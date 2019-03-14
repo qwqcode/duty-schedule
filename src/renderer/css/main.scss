@@ -1,0 +1,138 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #5e5e5e;
+  background-color: #d2d2d2;
+  overflow: hidden;
+  font-family: Roboto, "Helvetica Neue", "PingFangSC-Light",
+  "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(169, 169, 169, 0.14);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.el-input__inner {
+  border-radius: 2px;
+  border-width: 2px;
+  height: 34px;
+  line-height: 34px;
+  padding: 0 12px;
+}
+
+.el-input__icon {
+  line-height: 34px;
+}
+
+.el-button {
+  border-radius: 2px;
+  border-width: 2px;
+}
+
+/* notify */
+.notify-layer {
+  position: fixed;
+  z-index: 9999;
+  bottom: 60px;
+  left: calc(50vw - 180px);
+  width: 360px;
+  opacity: .83;
+  pointer-events: none;
+  
+  .notify-item {
+    display: block;
+    overflow: hidden;
+    background-color: #2c2c2c;
+    border-color: #2c2c2c;
+    color: #FFF;
+    cursor: pointer;
+    pointer-events: all;
+
+    &:not(:last-child) {
+      margin-bottom: 13px;
+    }
+
+    &.type-s {
+      color: #FFF;
+      background: #57d59f;
+    }
+
+    &.type-e {
+      color: #FFF;
+      background: #ff6f6c;
+    }
+    
+    &.type-w {
+      color: #FFF;
+      background: #ffc721;
+    }
+    
+    &.type-i {
+      color: #FFF;
+      background: #2ebcfc;
+    }
+
+    p {
+      line-height: 1.8;
+      padding: 6px 20px;
+      margin: 0;
+      text-align: center;
+    }
+  }
+}
+
+/* anim */
+.anim-fade-in {
+  -webkit-animation-name: fadeIn;
+  animation-name: fadeIn;
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+  -webkit-animation-duration: .3s;
+  animation-duration: .3s;
+}
+
+.anim-fade-out {
+  -webkit-animation-name: fadeOut;
+  animation-name: fadeOut;
+  -webkit-animation-duration: .2s;
+  animation-duration: .2s;
+}
+
+.anim-flash {
+  -webkit-animation-name: flash;
+  animation-name: flash
+}
+
+@keyframes fadeIn {
+  0% {
+      opacity: 0
+  }
+
+  to {
+      opacity: 1
+  }
+}
+
+@keyframes fadeOut {
+  100% {
+      opacity: 0;
+  }
+
+  0% {
+  }
+}
