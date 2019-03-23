@@ -1,5 +1,7 @@
 # duty-schedule
 
+<img src="./build/icons/icon.png" width="200px">
+
 > A duty schedule.
 
 #### Build Setup
