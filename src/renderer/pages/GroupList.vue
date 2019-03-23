@@ -9,20 +9,20 @@
 
     <el-row class="group-list">
       <el-col
-        class="group-item" 
-        v-for="(group, id) in groups" :key="id"
-        :class="{ 'is-selected': isGroupSelected(id) }"
+        v-for="group in groupList" :key="group.name"
+        class="group-item"
+        :class="{ 'is-selected': isGroupSelected(group) }"
         :span="6"
       >
-        <div class="inner" @click="!!asSelector ? selectOneGroup(id, group) : null">
+        <div class="inner" @click="!!asSelector ? groupSelect(group) : null">
           <div class="group-title">
-            <span class="group-title-text">第 {{ id }} 组</span>
+            <span class="group-title-text">{{ group.name }}</span>
             <span v-if="!!asSelector" class="select-btn">
-              <i :class="!isGroupSelected(id) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>  
-            </span>  
+              <i :class="!isGroupSelected(group) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+            </span>
           </div>
-          <div class="item" v-for="member in group" :key="member">
-            <div class="name" v-html="!searchKeyWords ? member : highlight(member)"></div>
+          <div class="item" v-for="member in group.data" :key="member">
+            <div class="name" v-html="searchHighlight(member)"></div>
           </div>
         </div>
       </el-col>
@@ -32,37 +32,48 @@
 </template>
 
 <script>
-  import Vue from 'vue'
-  import _ from 'lodash'
-
   export default {
-    props: ['asSelector'],
+    props: {
+      asSelector: Boolean
+    },
     data () {
       return {
-        groups: this.$store.state.Setting.groupList,
-        selectedGroupList: {},
+        groupSelectedList: [],
         searchKeyWords: ''
       }
     },
+    computed: {
+      groupList () {
+        return this.$store.state.Setting.groupList
+      }
+    },
     methods: {
-      isGroupSelected (groupId) {
-        return _.findKey(this.selectedGroupList, group => group.groupNum === groupId) !== undefined
-      },
-      selectOneGroup (groupId, group) {
-        if (!this.isGroupSelected(groupId)) {
-          Vue.set(this.selectedGroupList, Object.keys(this.selectedGroupList).length + 1, {
-            groupNum: groupId,
-            members: group
-          })
+      /**
+       * 选中 Group
+       */
+      groupSelect (group) {
+        if (!this.isGroupSelected(group)) {
+          // 若未选中
+          this.groupSelectedList.push(group)
         } else {
-          for (let i in this.selectedGroupList) {
-            if (this.selectedGroupList[i].groupNum === groupId) {
-              Vue.delete(this.selectedGroupList, i)
-            }
-          }
+          this.groupSelectedList.splice(this.groupSelectedList.indexOf(group), 1)
         }
       },
-      highlight (text) {
+
+      /**
+       * 判断 Group 是否选中
+       */
+      isGroupSelected (group) {
+        return this.groupSelectedList.indexOf(group) > -1
+      },
+
+      /**
+       * 搜索文字高亮
+       */
+      searchHighlight (text) {
+        if (!this.searchKeyWords) {
+          return text
+        }
         let index = text.indexOf(this.searchKeyWords)
         if (index >= 0) {
           text = text.substring(0, index) + '<span style="color: red;font-weight: bold;">' + text.substring(index, index + text.length) + '</span>' + text.substring(index + text.length)
@@ -70,11 +81,9 @@
         return text
       }
     },
-    computed: {
-    },
     watch: {
-      selectedGroupList (obj) {
-        // 让 this.selectedGroupList 和父 v-model="XXX" 的 XXX 对象联动
+      groupSelectedList (obj) {
+        // 让 this.groupSelectedList 和父 v-model="XXX" 的 XXX 对象联动
         this.$emit('input', obj)
       }
     }
@@ -125,7 +134,7 @@
           top: 0;
 
           & > i {
-            color: rgb(190, 190, 190); 
+            color: rgb(190, 190, 190);
           }
         }
       }

@@ -1,6 +1,8 @@
 import 'element-ui/lib/theme-chalk/index.css'
 import Vue from 'vue'
 import {
+  Timeline,
+  TimelineItem,
   Pagination,
   Dialog,
   Autocomplete,
@@ -70,6 +72,8 @@ import {
   Notification
 } from 'element-ui'
 
+Vue.use(Timeline)
+Vue.use(TimelineItem)
 Vue.use(Pagination)
 Vue.use(Dialog)
 Vue.use(Autocomplete)

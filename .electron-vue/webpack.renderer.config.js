@@ -44,7 +44,7 @@ let rendererConfig = {
       },
       {
         test: /\.scss$/,
-        use: ['vue-style-loader', `css-loader?sourceMap=${process.env.NODE_ENV !== 'production' ? 'true' : 'falae'}`, 'sass-loader']
+        use: ['vue-style-loader', `css-loader?sourceMap=${process.env.NODE_ENV !== 'production' ? 'true' : 'false'}`, 'sass-loader']
       },
       {
         test: /\.sass$/,

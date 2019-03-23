@@ -61,6 +61,10 @@ ipcMain.on('close-me', (evt, arg) => {
   app.quit()
 })
 
+ipcMain.on('open-dev-tools', (evt, arg) => {
+  mainWindow.webContents.openDevTools()
+})
+
 ipcMain.on('delete-vuex-store-data', (evt, arg) => {
   let vuexJsonPath = app.getPath('userData') + '/vuex.json'
 

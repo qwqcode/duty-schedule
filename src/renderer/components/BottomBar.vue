@@ -2,15 +2,15 @@
   <div class="bottom-bar-wrap">
     <div class="bottom-bar">
       <div class="left">
-        <router-link tag="button" to="schedule" replace><i class="zmdi zmdi-calendar-note"></i></router-link>
-        <router-link tag="button" to="builder" replace><i class="zmdi zmdi-file-plus"></i></router-link>
+        <router-link tag="button" to="/schedule" replace><i class="zmdi zmdi-calendar-note"></i></router-link>
+        <router-link tag="button" to="/builder" replace><i class="zmdi zmdi-file-plus"></i></router-link>
       </div>
       <div class="right">
-        <router-link tag="button" to="setting" replace><i class="zmdi zmdi-settings"></i></router-link>
-        <router-link tag="button" to="taskTypeList" replace><i class="zmdi zmdi-flag"></i></router-link>
-        <router-link tag="button" to="groupList" replace><i class="zmdi zmdi-accounts"></i></router-link>
+        <router-link tag="button" to="/setting" replace><i class="zmdi zmdi-settings"></i></router-link>
+        <router-link tag="button" to="/taskTypeList" replace><i class="zmdi zmdi-flag"></i></router-link>
+        <router-link tag="button" to="/groupList" replace><i class="zmdi zmdi-accounts"></i></router-link>
       </div>
-    </div> 
+    </div>
   </div>
 </template>
 
@@ -40,6 +40,7 @@
     display: flex;
     align-items: center;
     font-size: 15px;
+    border-top: 1px solid #F4F4F4;
 
     .left, .right {
     }

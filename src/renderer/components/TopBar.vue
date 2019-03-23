@@ -1,13 +1,13 @@
 <template>
   <div class="top-bar-wrap">
     <div class="top-bar">
-      <div class="left">值日安排表 (Pre-release Version)</div>
+      <div class="left">值日任务表</div>
       <div class="right">
         <button class="btn" data-action="minimize"><span class="icon window-minimize"></span></button>
         <button class="btn" data-action="maximize"><span class="icon window-maximize" ref="IconWindowMaximize"></span></button>
         <button class="btn" data-action="close"><span class="icon window-close"></span></button>
       </div>
-    </div> 
+    </div>
   </div>
 </template>
 

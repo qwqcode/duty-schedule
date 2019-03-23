@@ -13,6 +13,9 @@ import './element-ui'
 import './css/main.scss'
 import 'material-design-iconic-font/dist/css/material-design-iconic-font.min.css'
 
+import Transitions from 'vue2-transitions'
+Vue.use(Transitions)
+
 Vue.use(Router)
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios

@@ -12,6 +12,12 @@ export default new Router({
       component: require('@/pages/Builder').default
     },
     {
+      path: '/viewer/:title',
+      name: 'viewer',
+      props: true,
+      component: require('@/pages/Viewer').default
+    },
+    {
       path: '/groupList',
       component: require('@/pages/GroupList').default
     },

@@ -7643,6 +7643,11 @@ vue-template-es2015-compiler@^1.6.0:
   version "1.6.0"
   resolved "https://registry.npmjs.org/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.6.0.tgz#dc42697133302ce3017524356a6c61b7b69b4a18"
 
+vue2-transitions@^0.3.0:
+  version "0.3.0"
+  resolved "http://registry.npm.taobao.org/vue2-transitions/download/vue2-transitions-0.3.0.tgz#765fc0d743103fcfe2d10f431697d8873a075c17"
+  integrity sha1-dl/A10MQP8/i0Q9DFpfYhzoHXBc=
+
 vue@^2.5.17:
   version "2.5.17"
   resolved "https://registry.npmjs.org/vue/-/vue-2.5.17.tgz#0f8789ad718be68ca1872629832ed533589c6ada"

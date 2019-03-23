@@ -28,7 +28,9 @@
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
-              <el-button size="small" @click="deleteVuexStoreData()">清除所有内容和设定</el-button>
+              <el-button size="small" @click="syncTaskTypeCountList()">同步 taskTypeCountList</el-button>
+              <el-button size="small" @click="openDevTools()">打开调试工具</el-button>
+              <el-button size="small" @click="deleteVuexStoreData()" ref="deleteVuexStoreDataBtn">清除所有内容和设定</el-button>
             </div>
           </div>
         </div>
@@ -52,8 +54,7 @@
     data () {
       return {
         dataEditorCardList: {
-          'Setting': '基础设置',
-          'Schedule': '值日日程表'
+          'Setting': '基础设置'
         },
         dataEditorStoreKey: null,
         dataEditorTargetKey: null,
@@ -61,7 +62,20 @@
       }
     },
     methods: {
+      isDataAllowEdit () {
+        if (typeof window.SETTING_DATA_ALLOW_EDIT !== 'boolean' || window.SETTING_DATA_ALLOW_EDIT !== true) {
+          window.notify('没有权限修改数据', 'w')
+          console.log('[window.SETTING_DATA_ALLOW_EDIT]')
+          return false
+        } else {
+          return true
+        }
+      },
       toggleDataEditor (storeKey, targetKey) {
+        if (!this.isDataAllowEdit()) {
+          return
+        }
+
         if (this.dataEditorStoreKey === storeKey && this.dataEditorTargetKey === targetKey) {
           this.dataEditorStoreKey = null
           this.dataEditorTargetKey = null
@@ -85,6 +99,10 @@
         this.dataEditorTargetKey = targetKey
       },
       dataEditorSave () {
+        if (!this.isDataAllowEdit()) {
+          return
+        }
+
         let storeKey = this.dataEditorStoreKey
         let targetKey = this.dataEditorTargetKey
         if (storeKey !== null && targetKey !== null) {
@@ -99,8 +117,29 @@
           }
         }
       },
-      deleteVuexStoreData () {
-        ipcRenderer.send('delete-vuex-store-data')
+      syncTaskTypeCountList () {
+        this.$store.dispatch('Setting/syncTaskTypeCount')
+        window.notify('已同步')
+      },
+      deleteVuexStoreData (evt) {
+        if (!this.isDataAllowEdit()) {
+          return
+        }
+
+        let el = this.$refs.deleteVuexStoreDataBtn
+        if (typeof el.clickTime !== 'number') {
+          el.clickTime = 1
+        } else {
+          el.clickTime++
+        }
+        if (el.clickTime < 5) {
+          window.notify('危险操作，请再点 ' + (5 - el.clickTime) + ' 次', 'e')
+        } else {
+          ipcRenderer.send('delete-vuex-store-data')
+        }
+      },
+      openDevTools (evt) {
+        ipcRenderer.send('open-dev-tools')
       }
     },
     watch: {
@@ -127,7 +166,7 @@
         font-weight: bold;
         margin-bottom: 15px;
       }
-      
+
       .setting-item {
         &:not(:last-child) {
           margin-bottom: 10px;
@@ -135,7 +174,7 @@
       }
     }
 
-    
+
   }
 }
 </style>
