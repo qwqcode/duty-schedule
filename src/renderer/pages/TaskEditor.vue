@@ -101,12 +101,14 @@ export default {
       // 遍历 taskType 不重复的 list
       // 获取 task 中每个 taskType 做得最少的人
       let exceptedMemberNameList = [] // 排除列表
-      _.forEach(this.taskTypeListUnique, (taskType) => {
+
+      _.forEach(this.$store.state.Setting.taskTypeList, (taskTypeGroup, taskTypeGroupI) => {
         // 克隆一份 groupList 可任意操作数据，不改变原始数据
         let groupList = _.cloneDeep(this.task.groupList)
+        // 仅保留一个组
+        groupList = [groupList[taskTypeGroupI]]
 
-        // 循环 [该任务最多需要人数] 次
-        for (let i = 0; i < this.taskTypeMaxNeedNumList[taskType]; i++) {
+        _.forEach(taskTypeGroup.data, (taskType) => {
           let resultMember = this.getTaskTypeMinCountMember(groupList, taskType, exceptedMemberNameList)
           // 为 member 设置任务
           _.forEach(this.task.groupList, (group, groupI) => {
@@ -118,8 +120,7 @@ export default {
           })
           // 已分配任务的人，添加到排除列表（下一次 getTaskTypeMinCountMember 就不会再找 TA）
           exceptedMemberNameList.push(resultMember.data.name)
-          // 继续找人，直到达到 [该任务最多需要人数] 为止
-        }
+        })
       })
     },
     /**
