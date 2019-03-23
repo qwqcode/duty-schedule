@@ -36,9 +36,11 @@
         </div>
       </div>
 
-      <div class="setting-card">
-        <div class="title">版本信息</div>
-        **预发布版本**
+      <div class="setting-card" style="text-align: center;">
+        <img src="../assets/icon.png" width="60px" height="60px">
+        <br/><br/>
+        <b style="font-size: 1.4em;">值日任务表 v{{ version }}</b>
+        <br/><br/>© 2019 <span @click="openBlog()" style="cursor: pointer;color: #1a73e8">qwqaq.com</span>
       </div>
 
     </div>
@@ -46,7 +48,7 @@
 </template>
 
 <script>
-  import { ipcRenderer } from 'electron'
+  import { ipcRenderer, shell } from 'electron'
 
   export default {
     mounted () {
@@ -140,6 +142,14 @@
       },
       openDevTools (evt) {
         ipcRenderer.send('open-dev-tools')
+      },
+      openBlog () {
+        shell.openExternal('https://qwqaq.com')
+      }
+    },
+    computed: {
+      version () {
+        return require('../../../package.json').version
       }
     },
     watch: {
