@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 import _ from 'lodash'
 import Vue from 'vue'
 import TaskTypeList from './TaskTypeList.vue'
@@ -94,39 +94,131 @@ export default {
       this.autoDealingTaskType()
     },
     /**
+     * 只是存放数据的 example 注释，无实际作用
+     */
+    ___dataExample___ () {
+      /**
+       * @example Array this.$store.state.Setting.taskTypeList (=this.taskTypeList)
+       * ```
+       * [
+       *  { "data":[ "教室 地面扫+拖", "教室 地面扫+拖", ... ] },
+       *  { "data":[ "走廊 地面扫+拖", "擦 教室瓷砖+走廊瓷砖", ... ] },
+       *  ...
+       * ]
+       * ```
+       */
+      /**
+       * @example Object this.task.groupList 当前 task 中已选取的组
+       * ```
+       * {
+       *    "0": { "name": "第 1 组", "data": { "0": {"name": "张XX", "task": "教室 地面扫+拖"}, "1": {"name": "李XX", "task": "教室 地面扫+拖"}, "n": ... }},
+       *    "1": { "name": "第 2 组", "data": { "0": {"name": "黄XX", "task": "洗白板+倒垃圾"}, "1": {"name": "赵XX","task": "走廊 地面扫+拖"}, "n": ... }},
+       *    ...
+       * }
+       * ```
+       */
+    },
+    /**
      * 自动分发任务
      * (核心功能)
      */
     autoDealingTaskType () {
-      // 遍历 taskType 不重复的 list
-      // 获取 task 中每个 taskType 做得最少的人
-      let exceptedMemberNameList = [] // 排除列表
+      // 在注释中：^XXX^ => 表示 taskType 组，*XXX* => 表示 groupList 组
 
-      _.forEach(this.$store.state.Setting.taskTypeList, (taskTypeGroup, taskTypeGroupI) => {
-        // 克隆一份 groupList 可任意操作数据，不改变原始数据
+      let groupSelectList = this.buildGroupSelectListByCount() // 选组列表
+      let exceptedMemberNameList = [] // 排除的人 列表
+      console.log(groupSelectList)
+
+      // 遍历 taskType list 出所有的 ^taskType 组^
+      _.forEach(this.taskTypeList, (taskTypeGroup, taskTypeGroupI) => {
+        // 克隆一份 groupList（可任意操作数据，不改变原始数据）
         let groupList = _.cloneDeep(this.task.groupList)
-        // 仅保留一个组
-        groupList = [groupList[taskTypeGroupI]]
-
-        _.forEach(taskTypeGroup.data, (taskType) => {
-          let resultMember = this.getTaskTypeMinCountMember(groupList, taskType, exceptedMemberNameList)
-          // 为 member 设置任务
-          _.forEach(this.task.groupList, (group, groupI) => {
-            _.forEach(group.data, (member, memberI) => {
-              if (member.name === resultMember.data.name) {
-                Vue.set(this.task.groupList[groupI].data[memberI], 'task', taskType)
-              }
-            })
-          })
-          // 已分配任务的人，添加到排除列表（下一次 getTaskTypeMinCountMember 就不会再找 TA）
+        // 仅选择*一个组* 对应 ^taskType 的一个组^（用来抽取成员，并分配任务）
+        let selectedGroupIndex = groupSelectList[taskTypeGroupI]
+        groupList = [groupList[selectedGroupIndex]]
+        // 遍历 taskType list ^一个组^里面的所有 typeType Names
+        _.forEach(taskTypeGroup.data, (taskTypeName) => {
+          // 获取*一个组*内，做这个 taskTypeName 做得最少的成员
+          let resultMember = this.getTaskTypeMinCountMemberOne(groupList, taskTypeName, exceptedMemberNameList)
+          // 找到了该成员后，为该成员设置这个 taskTypeName
+          this.setMemberTask(resultMember.data.name, taskTypeName)
+          // 已分配任务的人，添加到排除列表（下一次 getTaskTypeMinCountMemberOne 就不会再找 TA）
           exceptedMemberNameList.push(resultMember.data.name)
         })
       })
     },
     /**
+     * 生成选组列表（作用是：不让某个组一直扫 公区or教室 其中一个地方）
+     * 生成 {"taskType 组 Index": "groupList 组 Index", ...}
+     * 根据 groupList 中成员做每个 taskType 组中每个 taskType 的次数排序
+     */
+    buildGroupSelectListByCount () {
+      let groupSelectList = {}
+      // _.shuffle 打乱顺序，防止当数据相同时，一直抽到某一个 *groupList 组*
+      _.forEach(_.shuffle(this.taskTypeList), (taskTypeGroup, taskTypeGroupI) => {
+        // 获取 *所有 groupList 组中所有成员* 做过这个 ^taskType 组^ 中所有 taskType 的次数 的总和
+        let sumList = {} // '*memberGroupI*': '总和'
+        // taskTypeGroup 去重
+        let uniqTaskTypeGroup = _.uniq(taskTypeGroup.data)
+        // console.log(`\nuniqTaskTypeGroup=${taskTypeGroupI}: ${JSON.stringify(uniqTaskTypeGroup)}`)
+
+        // 遍历当前 task 的 groupList（已选取的组）
+        _.forEach(this.task.groupList, (memberGroup, memberGroupI) => {
+          // console.log(`【${memberGroup.name}】`)
+          // 排除已在 groupSelectList 中的 *组*
+          if (_.filter(groupSelectList, (val) => val === memberGroupI).length > 0) {
+            // console.log(`-- 跳过 --`)
+            return
+          }
+          // 初始化这个 *组* 在 sumList 中的数据
+          if (typeof sumList[memberGroupI] === 'undefined') {
+            sumList[memberGroupI] = 0 // 初始化
+          }
+          // 遍历*一个组*中的成员
+          _.forEach(memberGroup.data, (member) => {
+            // 查询这个成员做过该 taskTypeGroup 中所有 taskType 的次数，并求和
+            _.forEach(uniqTaskTypeGroup, (taskTypeName) => {
+              // console.log(`【"${taskTypeName}", "${member.name}"】sumList[${memberGroupI}] += ${Number(this.getTaskTypeCount(taskTypeName, member.name))}`)
+              sumList[memberGroupI] += Number(this.getTaskTypeCount(taskTypeName, member.name))
+            })
+          })
+          // console.log('\n')
+        })
+
+        // console.log(`【结果】taskTypeGroupI=${taskTypeGroupI}, sumList=`, sumList)
+        /**
+         * taskTypeGroupI: 0 {0: 40, 1: 4, 2: 0, 3: 0}
+         * taskTypeGroupI: 1 {0: 4, 1: 28, 3: 0}
+         * taskTypeGroupI: 2 {0: 0, 1: 0}
+         * taskTypeGroupI: 3 {1: 0}
+         */
+        // 找出一个 做 ^这个taskTypeList Group中任务^ 最少的 *groupList 组*
+        let countMinMemberGroupIndex = null
+        let countMinMemberGroupNum
+        _.forEach(sumList, (num, memberGroupI) => {
+          if (typeof countMinMemberGroupNum !== 'number') {
+            // 初始化
+            countMinMemberGroupIndex = memberGroupI
+            countMinMemberGroupNum = num
+          } else {
+            // 若这个 memberGroup 的 sum 小于前一个的 sum
+            if (num < countMinMemberGroupNum) {
+              countMinMemberGroupIndex = memberGroupI
+              countMinMemberGroupNum = num
+            }
+          }
+        })
+
+        groupSelectList[taskTypeGroupI] = countMinMemberGroupIndex
+        // console.log(`【结果】groupSelectList[${taskTypeGroupI}] = ${countMinMemberGroupIndex}`)
+      })
+
+      return groupSelectList
+    },
+    /**
      * 从本 task 中获取做 指定 taskType 最少的人
      */
-    getTaskTypeMinCountMember (groupList, taskType, exceptedMemberNameList) {
+    getTaskTypeMinCountMemberOne (groupList, taskType, exceptedMemberNameList) {
       let countMinNum // 最小 count 数值
       let countMinMember = null // 做过该 taskType 最少的人
 
@@ -161,12 +253,22 @@ export default {
 
       return countMinMember
     },
-    // 获取本 task 中做指定 taskType 任务的人数
-    getTaskTypeSelectedTotal (taskType) {
+    // 为 this.task.groupList 中的指定成员设置任务
+    setMemberTask (memberName, taskTypeName) {
+      _.forEach(this.task.groupList, (group, groupI) => {
+        _.forEach(group.data, (member, memberI) => {
+          if (member.name === memberName) {
+            Vue.set(this.task.groupList[groupI].data[memberI], 'task', taskTypeName)
+          }
+        })
+      })
+    },
+    // 获取本 this.task.groupList 中做指定任务的人数
+    getTaskTypeSelectedTotal (taskTypeName) {
       let count = 0
       _.forEach(this.task.groupList, (group) => {
         _.forEach(group.data, (item) => {
-          if (item.task === taskType) {
+          if (item.task === taskTypeName) {
             count++
           }
         })
@@ -190,6 +292,7 @@ export default {
     }
   },
   computed: {
+    ...mapState('Setting', ['taskTypeList']),
     ...mapGetters('Setting', ['taskTypeFlatList', 'taskTypeListUnique', 'getTaskTypeCount', 'taskTypeMaxNeedNumList'])
   },
   watch: {
