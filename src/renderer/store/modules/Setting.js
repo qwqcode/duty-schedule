@@ -4,7 +4,8 @@ const state = {
   taskList: [],
   groupList: [],
   taskTypeList: {},
-  taskTypeCountList: {}
+  taskTypeCountList: {},
+  taskTypeGroupCountList: {}
 }
 
 const mutations = {
@@ -18,6 +19,7 @@ const mutations = {
   PUSH_TASK (state, task) {
     state.taskList.push(task)
     this.dispatch('Setting/syncTaskTypeCount')
+    this.dispatch('Setting/syncTaskTypeGroupCount')
   }
 }
 
@@ -43,12 +45,39 @@ const actions = {
     })
 
     commit('SET_SETTING', ['taskTypeCountList', countList, false])
+  },
+
+  /** 同步 taskTypeGroupCountList 记数 */
+  syncTaskTypeGroupCount ({ commit, state }) {
+    let countList = {}
+    _.forEach(state.taskTypeList, (taskTypeGroup) => {
+      let taskTypeGroupName = taskTypeGroup.name
+      countList[taskTypeGroupName] = {}
+
+      _.forEach(state.taskList, (task) => {
+        _.forEach(task.groupList, (group) => {
+          if (typeof countList[taskTypeGroupName][group.name] !== 'number') {
+            countList[taskTypeGroupName][group.name] = 0
+          }
+
+          if (group.taskTypeGroupName === taskTypeGroupName) {
+            countList[taskTypeGroupName][group.name] += 1
+          }
+        })
+      })
+    })
+
+    commit('SET_SETTING', ['taskTypeGroupCountList', countList, false])
   }
 }
 
 const getters = {
   getTaskTypeCount: (state) => (taskType, name) => {
     return state.taskTypeCountList[taskType] ? (state.taskTypeCountList[taskType][name] || 0) : 0
+  },
+
+  getTaskTypeGroupCount: (state) => (taskTypeGroupName, memberGroupName) => {
+    return state.taskTypeGroupCountList[taskTypeGroupName] ? (state.taskTypeGroupCountList[taskTypeGroupName][memberGroupName] || 0) : 0
   },
 
   groupMemberFlatList: (state, getters) => {

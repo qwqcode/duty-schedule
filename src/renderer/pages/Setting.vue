@@ -29,6 +29,7 @@
           <div class="setting-item">
             <div class="buttons">
               <el-button size="small" @click="syncTaskTypeCountList()">同步 taskTypeCountList</el-button>
+              <el-button size="small" @click="syncTaskTypeGroupCountList()">同步 taskTypeGroupCountList</el-button>
               <el-button size="small" @click="openDevTools()">打开调试工具</el-button>
               <el-button size="small" @click="deleteVuexStoreData()" ref="deleteVuexStoreDataBtn">清除所有内容和设定</el-button>
             </div>
@@ -52,6 +53,9 @@
 
   export default {
     mounted () {
+      if (typeof window.SETTING_DATA_ALLOW_EDIT === 'undefined') {
+        window.SETTING_DATA_ALLOW_EDIT = false
+      }
     },
     data () {
       return {
@@ -121,7 +125,11 @@
       },
       syncTaskTypeCountList () {
         this.$store.dispatch('Setting/syncTaskTypeCount')
-        window.notify('已同步')
+        window.notify('已同步 taskTypeCountList')
+      },
+      syncTaskTypeGroupCountList () {
+        this.$store.dispatch('Setting/syncTaskTypeGroupCount')
+        window.notify('已同步 taskTypeGroupList')
       },
       deleteVuexStoreData (evt) {
         if (!this.isDataAllowEdit()) {
@@ -160,7 +168,7 @@
 <style scoped lang="scss">
 .setting-page {
   .setting-list {
-    max-width: 70%;
+    max-width: 80%;
     margin: 0 auto;
 
     .setting-card {

@@ -8,8 +8,18 @@
     </el-form>
 
     <div class="task-group-list center-form">
-      <div class="group-item" v-for="(group, taskIndex) in this.task.groupList" :key="taskIndex">
-        <div class="group-item-title">{{ group.name }}</div>
+      <div class="group-item" v-for="(group, groupIndex) in this.task.groupList" :key="groupIndex">
+        <div class="group-item-title">{{ group.name }}
+          <span class="sub-text">
+            <el-select @change="onTaskTypeGroupSelected($event, groupIndex)" placeholder="请选择" :value="group.taskTypeGroupIndex">
+            <el-option
+              v-for="(item, key) in taskTypeList"
+              :key="key"
+              :label="item.name + ` [已做 ${getTaskTypeGroupCount(group.taskTypeGroupName, group.name)} 次]`"
+              :value="key"></el-option>
+            </el-select>
+          </span>
+        </div>
         <div class="member-item" v-for="(item, key) in group.data" :key="key">
           <el-row>
             <el-col :span="3">
@@ -45,6 +55,7 @@
 </template>
 
 <script>
+import { ipcRenderer } from 'electron'
 import { mapGetters, mapState } from 'vuex'
 import _ from 'lodash'
 import Vue from 'vue'
@@ -71,6 +82,33 @@ export default {
     }
   },
   methods: {
+    setAndAutoDealingTaskType (obj) {
+      if (typeof obj !== 'undefined') {
+        Vue.set(this.task, 'groupSelectList', obj)
+      }
+      this.autoDealingTaskType()
+      console.log(this.task.groupSelectList)
+    },
+    onTaskTypeGroupSelected (taskTypeGroupI, memberGroupI) {
+      alert('暂时无法自动修改')
+      console.log(`window.setAndAutoDealingTaskType(${JSON.stringify(this.task.groupSelectList)})\nthis.task.groupSelectList = `, this.task.groupSelectList)
+      window.setAndAutoDealingTaskType = this.setAndAutoDealingTaskType
+      ipcRenderer.send('open-dev-tools')
+
+      /*
+      console.log(taskTypeGroupI, memberGroupI)
+      taskTypeGroupI = Number(taskTypeGroupI)
+      memberGroupI = Number(memberGroupI)
+
+      let obj = {}
+      obj[taskTypeGroupI] = String(memberGroupI)
+      let arr = []
+      arr.push(taskTypeGroupI)
+      Vue.set(this.task, 'groupSelectList', this.buildGroupSelectListByCount(obj, arr))
+
+      this.autoDealingTaskType()
+      */
+    },
     initGroupListWithTask () {
       let groupListInit = this.task.groupListInit
       let groupList = {}
@@ -124,8 +162,11 @@ export default {
      */
     autoDealingTaskType () {
       // 在注释中：^XXX^ => 表示 taskType 组，*XXX* => 表示 groupList 组
+      let groupSelectList = this.task.groupSelectList
+      if (typeof groupSelectList === 'undefined') {
+        groupSelectList = this.task.groupSelectList = this.buildGroupSelectListByCount() // 选组列表（自动分配）
+      }
 
-      let groupSelectList = this.buildGroupSelectListByCount() // 选组列表
       let exceptedMemberNameList = [] // 排除的人 列表
       console.log(groupSelectList)
 
@@ -135,6 +176,10 @@ export default {
         let groupList = _.cloneDeep(this.task.groupList)
         // 仅选择*一个组* 对应 ^taskType 的一个组^（用来抽取成员，并分配任务）
         let selectedGroupIndex = groupSelectList[taskTypeGroupI]
+        // 对这个组设置 taskTypeGroupName
+        this.task.groupList[selectedGroupIndex].taskTypeGroupIndex = taskTypeGroupI
+        this.task.groupList[selectedGroupIndex].taskTypeGroupName = taskTypeGroup.name
+        // 获取这个组的成员数据
         groupList = [groupList[selectedGroupIndex]]
         // 遍历 taskType list ^一个组^里面的所有 typeType Names
         _.forEach(taskTypeGroup.data, (taskTypeName) => {
@@ -148,11 +193,60 @@ export default {
       })
     },
     /**
-     * 生成选组列表（作用是：不让某个组一直扫 公区or教室 其中一个地方）
+     * 通过 taskTypeGroupCountList 生成选组列表
+     */
+    buildGroupSelectListByCount (groupSelectList, exceptedTaskTypeGroupNames) {
+      groupSelectList = groupSelectList || {}
+      exceptedTaskTypeGroupNames = exceptedTaskTypeGroupNames || []
+
+      // TODO: 注意 _.shuffle(this.task.groupList) 不行的，因为会改变 memberGroupI，下次记得改：不使用 memberGroupI 作为 map 的 key
+      _.forEach(this.task.groupList, (memberGroup, memberGroupI) => {
+        if (_.filter(groupSelectList, (o) => o === memberGroupI).length > 0) {
+          return
+        }
+
+        // 分配给该成员组最少执行的次数的任务组
+        let countMinGroupKey = null
+        let countMinGroupKeyNum
+
+        _.forEach(this.taskTypeList, (taskTypeGroup, taskTypeGroupI) => {
+          // 若存在于排除任务组名组列表中，则跳过（不再安排这个任务组给成员组了）
+          if (exceptedTaskTypeGroupNames.indexOf(taskTypeGroupI) > -1) {
+            return
+          }
+
+          // 一个接一个地查询，比较大小，保存
+          let count = this.getTaskTypeGroupCount(taskTypeGroup.name, memberGroup.name)
+          console.log(`\nget(${taskTypeGroup.name}, ${memberGroup.name})=${count}\n`)
+          if (typeof countMinGroupKeyNum === 'undefined') {
+            countMinGroupKey = taskTypeGroupI
+            countMinGroupKeyNum = count
+          }
+
+          if (count < countMinGroupKeyNum) {
+            countMinGroupKey = taskTypeGroupI
+            countMinGroupKeyNum = count
+          }
+        })
+
+        groupSelectList[countMinGroupKey] = memberGroupI
+
+        // 已安排该组，添加 任务类型组key 到排除列表
+        exceptedTaskTypeGroupNames.push(countMinGroupKey)
+        console.log(`groupSelectList[${countMinGroupKey}] = ${memberGroupI}`)
+        console.log(`${countMinGroupKeyNum}`)
+        console.log(`${JSON.stringify(exceptedTaskTypeGroupNames)}`)
+        console.log(`\n`)
+      })
+
+      return groupSelectList
+    },
+    /**
+     * （已废弃）通过总和，生成选组列表（作用是：不让某个组一直扫 公区or教室 其中一个地方）
      * 生成 {"taskType 组 Index": "groupList 组 Index", ...}
      * 根据 groupList 中成员做每个 taskType 组中每个 taskType 的次数排序
      */
-    buildGroupSelectListByCount () {
+    buildGroupSelectListByCountBySum () {
       let groupSelectList = {}
       // _.shuffle 打乱顺序，防止当数据相同时，一直抽到某一个 *groupList 组*
       _.forEach(_.shuffle(this.taskTypeList), (taskTypeGroup, taskTypeGroupI) => {
@@ -292,8 +386,8 @@ export default {
     }
   },
   computed: {
-    ...mapState('Setting', ['taskTypeList']),
-    ...mapGetters('Setting', ['taskTypeFlatList', 'taskTypeListUnique', 'getTaskTypeCount', 'taskTypeMaxNeedNumList'])
+    ...mapState('Setting', ['taskTypeList', 'taskTypeGroupCountList']),
+    ...mapGetters('Setting', ['taskTypeFlatList', 'taskTypeListUnique', 'getTaskTypeCount', 'getTaskTypeGroupCount', 'taskTypeMaxNeedNumList'])
   },
   watch: {
     task (obj) {
@@ -316,15 +410,26 @@ export default {
 
   .task-group-list {
     .group-item {
+      padding: 10px 20px 30px 20px;
+
       & > .group-item-title {
-        font-size: 17px;
+        position: relative;
+        font-size: 21px;
         margin: 10px 0 20px 0;
-        text-align: center;
         color: #1a73e8;
+
+        .sub-text {
+          position: absolute;
+          right: 0;
+          top: 0;
+          font-size: 13px;
+          color: rgb(79, 80, 82);
+        }
       }
 
       &:not(:last-child) {
-        margin-bottom: 20px;
+        margin-bottom: 10px;
+        border-bottom: 1px dashed #dedede;
       }
     }
 

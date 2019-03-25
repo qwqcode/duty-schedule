@@ -4,7 +4,7 @@
       <div class="page-title" v-if="!asSelector">任务种类列表</div>
       <div class="inner">
         <div class="group" v-for="(taskType, taskTypeIndex) in taskTypeList" :key="taskTypeIndex">
-          <div class="group-title" v-if="!isUniqueMode">组 {{ taskTypeIndex + 1 }}</div>
+          <div class="group-title" v-if="!isUniqueMode">{{ taskType.name }}</div>
           <div class="group-title" v-if="isUniqueMode">为 {{ value.name }} 分配任务</div>
           <div class="item"
             v-for="(typeName, nameIndex) in taskType.data"
