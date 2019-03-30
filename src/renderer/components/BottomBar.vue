@@ -7,8 +7,8 @@
       </div>
       <div class="right">
         <router-link tag="button" to="/setting" replace><i class="zmdi zmdi-settings"></i></router-link>
-        <router-link tag="button" to="/taskTypeList" replace><i class="zmdi zmdi-flag"></i></router-link>
-        <router-link tag="button" to="/groupList" replace><i class="zmdi zmdi-accounts"></i></router-link>
+        <router-link tag="button" to="/taskTypeGroupList" replace><i class="zmdi zmdi-flag"></i></router-link>
+        <router-link tag="button" to="/memberGroupList" replace><i class="zmdi zmdi-accounts"></i></router-link>
       </div>
     </div>
   </div>

@@ -3,7 +3,7 @@
     <div class="task-type-list">
       <div class="page-title" v-if="!asSelector">任务种类列表</div>
       <div class="inner">
-        <div class="group" v-for="(taskType, taskTypeIndex) in taskTypeList" :key="taskTypeIndex">
+        <div class="group" v-for="(taskType, taskTypeIndex) in taskTypeGroupList" :key="taskTypeIndex">
           <div class="group-title" v-if="!isUniqueMode">{{ taskType.name }}</div>
           <div class="group-title" v-if="isUniqueMode">为 {{ value.name }} 分配任务</div>
           <div class="item"
@@ -53,7 +53,7 @@
       },
       getSelectedTotal (taskName) {
         let count = 0
-        _.forEach(this.task.groupList, (group) => {
+        _.forEach(this.task.memberGroupList, (group) => {
           _.forEach(group.data, (item) => {
             if (item.task === taskName) {
               count++
@@ -65,13 +65,13 @@
       }
     },
     computed: {
-      taskTypeList () {
+      taskTypeGroupList () {
         let list = {}
 
         if (!this.isUniqueMode) {
-          list = this.$store.state.Setting.taskTypeList
+          list = this.$store.state.Setting.taskTypeGroupList
         } else {
-          list = [{ data: this.$store.getters['Setting/taskTypeListUnique'] }]
+          list = [{ data: this.$store.getters['Setting/taskTypeGroupListUnique'] }]
         }
 
         return list

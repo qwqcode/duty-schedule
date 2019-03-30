@@ -7,7 +7,7 @@
     </div>
 
     <div class="task-viewer" v-if="!!task">
-      <div class="group-item" v-for="group in (viewMode === 1) ? this.taskGroupList : this.taskGroupListModeTaskType" :key="group.name">
+      <div class="group-item" v-for="group in (viewMode === 1) ? this.taskMemberGroupList : this.taskMemberGroupListModeTaskType" :key="group.name">
       <div class="group-name">{{ group.name }}</div>
       <el-table
         :data="values(group.data)"
@@ -69,17 +69,17 @@ export default {
     taskList () {
       return this.$store.state.Setting.taskList
     },
-    taskTypeList () {
-      return this.$store.state.Setting.taskTypeList
+    taskTypeGroupList () {
+      return this.$store.state.Setting.taskTypeGroupList
     },
-    taskGroupList () {
-      return this.task.groupList
+    taskMemberGroupList () {
+      return this.task.memberGroupList
     },
-    taskGroupListModeTaskType () {
+    taskMemberGroupListModeTaskType () {
       let list = []
-      _.forEach(this.taskTypeListUnique, (taskType) => {
+      _.forEach(this.taskTypeGroupListUnique, (taskType) => {
         let members = []
-        _.forEach(this.taskGroupList, (group) => {
+        _.forEach(this.taskMemberGroupList, (group) => {
           _.forEach(group.data, (member) => {
             if (member.task === taskType) {
               members.push(member)
@@ -95,7 +95,7 @@ export default {
 
       return list
     },
-    ...mapGetters('Setting', ['taskTypeListUnique'])
+    ...mapGetters('Setting', ['taskTypeGroupListUnique'])
   }
 }
 </script>

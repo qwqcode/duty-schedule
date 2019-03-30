@@ -78,10 +78,6 @@
         }
       },
       toggleDataEditor (storeKey, targetKey) {
-        if (!this.isDataAllowEdit()) {
-          return
-        }
-
         if (this.dataEditorStoreKey === storeKey && this.dataEditorTargetKey === targetKey) {
           this.dataEditorStoreKey = null
           this.dataEditorTargetKey = null
