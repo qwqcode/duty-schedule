@@ -18,12 +18,12 @@ export default new Router({
       component: require('@/pages/Viewer').default
     },
     {
-      path: '/groupList',
-      component: require('@/pages/GroupList').default
+      path: '/memberGroupList',
+      component: require('@/pages/MemberGroupList').default
     },
     {
-      path: '/taskTypeList',
-      component: require('@/pages/TaskTypeList').default
+      path: '/taskTypeGroupList',
+      component: require('@/pages/TaskTypeGroupList').default
     },
     {
       path: '/setting',

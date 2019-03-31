@@ -9,7 +9,7 @@
 
     <el-row class="group-list">
       <el-col
-        v-for="group in groupList" :key="group.name"
+        v-for="group in memberGroupList" :key="group.name"
         class="group-item"
         :class="{ 'is-selected': isGroupSelected(group) }"
         :span="6"
@@ -43,8 +43,8 @@
       }
     },
     computed: {
-      groupList () {
-        return this.$store.state.Setting.groupList
+      memberGroupList () {
+        return this.$store.state.Setting.memberGroupList
       }
     },
     methods: {
