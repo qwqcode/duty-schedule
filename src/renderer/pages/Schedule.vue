@@ -1,167 +1,302 @@
 <template>
   <div class="page schedule-page fullscreen">
     <div class="inner">
-      <div class="task-list">
-        <div
-          class="task-list-item"
-          v-for="task in taskList"
-          :key="task.title"
-          @click="openTask(task)">
+      <div class="left-bar">
+        <div class="card group-switch">
+          <div class="item"><i class="zmdi zmdi-menu"></i></div>
+          <div class="dividing"></div>
+          <div class="item"><i class="zmdi zmdi-flag"></i></div>
+        </div>
+        <div class="card group-switch">
+          <div class="title">组</div>
+          <div class="item"
+               v-for="(group, key) in task.memberGroupList"
+               :key="key"
+               :class="{ 'active': key == currentMemberGroupKey }"
+               @click="switchGroupByKey(key)">
+            {{ getGroupNumByName(group.name) }}
+          </div>
+        </div>
+        <div class="card group-switch">
+          <div class="item" @click="autoSwitch = !autoSwitch"><i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`"></i></div>
+        </div>
+      </div>
+      <div class="right-card">
+        <transition-group name="zoom" tag="div">
+        <div class="float-card group-info"
+             v-for="(group, key) in task.memberGroupList"
+             :key="key"
+             :ref="`groupInfoCard_${key}`"
+             v-show="key == currentMemberGroupKey">
           <div class="inner">
-            <div class="title">{{ task.title }}</div>
-            <div class="time">{{ timeAgo(new Date(task.time)) }}</div>
-            <div class="flags">
-              <span class="flag flag-green" v-if="dateFormat(new Date(task.time)) === dateFormat(new Date())">今日</span>
-              <span class="flag flag-red" v-if="task.time < new Date().getTime() - 24*60*60*1000">已过期</span>
+            <div class="auto-switch-bar" v-show="autoSwitch"></div>
+            <div class="content">
+              <div class="title">{{ currentMemberGroup.name }}</div>
+              <el-row class="task-type-group-wrap" :gutter="30">
+                <el-col class="task-type-group"
+                        v-for="(item, i) in taskMemberGroupListModeTaskType"
+                        :key="i"
+                        :span="8">
+                  <div class="type-name">{{ item.name }}</div>
+                  <div class="members">
+                    <div class="member-item" v-for="(member, mi) in item.data" :key="mi">{{ member }}</div>
+                  </div>
+                </el-col>
+              </el-row>
             </div>
           </div>
         </div>
+        </transition-group>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-  import _ from 'lodash'
+import TaskList from './TaskList.vue'
+import _ from 'lodash'
+import { mapGetters } from 'vuex'
 
-  export default {
-    data () {
-      return {
-
+export default {
+  components: { TaskList },
+  created () {
+    this.task = this.taskList[0]
+  },
+  data () {
+    return {
+      task: null,
+      currentMemberGroupKey: 0,
+      autoSwitch: false
+    }
+  },
+  watch: {
+    currentMemberGroupKey (newVal, oldVal) {
+      if (this.autoSwitch) {
+        this.startAutoSwitchTimeout(this.$refs['groupInfoCard_' + newVal][0])
       }
     },
-    computed: {
-      taskList () {
-        return _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
-      }
-    },
-    methods: {
-      openTask (task) {
-        this.$router.replace({ name: 'viewer', params: { title: task.title } })
-      },
-
-      padWithZeros (vNumber, width) {
-        var numAsString = vNumber.toString()
-        while (numAsString.length < width) {
-          numAsString = '0' + numAsString
-        }
-        return numAsString
-      },
-
-      dateFormat (date) {
-        var vDay = this.padWithZeros(date.getDate(), 2)
-        var vMonth = this.padWithZeros(date.getMonth() + 1, 2)
-        var vYear = this.padWithZeros(date.getFullYear(), 2)
-        // var vHour = padWithZeros(date.getHours(), 2);
-        // var vMinute = padWithZeros(date.getMinutes(), 2);
-        // var vSecond = padWithZeros(date.getSeconds(), 2);
-        return `${vYear}-${vMonth}-${vDay}`
-      },
-
-      timeAgo (date) {
-        try {
-          var oldTime = date.getTime()
-          var currTime = new Date().getTime()
-          var diffValue = currTime - oldTime
-
-          var days = Math.floor(diffValue / (24 * 3600 * 1000))
-          if (days === 0) {
-            // 计算相差小时数
-            var leave1 = diffValue % (24 * 3600 * 1000) // 计算天数后剩余的毫秒数
-            var hours = Math.floor(leave1 / (3600 * 1000))
-            if (hours === 0) {
-              // 计算相差分钟数
-              var leave2 = leave1 % (3600 * 1000) // 计算小时数后剩余的毫秒数
-              var minutes = Math.floor(leave2 / (60 * 1000))
-              if (minutes === 0) {
-                // 计算相差秒数
-                var leave3 = leave2 % (60 * 1000) // 计算分钟数后剩余的毫秒数
-                var seconds = Math.round(leave3 / 1000)
-                return seconds + ' 秒前'
-              }
-              return minutes + ' 分钟前'
-            }
-            return hours + ' 小时前'
-          }
-          if (days < 0) return '刚刚'
-
-          if (days < 8) {
-            return days + ' 天前'
-          } else {
-            return this.dateFormat(date)
-          }
-        } catch (error) {
-          console.error(error)
-        }
+    autoSwitch (newVal) {
+      if (newVal === true) {
+        this.startAutoSwitchTimeout(this.$refs['groupInfoCard_' + this.currentMemberGroupKey][0])
       }
     }
+  },
+  computed: {
+    taskList () {
+      return _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
+    },
+    currentMemberGroup () {
+      return this.task.memberGroupList[this.currentMemberGroupKey]
+    },
+    taskMemberGroupListModeTaskType () {
+      let typesListUnique = []
+      _.forEach(this.currentMemberGroup.data, (member) => {
+        if (typesListUnique.indexOf(member.task) <= -1) {
+          typesListUnique.push(member.task)
+        }
+      })
+
+      let list = []
+      _.forEach(typesListUnique, (taskType) => {
+        let members = []
+        _.forEach(this.currentMemberGroup.data, (member) => {
+          if (member.task === taskType) {
+            members.push(member.name)
+          }
+        })
+
+        list.push({
+          name: taskType,
+          data: members
+        })
+      })
+
+      console.log(list)
+
+      return list
+    },
+    ...mapGetters('Setting', ['taskTypeGroupListUnique'])
+  },
+  methods: {
+    getGroupNumByName (groupName) {
+      return groupName.match(/第 (.*) 组/)[1]
+    },
+    switchGroupByKey (key) {
+      this.autoSwitch = false
+      this.currentMemberGroupKey = key
+    },
+    startAutoSwitchTimeout (cardElem) {
+      const timeout = 10 * 1000
+      const perTime = 50
+
+      let timeLeft = 0
+      let switchBar = cardElem.querySelector('.auto-switch-bar')
+      switchBar.style.height = ''
+
+      let intervalKey = window.setInterval(() => {
+        if (this.autoSwitch === false) {
+          window.clearInterval(intervalKey)
+          return
+        }
+        switchBar.style.height = (((timeout - timeLeft) / timeout) * 100).toFixed(2) + '%'
+        timeLeft += perTime
+        if (timeLeft > timeout) {
+          // 切换组
+          if (this.currentMemberGroupKey + 1 < Object.keys(this.task.memberGroupList).length) {
+            this.currentMemberGroupKey++
+          } else {
+            this.currentMemberGroupKey = 0
+          }
+          window.clearInterval(intervalKey)
+        }
+      }, perTime)
+    }
   }
+}
 </script>
 
 <style scoped lang="scss">
 .schedule-page {
-  background: #F4F4F4;
+  background: #f4f4f4;
 
   & > .inner {
-    padding: 60px 30px 20px 30px;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
   }
 
-  .task-list {
-    .task-list-item {
-      padding: 5px;
+  .left-bar {
+    flex-basis: 50px;
+    padding-left: 20px;
+    display: flex;
+    place-items: center;
+    justify-content: center;
+    flex-flow: column;
 
-      & > .inner {
-        background: #FFF;
-        border: 1px solid #F4F4F4;
-        padding: 20px 30px;
-        cursor: pointer;
-        transition: all .2s linear;
-        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-        position: relative;
+    .card {
+      width: 44px;
+      min-height: 40px;
+      background: #FFF;
+      border-radius: 3px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
 
-        &:before {
-          content: ' ';
-          position: absolute;
-          left: -2px;
-          top: 10px;
-          height: calc(100% - 20px);
-          width: 3px;
-          background: #0083ff;
-          box-shadow: 0px 2px 15px rgba(0, 131, 255, 0.22);
-        }
+      &:not(:last-child) {
+        margin-bottom: 10px;
+      }
+    }
 
-        &:hover {
-          box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-          transform: translate3d(0, -4px, 0);
-        }
+    .group-switch {
+      & > div {
+        text-align: center;
+        width: 100%;
+        height: 40px;
+        line-height: 40px;
       }
 
       .title {
-        font-size: 1.4em;
-        color: #0083ff;
-        margin-bottom: 15px;
+        user-select: none;
+        color: #1a73e8;
+        border-bottom: 1px solid #F4F4F4;
       }
 
-      .time {}
+      .dividing {
+        height: 1px;
+        background: #F4F4F4;
+        width: 100%;
+      }
 
-      .flags {
-        position: absolute;
-        right: 20px;
-        top: 20px;
+      .item {
+        position: relative;
+        cursor: pointer;
 
-        .flag {
-          border-radius: 3px;
-          padding: 5px 10px;
-          color: #FFF;
+        &.active, &:hover {
+          color: #1a73e8;
+          font-weight: bold;
+          background: rgba(66, 133, 244, 0.12);
+        }
 
-          &.flag-green {
-            background: rgba(35, 209, 96, 0.85);
-            box-shadow: 3px 2px 15px rgba(35, 209, 96, 0.22);
+        /*&.active:after {
+          content: ' ';
+          position: absolute;
+          right: -30px;
+          top: 10px;
+          border-top: 10px solid transparent;
+          transform: rotate(-135deg);
+          border-style: solid;
+          border-width: 10px;
+          border-color: #fff #fff transparent transparent;
+          box-shadow: 0 0px 3px rgba(0, 0, 0, 0.22)
+        }*/
+      }
+    }
+  }
+
+  .right-card {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+
+    .float-card {
+      position: absolute;
+      background: #fff;
+      top: 70px;
+      left: 15px;
+      height: calc(100% - 100px);
+      width: calc(100% - 40px);
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+      border-radius: 3px;
+
+      & > .inner {
+        position: relative;
+        height: 100%;
+
+        .auto-switch-bar {
+          top: 0;
+          left: 0;
+          height: 100%;
+          width: 3px;
+          position: absolute;
+          transition: height .2s;
+          background: rgba(28, 116, 233, 0.37);
+        }
+
+        .content {
+          padding: 20px;
+        }
+      }
+
+      &.group-info {
+        .title {
+          font-size: 30px;
+          padding-left: 10px;
+          margin-bottom: 20px;
+          &:before {
+            content: '\f2fb';
+            font-family: 'Material-Design-Iconic-Font';
+            padding-right: 20gipx;
           }
+        }
 
-          &.flag-red {
-            background: rgba(209, 35, 58, 0.85);
-            box-shadow: 3px 2px 15px rgba(209, 35, 58, 0.22);
+        .task-type-group-wrap {
+          padding: 0 25px;
+
+          .task-type-group {
+            .type-name {
+              color: #1a73e8;
+              font-size: 25px;
+              margin-bottom: 20px;
+            }
+
+            .members {
+              margin-left: 10px;
+              .member-item {
+                font-size: 25px;
+                &:not(:last-child) {
+                  margin-bottom: 10px;
+                }
+              }
+            }
           }
         }
       }
