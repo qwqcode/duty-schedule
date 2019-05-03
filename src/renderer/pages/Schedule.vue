@@ -1,9 +1,14 @@
 <template>
   <div class="page schedule-page fullscreen">
+    <div class="task-list-sidebar" style="display: none">
+      <div class="inner" ref="taskListSidebarInner">
+        <task-list class="task-list" @openTask="openTask" :selected-task="this.task"></task-list>
+      </div>
+    </div>
     <div class="inner">
       <div class="left-bar">
         <div class="card group-switch">
-          <div class="item"><i class="zmdi zmdi-menu"></i></div>
+          <div class="item" @click="showTaskListSidebar()"><i class="zmdi zmdi-menu"></i></div>
           <div class="dividing"></div>
           <div class="item"><i class="zmdi zmdi-flag"></i></div>
         </div>
@@ -56,6 +61,7 @@
 import TaskList from './TaskList.vue'
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
+import $ from 'jquery'
 
 export default {
   components: { TaskList },
@@ -66,7 +72,8 @@ export default {
     return {
       task: null,
       currentMemberGroupKey: 0,
-      autoSwitch: false
+      autoSwitch: false,
+      isTaskListSidebarShow: false
     }
   },
   watch: {
@@ -111,13 +118,17 @@ export default {
         })
       })
 
-      console.log(list)
-
       return list
     },
     ...mapGetters('Setting', ['taskTypeGroupListUnique'])
   },
   methods: {
+    openTask (task) {
+      this.task = task
+      this.currentMemberGroupKey = 0
+      this.autoSwitch = false
+      this.hideTaskListSidebar()
+    },
     getGroupNumByName (groupName) {
       return groupName.match(/第 (.*) 组/)[1]
     },
@@ -150,6 +161,28 @@ export default {
           window.clearInterval(intervalKey)
         }
       }, perTime)
+    },
+    showTaskListSidebar () {
+      $('.task-list-sidebar').show().css('background-color', 'rgba(110, 110, 110, 0.39)')
+      $(this.$refs.taskListSidebarInner).removeClass('show')
+      this.isTaskListSidebarShow = true
+      window.setTimeout(() => {
+        $(this.$refs.taskListSidebarInner).addClass('show')
+        $(document).bind('click.hideSidebar', (e) => {
+          if ($(e.target).is($('.task-list-sidebar')) || !$(e.target).closest(this.$refs.taskListSidebarInner)) {
+            this.hideTaskListSidebar()
+            $(document).unbind('click.hideSidebar')
+          }
+        })
+      }, 20)
+    },
+    hideTaskListSidebar () {
+      $(this.$refs.taskListSidebarInner).removeClass('show')
+      $('.task-list-sidebar').css('background-color', '')
+      window.setTimeout(() => {
+        this.isTaskListSidebarShow = false
+        $('.task-list-sidebar').hide()
+      }, 400)
     }
   }
 }
@@ -164,6 +197,31 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: row;
+  }
+
+  .task-list-sidebar {
+    z-index: 20;
+    transition: background-color 400ms;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+    & > .inner {
+      overflow-y: auto;
+      width: 40%;
+      height: 100%;
+      transform: translate(-100%, 0);
+      transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1) 0ms;
+
+      &.show {
+        transform: translate(0, 0);
+      }
+    }
+
+    .task-list {
+      background: #FFF;
+    }
   }
 
   .left-bar {
@@ -258,7 +316,8 @@ export default {
           width: 3px;
           position: absolute;
           transition: height .2s;
-          background: rgba(28, 116, 233, 0.37);
+          background: linear-gradient(#1a73e8, #0eefff);
+          box-shadow: 0 1px 3px rgba(14, 239, 255, .40);
         }
 
         .content {
@@ -270,11 +329,11 @@ export default {
         .title {
           font-size: 30px;
           padding-left: 10px;
-          margin-bottom: 20px;
+          margin-bottom: 25px;
           &:before {
             content: '\f2fb';
             font-family: 'Material-Design-Iconic-Font';
-            padding-right: 20gipx;
+            padding-right: 20px;
           }
         }
 
@@ -284,8 +343,8 @@ export default {
           .task-type-group {
             .type-name {
               color: #1a73e8;
-              font-size: 25px;
-              margin-bottom: 20px;
+              font-size: 22px;
+              margin-bottom: 15px;
             }
 
             .members {

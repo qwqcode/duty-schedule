@@ -1,9 +1,20 @@
 <template>
   <div class="task-list">
-    <div class="task-list-item" v-for="task in taskList" :key="task.title" @click="openTask(task)">
+    <div class="task-list-item"
+         v-for="task in taskList"
+         :key="task.title"
+         @click="openTask(task)"
+         :class="{ 'selected': (task === selectedTask) }">
       <div class="inner">
         <div class="title">{{ task.title }}</div>
-        <div class="time">{{ timeAgo(new Date(task.time)) }}</div>
+        <div class="time">
+          {{ timeAgo(new Date(task.time)) }} |
+          组: <span class="group"
+               v-for="(group, key) in task.memberGroupList"
+               :key="key">
+               {{ getGroupNumByName(group.name) }}
+          </span>
+          </div>
         <div class="flags">
           <span
             class="flag flag-green"
@@ -19,6 +30,7 @@
 <script>
 import _ from 'lodash'
 export default {
+  props: ['selected-task'],
   data () {
     return {
 
@@ -31,9 +43,11 @@ export default {
   },
   methods: {
     openTask (task) {
-      this.$router.replace({ name: 'viewer', params: { title: task.title } })
+      this.$emit('openTask', task)
     },
-
+    getGroupNumByName (groupName) {
+      return groupName.match(/第 (.*) 组/)[1]
+    },
     padWithZeros (vNumber, width) {
       var numAsString = vNumber.toString()
       while (numAsString.length < width) {
@@ -94,8 +108,17 @@ export default {
 
 <style lang="scss" scoped>
   .task-list {
+    padding: 5px;
+    padding-top: 40px;
+
     .task-list-item {
       padding: 5px;
+
+      &.selected {
+        & > .inner:before {
+          background: #0083ff;
+        }
+      }
 
       & > .inner {
         background: #FFF;
@@ -113,7 +136,7 @@ export default {
           top: 10px;
           height: calc(100% - 20px);
           width: 3px;
-          background: #0083ff;
+          background: transparent;
           box-shadow: 0px 2px 15px rgba(0, 131, 255, 0.22);
         }
 
