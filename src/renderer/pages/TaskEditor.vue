@@ -90,8 +90,8 @@ export default {
       console.log(this.task.groupSelectList)
     },
     onTaskTypeGroupSelected (taskTypeGroupI, memberGroupI) {
-      alert('暂时无法自动修改')
-      console.log(`window.setAndAutoDealingTaskType(${JSON.stringify(this.task.groupSelectList)})\nthis.task.groupSelectList = `, this.task.groupSelectList)
+      window.notify('暂时无法自动修改，请转为手动修改', 'w')
+      console.log(`// "任务 index" => "组位置序号"\nwindow.setAndAutoDealingTaskType(${JSON.stringify(this.task.groupSelectList, null, '  ')})`)
       window.setAndAutoDealingTaskType = this.setAndAutoDealingTaskType
       ipcRenderer.send('open-dev-tools')
 

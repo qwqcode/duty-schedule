@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import Vue from 'vue'
 
 const state = {
   taskList: [],
@@ -18,6 +19,18 @@ const mutations = {
 
   PUSH_TASK (state, task) {
     state.taskList.push(task)
+    this.dispatch('Setting/syncTaskTypeCount')
+    this.dispatch('Setting/syncTaskTypeGroupCount')
+  },
+
+  REMOVE_TASK (state, task) {
+    _.forEach(state.taskList, (taskItem, key) => {
+      if (taskItem.title === task.title) {
+        Vue.delete(state.taskList, key)
+        return false
+      }
+      return true
+    })
     this.dispatch('Setting/syncTaskTypeCount')
     this.dispatch('Setting/syncTaskTypeGroupCount')
   }

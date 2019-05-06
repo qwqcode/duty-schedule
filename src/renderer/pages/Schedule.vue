@@ -24,13 +24,15 @@
         </div>
         <div class="card group-switch">
           <div class="item" @click="autoSwitch = !autoSwitch"><i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`"></i></div>
+          <div class="dividing"></div>
+          <router-link tag="div" class="item" :to="{ name: 'viewer', params: { title: task.title }}"><i class="zmdi zmdi-view-list"></i></router-link>
         </div>
       </div>
       <div class="right-card">
         <transition-group name="zoom" tag="div">
         <div class="float-card group-info"
              v-for="(group, key) in task.memberGroupList"
-             :key="key"
+             :key="group.name"
              :ref="`groupInfoCard_${key}`"
              v-show="key == currentMemberGroupKey">
           <div class="inner">
@@ -77,6 +79,9 @@ export default {
     }
   },
   watch: {
+    task (newVal) {
+      this.$parent.setSubTitle(' ' + newVal.title)
+    },
     currentMemberGroupKey (newVal, oldVal) {
       if (this.autoSwitch) {
         this.startAutoSwitchTimeout(this.$refs['groupInfoCard_' + newVal][0])

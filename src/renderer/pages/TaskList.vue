@@ -3,26 +3,24 @@
     <div class="task-list-item"
          v-for="task in taskList"
          :key="task.title"
-         @click="openTask(task)"
          :class="{ 'selected': (task === selectedTask) }">
-      <div class="inner">
+      <div class="inner" @click="openTask(task)">
         <div class="title">{{ task.title }}</div>
-        <div class="time">
-          {{ timeAgo(new Date(task.time)) }} |
-          组: <span class="group"
-               v-for="(group, key) in task.memberGroupList"
-               :key="key">
-               {{ getGroupNumByName(group.name) }}
-          </span>
-          </div>
-        <div class="flags">
-          <span
-            class="flag flag-green"
-            v-if="dateFormat(new Date(task.time)) === dateFormat(new Date())"
-          >今日</span>
-          <span class="flag flag-red" v-if="task.time < new Date().getTime() - 24*60*60*1000">已过期</span>
+        <div class="meta">
+          <span class="time">{{ timeAgo(new Date(task.time)) }}</span>
+          <span class="groups">组: <span class="group-item" v-for="(item, i) in getMemberGroupListNumbers(task)" :key="i">{{ item }}</span></span>
         </div>
       </div>
+      <div class="flags">
+        <span
+          class="flag flag-green"
+          v-if="dateFormat(new Date(task.time)) === dateFormat(new Date())"
+        >今日</span>
+        <!--<span class="flag flag-red" v-if="task.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
+      </div>
+      <span class="act-btns">
+        <span class="btn-item" @click="deleteTask(task)"><i class="zmdi zmdi-delete"></i></span>
+      </span>
     </div>
   </div>
 </template>
@@ -33,7 +31,8 @@ export default {
   props: ['selected-task'],
   data () {
     return {
-
+      deleteClickTime: 0,
+      deleteTaskTitle: null
     }
   },
   computed: {
@@ -45,6 +44,13 @@ export default {
     openTask (task) {
       this.$emit('openTask', task)
     },
+    getMemberGroupListNumbers (task) {
+      let arr = []
+      _.each(task.memberGroupList, (group, i) => {
+        arr.push(this.getGroupNumByName(group.name))
+      })
+      return _.sortBy(arr)
+    },
     getGroupNumByName (groupName) {
       return groupName.match(/第 (.*) 组/)[1]
     },
@@ -55,7 +61,31 @@ export default {
       }
       return numAsString
     },
-
+    isDataAllowEdit () {
+      if (typeof window.SETTING_DATA_ALLOW_EDIT !== 'boolean' || window.SETTING_DATA_ALLOW_EDIT !== true) {
+        window.notify('没有权限修改数据', 'w')
+        console.log('[window.SETTING_DATA_ALLOW_EDIT]')
+        return false
+      } else {
+        return true
+      }
+    },
+    deleteTask (task) {
+      if (this.isDataAllowEdit()) {
+        if (this.deleteTaskTitle !== task.title) {
+          this.deleteTaskTitle = task.title
+          this.deleteClickTime = 0
+        }
+        if (this.deleteClickTime < 3 - 1) {
+          this.deleteClickTime++
+          window.notify(`危险操作，请再点 ${(3 - this.deleteClickTime)} 次`, 'e')
+          return
+        }
+        this.$store.commit('Setting/REMOVE_TASK', task)
+        window.notify(`"${task.title}" 已删除`, 'i')
+        this.deleteClickTime = 0
+      }
+    },
     dateFormat (date) {
       var vDay = this.padWithZeros(date.getDate(), 2)
       var vMonth = this.padWithZeros(date.getMonth() + 1, 2)
@@ -110,9 +140,11 @@ export default {
   .task-list {
     padding: 5px;
     padding-top: 40px;
+    background: #f4f4f4;
 
     .task-list-item {
       padding: 5px;
+      position: relative;
 
       &.selected {
         & > .inner:before {
@@ -120,14 +152,19 @@ export default {
         }
       }
 
+      &:hover > .inner {
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      }
+
       & > .inner {
+        position: relative;
         background: #FFF;
-        border: 1px solid #F4F4F4;
+        border: 1px solid #eee;
         padding: 20px 30px;
         cursor: pointer;
         transition: all .2s linear;
+        border-radius: 3px;
         box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-        position: relative;
 
         &:before {
           content: ' ';
@@ -139,11 +176,6 @@ export default {
           background: transparent;
           box-shadow: 0px 2px 15px rgba(0, 131, 255, 0.22);
         }
-
-        &:hover {
-          box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-          transform: translate3d(0, -4px, 0);
-        }
       }
 
       .title {
@@ -152,16 +184,58 @@ export default {
         margin-bottom: 15px;
       }
 
-      .time {}
+      .meta {
+        display: flex;
+        flex-direction: row;
+
+        & > span {
+          margin-right: 10px;
+          padding-right: 10px;
+
+          &:not(:last-child) {
+            border-right: 2px solid #EEE;
+          }
+
+          &.time {
+
+          }
+
+          &.groups {
+            .group-item {
+              &:not(:last-child) {
+                margin-right: 5px;
+              }
+            }
+          }
+        }
+      }
+
+      .act-btns {
+        position: absolute;
+        display: none;
+        top: 20px;
+        right: 30px;
+
+        .btn-item {
+          cursor: pointer;
+          font-size: 20px;
+          color: #5a6370;
+        }
+      }
+
+      &:hover .act-btns {
+        display: inherit;
+      }
 
       .flags {
         position: absolute;
-        right: 20px;
-        top: 20px;
+        right: 6px;
+        top: -2px;
 
         .flag {
-          border-radius: 3px;
-          padding: 5px 10px;
+          border-radius: 50px;
+          font-size: 13px;
+          padding: 4px 10px;
           color: #FFF;
 
           &.flag-green {

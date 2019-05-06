@@ -1,11 +1,11 @@
 <template>
   <div class="page group-list-page" :class="{ 'as-selector': !!asSelector }">
 
-    <div class="search">
+    <!--<div class="search">
       <el-input v-model="searchKeyWords" placeholder="搜索" autocomplete="off" clearable>
         <i slot="prefix" class="el-input__icon el-icon-search"></i>
       </el-input>
-    </div>
+    </div>-->
 
     <el-row class="group-list">
       <el-col
@@ -21,6 +21,7 @@
               <i :class="!isGroupSelected(group) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
             </span>
           </div>
+          <div class="group-work-info" v-html="getLastWorkInfo(group)"></div>
           <div class="item" v-for="member in group.data" :key="member">
             <div class="name" v-html="searchHighlight(member)"></div>
           </div>
@@ -32,6 +33,9 @@
 </template>
 
 <script>
+  import _ from 'lodash'
+  import { mapGetters } from 'vuex'
+
   export default {
     props: {
       asSelector: Boolean
@@ -39,13 +43,15 @@
     data () {
       return {
         groupSelectedList: [],
-        searchKeyWords: ''
+        searchKeyWords: '',
+        dataColor: {}
       }
     },
     computed: {
       memberGroupList () {
         return this.$store.state.Setting.memberGroupList
-      }
+      },
+      ...mapGetters('Setting', ['getTaskTypeGroupCount'])
     },
     methods: {
       /**
@@ -58,6 +64,33 @@
         } else {
           this.groupSelectedList.splice(this.groupSelectedList.indexOf(group), 1)
         }
+      },
+
+      getRandColor () {
+        var colorElements = '0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f'
+        var colorArray = colorElements.split(',')
+        var color = '#'
+        for (var i = 0; i < 6; i++) {
+          color += colorArray[Math.floor(Math.random() * 16)]
+        }
+        return color
+      },
+
+      getLastWorkInfo (group) {
+        let gpName = group.name
+        let taskListSorted = _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
+        let lastWorkArea = ''
+        let lastWorkDate = ''
+        _.forEach(taskListSorted, (task, key) => {
+          _.forEach(task.memberGroupList, (groupItem) => {
+            if (groupItem.name === gpName) {
+              lastWorkArea = groupItem.taskTypeGroupName
+              lastWorkDate = task.title
+            }
+          })
+        })
+        let color = this.dataColor[lastWorkDate] || (this.dataColor[lastWorkDate] = this.getRandColor())
+        return `上次：${lastWorkArea} [${this.getTaskTypeGroupCount(lastWorkArea, gpName)}]<br/> <span style="background: ${color}" class="color-block"></span><span style="color: ${color}">${lastWorkDate}</span>`
       },
 
       /**
@@ -90,7 +123,7 @@
   }
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
 .group-list-page {
   .search {
     padding: 0 14px 0 14px;
@@ -136,6 +169,25 @@
           & > i {
             color: rgb(190, 190, 190);
           }
+        }
+      }
+
+      .group-work-info {
+        line-height: 20px;
+        padding: 5px 15px;
+        margin: 15px 0 10px 0;
+        font-size: 13px;
+        background-color: rgba(66,133,244,0.12);
+        border: 1px solid #d2e3fc;
+        color: #1a73e8;
+        border-radius: 4px;
+
+        .color-block {
+          display: inline-block;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          margin-right: 5px;
         }
       }
 

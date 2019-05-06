@@ -1,7 +1,7 @@
 <template>
   <div class="top-bar-wrap">
     <div class="top-bar">
-      <div class="left">值日任务表</div>
+      <div class="left">值日任务表 <span class="sub-title">{{ subTitle }}</span></div>
       <div class="right">
         <button class="btn" data-action="minimize"><span class="icon window-minimize"></span></button>
         <button class="btn" data-action="maximize"><span class="icon window-maximize" ref="IconWindowMaximize"></span></button>
@@ -15,6 +15,12 @@
   const { remote } = require('electron')
 
   export default {
+    props: {
+      subTitle: {
+        type: String,
+        default: ''
+      }
+    },
     mounted () {
       let btns = document.querySelectorAll('[data-action]')
       btns.forEach(btn => {
@@ -78,6 +84,11 @@
       display: flex;
       align-items: center;
       flex-direction: row;
+
+      .sub-title {
+        margin-left: 10px;
+        color: #5f6f7b;
+      }
     }
 
     .right {

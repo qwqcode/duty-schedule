@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <top-bar></top-bar>
+    <top-bar :sub-title="subTitle"></top-bar>
     <div class="page-wrap">
       <transition :name="transitionName">
         <router-view></router-view>
@@ -20,7 +20,13 @@
     },
     data () {
       return {
-        transitionName: ''
+        transitionName: '',
+        subTitle: ''
+      }
+    },
+    methods: {
+      setSubTitle (str) {
+        this.subTitle = str
       }
     },
     components: { TopBar, BottomBar },
