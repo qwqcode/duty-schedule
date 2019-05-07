@@ -21,7 +21,7 @@
               <i :class="!isGroupSelected(group) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
             </span>
           </div>
-          <div class="group-work-info" v-html="getLastWorkInfo(group)"></div>
+          <div class="group-work-info-wrap" v-html="getLastWorkInfo(group)"></div>
           <div class="item" v-for="member in group.data" :key="member">
             <div class="name" v-html="searchHighlight(member)"></div>
           </div>
@@ -81,16 +81,23 @@
         let taskListSorted = _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
         let lastWorkArea = ''
         let lastWorkDate = ''
+        let isLastest = false
         _.forEach(taskListSorted, (task, key) => {
+          let isContinue = true
           _.forEach(task.memberGroupList, (groupItem) => {
             if (groupItem.name === gpName) {
               lastWorkArea = groupItem.taskTypeGroupName
               lastWorkDate = task.title
+              if (key === 0) {
+                isLastest = true
+              }
+              isContinue = false
             }
           })
+          return isContinue
         })
-        let color = this.dataColor[lastWorkDate] || (this.dataColor[lastWorkDate] = this.getRandColor())
-        return `上次：${lastWorkArea} [${this.getTaskTypeGroupCount(lastWorkArea, gpName)}]<br/> <span style="background: ${color}" class="color-block"></span><span style="color: ${color}">${lastWorkDate}</span>`
+        // let color = this.dataColor[lastWorkDate] || (this.dataColor[lastWorkDate] = this.getRandColor())
+        return `<div class="group-work-info${isLastest ? ' is-lastest' : ''}">上次：${lastWorkArea} [${this.getTaskTypeGroupCount('教室', gpName, true)}|${this.getTaskTypeGroupCount('公区', gpName, true)}]<br/> ${lastWorkDate}</div>`
       },
 
       /**
@@ -177,10 +184,16 @@
         padding: 5px 15px;
         margin: 15px 0 10px 0;
         font-size: 13px;
-        background-color: rgba(66,133,244,0.12);
-        border: 1px solid #d2e3fc;
-        color: #1a73e8;
+        background-color: #eee;
+        border: 1px solid rgb(219, 219, 219);
+        color: #4b5669;
         border-radius: 4px;
+
+        &.is-lastest {
+          border: 1px solid #d2e3fc;
+          background-color: rgba(66,133,244,0.12);
+          color: #1a73e8;
+        }
 
         .color-block {
           display: inline-block;
