@@ -56,7 +56,6 @@
     "@types/jquery": "^3.3.29",
     "@types/lodash": "^4.14.123",
     "axios": "^0.18.0",
-    "bulma": "^0.7.4",
     "element-theme-chalk": "^2.6.1",
     "element-ui": "^2.6.1",
     "jquery": "^3.3.1",
