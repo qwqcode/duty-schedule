@@ -113,18 +113,6 @@ const getters = {
     return taskTypeGroupCountList[taskTypeGroupName] ? (taskTypeGroupCountList[taskTypeGroupName][memberGroupName] || 0) : 0
   },
 
-  memberGroupListFlat: (state, getters) => {
-    let memberGroupList = state.memberGroupList
-    let flatList = []
-    for (let groupI in memberGroupList) {
-      for (let o in memberGroupList[groupI].data) {
-        flatList.push(memberGroupList[groupI].data[o])
-      }
-    }
-
-    return flatList
-  },
-
   taskTypeGroupListFlat: (state, getters) => {
     let rawTaskTypeGroupList = state.taskTypeGroupList
     let flatList = []
@@ -140,18 +128,6 @@ const getters = {
     return getters.taskTypeGroupListFlat.filter((val, index, array) => {
       return array.indexOf(val) === index
     })
-  },
-
-  /** 每种 taskType 最多需要分配的人数 */
-  eachTaskTypeMaxNeedNumList: (state, getters) => {
-    let list = {}
-    _.forEach(getters.taskTypeGroupListFlat, (item) => {
-      if (typeof list[item] === 'undefined') {
-        list[item] = 0
-      }
-      list[item]++
-    })
-    return list
   }
 }
 

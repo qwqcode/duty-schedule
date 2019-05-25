@@ -49,13 +49,14 @@
   </div>
 </template>
 
-<script>
-import MemberGroupList from './MemberGroupList'
-import TaskEditor from './TaskEditor'
+<script lang="ts">
+import MemberGroupList from './MemberGroupList.vue'
+import TaskEditor from './TaskEditor.vue'
 import $ from 'jQuery'
 import _ from 'lodash'
+import Vue from 'vue'
 
-export default {
+export default Vue.extend({
   components: { MemberGroupList, TaskEditor },
   data () {
     return {
@@ -108,7 +109,7 @@ export default {
       $(`step-${this.stepNum}`).scrollTop(0)
     }
   }
-}
+})
 </script>
 
 <style scoped lang="scss">

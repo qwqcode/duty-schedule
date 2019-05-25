@@ -15,8 +15,7 @@
     "lint:fix": "eslint --ext .js,.vue -f ./node_modules/eslint-friendly-formatter --fix src",
     "pack": "npm run pack:main && npm run pack:renderer",
     "pack:main": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.main.config.js",
-    "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js",
-    "postinstall": "npm run lint:fix"
+    "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js"
   },
   "build": {
     "productName": "值日任务表",
@@ -64,6 +63,7 @@
     "normalize.css": "^8.0.1",
     "vue": "^2.5.18",
     "vue-electron": "^1.0.6",
+    "vue-ls": "^3.2.1",
     "vue-router": "^3.0.1",
     "vue2-animate": "^2.1.0",
     "vue2-transitions": "^0.3.0",
@@ -71,6 +71,7 @@
     "vuex-electron": "^1.0.0"
   },
   "devDependencies": {
+    "@types/vue-router": "^2.0.0",
     "ajv": "^6.5.0",
     "babel-core": "^6.26.3",
     "babel-eslint": "^8.2.3",
@@ -108,10 +109,16 @@
     "node-sass": "^4.10.0",
     "sass-loader": "^7.0.3",
     "style-loader": "^0.21.0",
+    "ts-loader": "^6.0.1",
+    "tslint": "^5.16.0",
+    "tslint-config-standard": "^8.0.1",
+    "typescript": "^3.4.5",
     "url-loader": "^1.0.1",
+    "vue-class-component": "^7.1.0",
     "vue-devtools": "^5.0.0-beta.1",
     "vue-html-loader": "^1.2.4",
     "vue-loader": "^15.2.4",
+    "vue-property-decorator": "^8.1.1",
     "vue-style-loader": "^4.1.0",
     "vue-template-compiler": "^2.5.18",
     "webpack": "^4.15.1",

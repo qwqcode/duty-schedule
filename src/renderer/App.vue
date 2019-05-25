@@ -10,32 +10,32 @@
   </div>
 </template>
 
-<script>
-  import TopBar from './components/TopBar'
-  import BottomBar from './components/BottomBar'
+<script lang="ts">
+  import Vue from 'vue'
+  import Component from 'vue-class-component'
+  import { Watch } from 'vue-property-decorator'
+  import TopBar from './components/TopBar.vue'
+  import BottomBar from './components/BottomBar.vue'
 
-  export default {
-    name: 'duty-schedule',
+  @Component({
+    components: { TopBar, BottomBar }
+  })
+  export default class App extends Vue {
+    transitionName: string = ''
+    subTitle: string = ''
+
     created () {
-    },
-    data () {
-      return {
-        transitionName: '',
-        subTitle: ''
-      }
-    },
-    methods: {
-      setSubTitle (str) {
-        this.subTitle = str
-      }
-    },
-    components: { TopBar, BottomBar },
-    watch: {
-      '$route' (to, from) {
-        const toDepth = to.path.split('/').length
-        const fromDepth = from.path.split('/').length
-        this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
-      }
+    }
+
+    setSubTitle (str: string) {
+      this.subTitle = str
+    }
+
+    @Watch('$route')
+    onRouteChanged (to: any, from: any) {
+      const toDepth = to.path.split('/').length
+      const fromDepth = from.path.split('/').length
+      this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
     }
   }
 </script>
