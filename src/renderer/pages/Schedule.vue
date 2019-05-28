@@ -154,20 +154,18 @@ export default class Schedule extends Vue {
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    //(this.$parent as any).setSubTitle(' ' + newPlan.name)
+    (this.$parent as any).setSubTitle(' ' + newPlan.name)
   }
 
   @Watch('currGrpKey')
   onCurrGrpKeyChanged(newKey: number, oldKey: number) {
-    if (this.autoSwitch) {
-      this.startAutoSwitch(this.$refs['groupInfoCard_' + newKey] as Element)
-    }
+    // 当切换组时
   }
 
   @Watch('autoSwitch')
   onAutoSwitchChanged(newVal: boolean) {
     if (newVal === true) {
-      this.startAutoSwitch(this.$refs['groupInfoCard_' + this.currGrpKey] as Element)
+      this.startAutoSwitch((this.$refs['groupInfoCard_' + this.currGrpKey] as Element[])[0] as Element)
     }
   }
 

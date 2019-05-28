@@ -69,6 +69,7 @@
 </template>
 
 <script lang="ts">
+import _ from 'lodash'
 import { ipcRenderer, shell } from 'electron'
 import Vue from 'vue'
 import DataAction from "../core/data-action"
@@ -117,9 +118,9 @@ export default class Setting extends Vue {
     let jsonObj = {}
     if (fieldName === "__ALL__") {
       let allJson: any = {}
-      for (let key in DataStore.DATA_FIELDS) {
+      _.forEach(DataStore.DATA_FIELDS, (key) => {
         allJson[key] = (DataStore as any)[key]
-      }
+      })
       jsonObj = allJson
     } else {
       jsonObj = (DataStore as any)[fieldName]

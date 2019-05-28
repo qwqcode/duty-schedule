@@ -1,7 +1,7 @@
 <template>
   <div class="page area-list-page" :class="{ 'as-selector': !!asSelector }">
     <div class="area-list">
-      <div class="page-title" v-if="!asSelector">任务类型列表</div>
+      <div class="page-title" v-if="!asSelector">任务类型</div>
       <div class="inner">
         <div class="group" v-for="(area, areaIndex) in areaList" :key="areaIndex">
           <div class="group-title">{{ !isUniqueMode ? area.name : `为 ${value.name} 分配任务` }}</div>
@@ -61,13 +61,13 @@ import DataQuery from '../core/data-query';
 
       getSelectedTotal (taskName: string) {
         let count = 0
-        _.forEach(this.task.memberGroupList, (group) => {
+        /* _.forEach(this.task.memberGroupList, (group) => {
           _.forEach(group.data, (item) => {
             if (item.task === taskName) {
               count++
             }
           })
-        })
+        }) */
 
         return count
       }

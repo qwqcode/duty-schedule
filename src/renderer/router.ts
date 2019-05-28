@@ -3,13 +3,25 @@ import Router from 'vue-router'
 export default new Router({
   routes: [
     {
-      path: '/schedule',
+      path: '/Schedule',
       name: 'home',
       component: require('@/pages/Schedule').default
     },
     {
+      path: '/GrpList',
+      component: require('@/pages/GrpList').default
+    },
+    {
+      path: '/AreaList',
+      component: require('@/pages/AreaList').default
+    },
+    {
+      path: '/Setting',
+      component: require('@/pages/Setting').default
+    },
+    {
       path: '*',
-      redirect: '/schedule'
+      redirect: '/Schedule'
     }
   ],
   linkActiveClass: 'active'

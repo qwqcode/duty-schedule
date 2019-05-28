@@ -1,29 +1,28 @@
 <template>
   <div class="page group-list-page" :class="{ 'as-selector': !!asSelector }">
 
-    <!--<div class="search">
+    <div class="search">
       <el-input v-model="searchKeyWords" placeholder="搜索" autocomplete="off" clearable>
         <i slot="prefix" class="el-input__icon el-icon-search"></i>
       </el-input>
-    </div>-->
+    </div>
 
     <el-row class="group-list">
       <el-col
-        v-for="group in memberGroupList" :key="group.name"
+        v-for="grp in grpList" :key="grp.id"
         class="group-item"
-        :class="{ 'is-selected': isGroupSelected(group) }"
+        :class="{ 'is-selected': isGrpSelected(grp) }"
         :span="6"
       >
-        <div class="inner" @click="!!asSelector ? groupSelect(group) : null">
+        <div class="inner" @click="!!asSelector ? selectGrp(grp) : null">
           <div class="group-title">
-            <span class="group-title-text">{{ group.name }}</span>
+            <span class="group-title-text">第 {{ grp.id }} 组</span>
             <span v-if="!!asSelector" class="select-btn">
-              <i :class="!isGroupSelected(group) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+              <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
             </span>
           </div>
-          <div class="group-work-info-wrap" v-html="getLastWorkInfo(group)"></div>
-          <div class="item" v-for="member in group.data" :key="member">
-            <div class="name" v-html="searchHighlight(member)"></div>
+          <div class="item" v-for="person in grp.personList" :key="person">
+            <div class="name" v-html="searchHighlight(person)"></div>
           </div>
         </div>
       </el-col>
@@ -35,21 +34,23 @@
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
-import { Prop, Watch } from 'vue-property-decorator';
+import { Prop, Watch, Component } from 'vue-property-decorator';
+import DataStore from '../core/data-store';
+import { Grp } from '../core/data-interfaces';
 
+@Component({})
 export default class GrpList extends Vue {
-    groupSelectedList = []
-    searchKeyWords = ''
-    dataColor = {}
+    grpSelList: Grp[] = []
+    searchKeyWords: string = ''
 
     @Prop() readonly asSelector!: boolean
 
-    get memberGroupList () {
-      return this.$store.state.Setting.memberGroupList
+    get grpList () {
+      return DataStore.GrpList
     }
 
-    @Watch('groupSelectedList')
-    onGroupSelectedListChanged (obj) {
+    @Watch('grpSelList')
+    onGrpSelListChanged (obj: Grp[]) {
       // 让 this.groupSelectedList 和父 v-model="XXX" 的 XXX 对象联动
       this.$emit('input', obj)
     }
@@ -57,12 +58,12 @@ export default class GrpList extends Vue {
     /**
        * 选中 Group
        */
-      groupSelect (group) {
-        if (!this.isGroupSelected(group)) {
+      selectGrp (grp: Grp) {
+        if (!this.isGrpSelected(grp)) {
           // 若未选中
-          this.groupSelectedList.push(group)
+          this.grpSelList.push(grp)
         } else {
-          this.groupSelectedList.splice(this.groupSelectedList.indexOf(group), 1)
+          this.grpSelList.splice(this.grpSelList.indexOf(grp), 1)
         }
       }
 
@@ -76,41 +77,17 @@ export default class GrpList extends Vue {
         return color
       }
 
-      getLastWorkInfo (group) {
-        let gpName = group.name
-        let taskListSorted = _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
-        let lastWorkArea = ''
-        let lastWorkDate = ''
-        let isLastest = false
-        _.forEach(taskListSorted, (task, key) => {
-          let isContinue = true
-          _.forEach(task.memberGroupList, (groupItem) => {
-            if (groupItem.name === gpName) {
-              lastWorkArea = groupItem.taskTypeGroupName
-              lastWorkDate = task.title
-              if (key === 0) {
-                isLastest = true
-              }
-              isContinue = false
-            }
-          })
-          return isContinue
-        })
-        // let color = this.dataColor[lastWorkDate] || (this.dataColor[lastWorkDate] = this.getRandColor())
-        return `<div class="group-work-info${isLastest ? ' is-lastest' : ''}">上次：${lastWorkArea} [${this.getTaskTypeGroupCount('教室', gpName, true)}|${this.getTaskTypeGroupCount('公区', gpName, true)}]<br/> ${lastWorkDate}</div>`
-      }
-
       /**
        * 判断 Group 是否选中
        */
-      isGroupSelected (group) {
-        return this.groupSelectedList.indexOf(group) > -1
+      isGrpSelected (grp: Grp) {
+        return this.grpSelList.indexOf(grp) > -1
       }
 
       /**
        * 搜索文字高亮
        */
-      searchHighlight (text) {
+      searchHighlight (text: string) {
         if (!this.searchKeyWords) {
           return text
         }
@@ -169,31 +146,6 @@ export default class GrpList extends Vue {
           & > i {
             color: rgb(190, 190, 190);
           }
-        }
-      }
-
-      .group-work-info {
-        line-height: 20px;
-        padding: 5px 15px;
-        margin: 15px 0 10px 0;
-        font-size: 13px;
-        background-color: #eee;
-        border: 1px solid rgb(219, 219, 219);
-        color: #4b5669;
-        border-radius: 4px;
-
-        &.is-lastest {
-          border: 1px solid #d2e3fc;
-          background-color: rgba(66,133,244,0.12);
-          color: #1a73e8;
-        }
-
-        .color-block {
-          display: inline-block;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          margin-right: 5px;
         }
       }
 
