@@ -32,14 +32,7 @@ let rendererConfig = {
   module: {
     rules: [
       {
-        test: /\.ts$/,
-        loader: 'ts-loader',
-        options: {
-          appendTsSuffixTo: [/\.vue$/]
-        }
-      },
-      {
-        test: /\.(js|vue)$/,
+        test: /\.(js|vue|ts)$/,
         enforce: 'pre',
         exclude: /node_modules/,
         use: {
@@ -70,6 +63,21 @@ let rendererConfig = {
         use: 'vue-html-loader'
       },
       {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader'
+          },
+          {
+            loader: 'ts-loader',
+            options: {
+              appendTsSuffixTo: [/\.vue$/]
+            }
+          }
+        ]
+      },
+      {
         test: /\.js$/,
         use: 'babel-loader',
         exclude: /node_modules/
@@ -85,6 +93,8 @@ let rendererConfig = {
           options: {
             extractCSS: process.env.NODE_ENV === 'production',
             loaders: {
+              js: 'ts-loader',
+              ts: 'ts-loader',
               sass: 'vue-style-loader!css-loader!sass-loader?indentedSyntax=1',
               scss: 'vue-style-loader!css-loader!sass-loader',
               less: 'vue-style-loader!css-loader!less-loader'
@@ -152,10 +162,11 @@ let rendererConfig = {
   resolve: {
     alias: {
       '@': path.join(__dirname, '../src/renderer'),
+      '~': path.join(__dirname, '../'),
       'vue$': 'vue/dist/vue.esm.js',
       'jquery': 'jquery/src/jquery'
     },
-    extensions: ['.js', '.vue', '.json', '.ts', '.css', '.node']
+    extensions: ['.ts', '.js', '.vue', '.json', '.css', '.node']
   },
   target: 'electron-renderer'
 }

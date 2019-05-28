@@ -1,17 +1,17 @@
-import { ipcRenderer } from 'electron'
 import Vue from 'vue'
 import axios from 'axios'
 import Router from 'vue-router'
 
 import App from './App.vue'
 import router from './router'
-import store from './store'
 import 'normalize.css/normalize.css'
 import './element-ui'
 
 import './css/main.scss'
 import 'vue2-animate/dist/vue2-animate.min.css'
 import 'material-design-iconic-font/dist/css/material-design-iconic-font.min.css'
+import $ from 'jquery'
+import DataStore from './core/data-store';
 
 Vue.use(require('vue2-transitions'))
 
@@ -22,11 +22,13 @@ Vue.config.productionTip = false
 
 declare global {
   interface Window {
-    notify: Function
+    notify(message: string, level?: string, timeout?: number): void
+    test: any
   }
 }
+
 /* notify */
-window.notify = (message: string, level: string, timeout?: number) => {
+window.notify = (message: string, level?: string, timeout?: number): void => {
   console.log('[notify][' + level + '][' + new Date().toLocaleString() + '] ' + message)
 
   timeout = timeout || 1000
@@ -38,7 +40,7 @@ window.notify = (message: string, level: string, timeout?: number) => {
 
   let notifyElem = $('<div class="notify-item anim-fade-in ' + (level ? 'type-' + level : '') + '"><p class="notify-content"></p></div>')
   notifyElem.find('.notify-content').html(message.replace('\n', '<br/>'))
-  notifyElem.prependTo(layerElem)
+  notifyElem.prependTo(layerElem);
 
   let notifyRemove = function () {
     notifyElem.addClass('anim-fade-out')
@@ -57,18 +59,20 @@ window.notify = (message: string, level: string, timeout?: number) => {
   })
 }
 
-/*ipcRenderer.on('show-notify', (evt, args) => {
+/* ipcRenderer.on('show-notify', (evt, args) => {
   window.notify(args[0], args[1], args[2])
 })
 
 ipcRenderer.on('reload-page', (evt, args) => {
   window.location.reload()
-})*/
+}) */
+
+// 初始化数据存储器
+DataStore.init()
 
 /* eslint-disable no-new */
 new Vue({
   components: { App },
   router,
-  store,
   template: '<App/>'
 }).$mount('#app')

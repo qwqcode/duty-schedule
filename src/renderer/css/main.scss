@@ -53,7 +53,7 @@ body {
   width: 360px;
   opacity: .83;
   pointer-events: none;
-  
+
   .notify-item {
     display: block;
     overflow: hidden;
@@ -76,12 +76,12 @@ body {
       color: #FFF;
       background: #ff6f6c;
     }
-    
+
     &.type-w {
       color: #FFF;
       background: #ffc721;
     }
-    
+
     &.type-i {
       color: #FFF;
       background: #2ebcfc;
@@ -98,24 +98,14 @@ body {
 
 /* anim */
 .anim-fade-in {
-  -webkit-animation-name: fadeIn;
   animation-name: fadeIn;
-  -webkit-animation-fill-mode: both;
   animation-fill-mode: both;
-  -webkit-animation-duration: .3s;
   animation-duration: .3s;
 }
 
 .anim-fade-out {
-  -webkit-animation-name: fadeOut;
   animation-name: fadeOut;
-  -webkit-animation-duration: .2s;
   animation-duration: .2s;
-}
-
-.anim-flash {
-  -webkit-animation-name: flash;
-  animation-name: flash
 }
 
 @keyframes fadeIn {

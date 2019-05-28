@@ -44,7 +44,7 @@
       <div class="inner">
         <div class="close-btn"><i class="zmdi zmdi-close"></i></div>
         <div class="body">
-          <TaskTypeGroupList :asSelector="true" v-model="typeSelector.memeberItem" :task="task" @input="closeTypeSelector()"></TaskTypeGroupList>
+          <AreaList :asSelector="true" v-model="typeSelector.memeberItem" :task="task" @input="closeTypeSelector()"></AreaList>
         </div>
       </div>
     </div>
@@ -56,14 +56,13 @@
 
 <script>
 import { ipcRenderer } from 'electron'
-import { mapGetters, mapState } from 'vuex'
 import _ from 'lodash'
 import Vue from 'vue'
-import TaskTypeGroupList from './TaskTypeGroupList'
+import AreaList from './AreaList'
 import $ from 'jquery'
 
 export default {
-  components: { TaskTypeGroupList },
+  components: { AreaList },
   props: ['value'],
   data () {
     return {

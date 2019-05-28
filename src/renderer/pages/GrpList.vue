@@ -32,29 +32,29 @@
   </div>
 </template>
 
-<script>
-  import _ from 'lodash'
-  import { mapGetters } from 'vuex'
+<script lang="ts">
+import _ from 'lodash'
+import Vue from 'vue'
+import { Prop, Watch } from 'vue-property-decorator';
 
-  export default {
-    props: {
-      asSelector: Boolean
-    },
-    data () {
-      return {
-        groupSelectedList: [],
-        searchKeyWords: '',
-        dataColor: {}
-      }
-    },
-    computed: {
-      memberGroupList () {
-        return this.$store.state.Setting.memberGroupList
-      },
-      ...mapGetters('Setting', ['getTaskTypeGroupCount'])
-    },
-    methods: {
-      /**
+export default class GrpList extends Vue {
+    groupSelectedList = []
+    searchKeyWords = ''
+    dataColor = {}
+
+    @Prop() readonly asSelector!: boolean
+
+    get memberGroupList () {
+      return this.$store.state.Setting.memberGroupList
+    }
+
+    @Watch('groupSelectedList')
+    onGroupSelectedListChanged (obj) {
+      // 让 this.groupSelectedList 和父 v-model="XXX" 的 XXX 对象联动
+      this.$emit('input', obj)
+    }
+
+    /**
        * 选中 Group
        */
       groupSelect (group) {
@@ -64,7 +64,7 @@
         } else {
           this.groupSelectedList.splice(this.groupSelectedList.indexOf(group), 1)
         }
-      },
+      }
 
       getRandColor () {
         var colorElements = '0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f'
@@ -74,7 +74,7 @@
           color += colorArray[Math.floor(Math.random() * 16)]
         }
         return color
-      },
+      }
 
       getLastWorkInfo (group) {
         let gpName = group.name
@@ -98,14 +98,14 @@
         })
         // let color = this.dataColor[lastWorkDate] || (this.dataColor[lastWorkDate] = this.getRandColor())
         return `<div class="group-work-info${isLastest ? ' is-lastest' : ''}">上次：${lastWorkArea} [${this.getTaskTypeGroupCount('教室', gpName, true)}|${this.getTaskTypeGroupCount('公区', gpName, true)}]<br/> ${lastWorkDate}</div>`
-      },
+      }
 
       /**
        * 判断 Group 是否选中
        */
       isGroupSelected (group) {
         return this.groupSelectedList.indexOf(group) > -1
-      },
+      }
 
       /**
        * 搜索文字高亮
@@ -120,13 +120,6 @@
         }
         return text
       }
-    },
-    watch: {
-      groupSelectedList (obj) {
-        // 让 this.groupSelectedList 和父 v-model="XXX" 的 XXX 对象联动
-        this.$emit('input', obj)
-      }
-    }
   }
 </script>
 

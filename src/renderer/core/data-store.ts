@@ -22,11 +22,12 @@ export default class DataStore {
   /** 初始化数据 */
   public static init (): void {
     // 尝试从 LocalStorage 中加载数据
+    console.log()
     let jsonStr = window.localStorage.getItem(this.LS_KEY)
     if (jsonStr !== null) {
       let obj = JSON.parse(jsonStr)
       _.forEach(this.DATA_FIELDS, (key) => {
-        if (obj.hasOwnProperty(key) && (this as any).hasOwnProperty(key)) {
+        if (obj.hasOwnProperty(key) && (this as Object).hasOwnProperty(key)) {
           (this as any)[key] = obj[key]
         }
       })
@@ -37,7 +38,7 @@ export default class DataStore {
   public static save (): void {
     let obj: any = {}
     _.forEach(this.DATA_FIELDS, (key) => {
-      obj[key] = (this as any).key
+      obj[key] = (this as any)[key]
     })
     window.localStorage.setItem(this.LS_KEY, JSON.stringify(obj))
   }
@@ -45,7 +46,7 @@ export default class DataStore {
   /** 清空数据 */
   public static clearAll (): void {
     _.forEach(this.DATA_FIELDS, (key) => {
-      (this as any)[key] = {}
+      (this as any)[key] = []
     })
     this.save()
   }

@@ -12,8 +12,7 @@
 
 <script lang="ts">
   import Vue from 'vue'
-  import Component from 'vue-class-component'
-  import { Watch } from 'vue-property-decorator'
+  import { Watch, Component } from 'vue-property-decorator'
   import TopBar from './components/TopBar.vue'
   import BottomBar from './components/BottomBar.vue'
 

@@ -55,9 +55,21 @@ import TaskEditor from './TaskEditor.vue'
 import $ from 'jQuery'
 import _ from 'lodash'
 import Vue from 'vue'
+import { Component } from 'vue-property-decorator'
+import { Plan } from '../core/data-interfaces'
 
-export default Vue.extend({
-  components: { MemberGroupList, TaskEditor },
+@Component({
+  components: { MemberGroupList, TaskEditor }
+})
+export default class Builder extends Vue {
+  plan: Plan | undefined = undefined
+  stepNum: number = 1
+  stepDesc = {
+    1: '选择小组',
+    2: '分配任务',
+    3: '完成创建'
+  }
+
   data () {
     return {
       task: null,
@@ -68,48 +80,50 @@ export default Vue.extend({
         '3': '完成创建'
       }
     }
-  },
+  }
+
   created () {
-    // 初始化 Task
-    this.task = {
-      title: `${this.getDate()}`,
-      memberGroupListInit: [],
-      time: ''
+    // 初始化 plan
+    this.plan = {
+      id: new Date().getTime(),
+      name: `${this.getDate()}`,
+      time: new Date().getTime(),
+      grpList: []
     }
-  },
-  methods: {
-    getDate () {
+  }
+
+  getDate () {
       let myDate = new Date()
       let year = myDate.getFullYear()
       let month = myDate.getMonth() + 1
       let date = myDate.getDate()
       let str = '星期' + '日一二三四五六'.charAt(new Date().getDay())
       return year + '-' + month + '-' + date + ' ' + str
-    },
-    nextStep () {
-      // 切换 step 前
-      if (this.stepNum === 1 && this.task.memberGroupListInit.length === 0) {
-        window.notify('请选择小组')
+    }
+
+  nextStep () {
+    // 切换 step 前
+    if (this.stepNum === 1 && this.task.memberGroupListInit.length === 0) {
+      window.notify('请选择小组')
+      return
+    }
+
+    if (this.stepNum === 2) {
+      if (_.find(this.$store.state.Setting.taskList, (o) => { return o.title === this.task.title })) {
+        window.notify('标题重复，请更换标题', 'w', 2000)
         return
       }
 
-      if (this.stepNum === 2) {
-        if (_.find(this.$store.state.Setting.taskList, (o) => { return o.title === this.task.title })) {
-          window.notify('标题重复，请更换标题', 'w', 2000)
-          return
-        }
-
-        // 保存数据
-        this.task.time = (new Date()).getTime()
-        this.$store.commit('Setting/PUSH_TASK', this.task)
-      }
-
-      // 执行切换 step
-      this.stepNum++
-      $(`step-${this.stepNum}`).scrollTop(0)
+      // 保存数据
+      this.task.time = (new Date()).getTime()
+      this.$store.commit('Setting/PUSH_TASK', this.task)
     }
+
+    // 执行切换 step
+    this.stepNum++
+    $(`step-${this.stepNum}`).scrollTop(0)
   }
-})
+}
 </script>
 
 <style scoped lang="scss">

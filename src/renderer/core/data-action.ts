@@ -9,12 +9,13 @@ export default class DataAction {
   /** 保存计划 */
   public static savePlan (plan: Plan): void {
     DataStore.PlanList.push(plan)
+    this.syncRec()
     DataStore.save()
   }
 
   /** 删除计划 */
   public static delPlan (planId: number): void {
-    let removedPlans = _.remove(DataStore.PlanList, (plan) => plan.id === planId)
+    _.remove(DataStore.PlanList, (plan) => plan.id === planId)
   }
 
   /** 同步 Rec */
@@ -23,13 +24,13 @@ export default class DataAction {
     // 遍历计划列表
     _.forEach(DataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
-      _.forEach(plan.grpList, (grpList: PlanGrp) => {
+      _.forEach(plan.grpList, (planGrp: PlanGrp) => {
         // 初始化 recList 中的该组数据 rec
         let rec: Rec
-        let findRec = _.find(recList, (o) => o.grpId === grpList.grpId)
+        let findRec = _.find(recList, (o) => o.grpId === planGrp.grpId)
         if (findRec === undefined) {
           rec = {
-            grpId: grpList.grpId,
+            grpId: planGrp.grpId,
             areaList: {},
             taskList: {}
           }
@@ -38,13 +39,13 @@ export default class DataAction {
           rec = findRec
         }
         // 更新该组的区域列表
-        if (!rec.areaList.hasOwnProperty(grpList.area)) {
-          rec.areaList[grpList.area] = 1
+        if (!rec.areaList.hasOwnProperty(planGrp.area)) {
+          rec.areaList[planGrp.area] = 1
         } else {
-          rec.areaList[grpList.area] += 1
+          rec.areaList[planGrp.area] += 1
         }
         // 更新该组的个人任务列表
-        _.forEach(grpList.personTaskList, (task: string, person: string) => {
+        _.forEach(planGrp.personTaskList, (task: string, person: string) => {
           if (!rec.taskList.hasOwnProperty(task)) {
             rec.taskList[task] = {}
           }
