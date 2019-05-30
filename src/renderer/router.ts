@@ -8,6 +8,10 @@ export default new Router({
       component: require('@/pages/Schedule').default
     },
     {
+      path: '/Builder',
+      component: require('@/pages/Builder').default
+    },
+    {
       path: '/GrpList',
       component: require('@/pages/GrpList').default
     },
