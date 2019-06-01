@@ -67,16 +67,6 @@ export default class GrpList extends Vue {
         }
       }
 
-      getRandColor () {
-        var colorElements = '0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f'
-        var colorArray = colorElements.split(',')
-        var color = '#'
-        for (var i = 0; i < 6; i++) {
-          color += colorArray[Math.floor(Math.random() * 16)]
-        }
-        return color
-      }
-
       /**
        * 判断 Group 是否选中
        */

@@ -83,7 +83,7 @@ import DataQuery from '../core/data-query';
     .inner {
       .group {
         padding: 20px;
-        background: #FFF;
+        background: rgba(255, 255, 255, 0.82);
 
         &:not(:last-child) {
           margin-bottom: 10px;

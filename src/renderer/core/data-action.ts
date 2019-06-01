@@ -6,6 +6,16 @@ import DataStore from './data-store'
  * 数据操作类
  */
 export default class DataAction {
+  /** 获取一个空 Plan */
+  public static newEmptyPlan () : Plan {
+    return {
+      id: new Date().getTime(),
+      name: `${this.getDateText()}`,
+      time: new Date().getTime(),
+      grpList: []
+    }
+  }
+
   /** 保存计划 */
   public static savePlan (plan: Plan): void {
     DataStore.PlanList.push(plan)
@@ -75,5 +85,15 @@ export default class DataAction {
   /** 为设置界面提供的数据清空 */
   public static settingClearData () {
     DataStore.clearAll()
+  }
+
+  /** 获取日期文字 */
+  public static getDateText () {
+    let myDate = new Date()
+    let year = myDate.getFullYear()
+    let month = myDate.getMonth() + 1
+    let date = myDate.getDate()
+    let str = '星期' + '日一二三四五六'.charAt(new Date().getDay())
+    return year + '-' + month + '-' + date + ' ' + str
   }
 }
