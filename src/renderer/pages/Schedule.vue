@@ -94,7 +94,7 @@ export default class Schedule extends Vue {
 
   created() {
     // 测试
-    //DataStore.clearAll()
+    // DataStore.clearAll()
     DataStore.GrpList = GrpList
     DataStore.AreaList = AreaList
     DataStore.save()
@@ -116,10 +116,10 @@ export default class Schedule extends Vue {
       let newPlanGrpList: PlanGrp[] = []
 
       _.forEach(grpList2, (grp, key) => {
-        let nPl: { [person: string]: string } = {}
+        let nPl: { person: string, task: string }[] = []
         _.forEach(grp.personList, (person, index) => {
           if (!personToTask[person]) return
-          nPl[person] = personToTask[person]
+          nPl.push({ person: person, task: personToTask[person]})
         })
 
         let planGrp: PlanGrp = {
@@ -145,7 +145,9 @@ export default class Schedule extends Vue {
 
     //createTestPlan()
 
-    for (let i = 0; i < 50; i++) {}
+    for (let i = 0; i < 100; i++) {
+      //createTestPlan()
+    }
 
     console.log(DataStore)
 
@@ -182,7 +184,9 @@ export default class Schedule extends Vue {
   /** 每个任务下的成员名字 列表 */
   get tasksPersonNameList() {
     let list: Array<{ task: string; persons: string[] }> = []
-    _.forEach((this.currGrp as PlanGrp).personTaskList, (task, person) => {
+    _.forEach((this.currGrp as PlanGrp).personTaskList, (personTaskItem) => {
+      let person = personTaskItem.person,
+          task = personTaskItem.task
       let item = list.find(o => o.task === task)
       if (item === undefined) {
         item = { task: task, persons: [] }

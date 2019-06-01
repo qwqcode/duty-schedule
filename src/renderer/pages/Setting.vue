@@ -55,7 +55,7 @@
       </div>
 
       <div class="setting-card" style="text-align: center;">
-        <img src="../assets/icon.png" width="60px" height="60px">
+        <img src="../assets/icon.png" style="padding-top: 20px;" width="60px" height="60px">
         <br>
         <br>
         <b style="font-size: 1.4em;">值日任务表 v{{ version }}</b>

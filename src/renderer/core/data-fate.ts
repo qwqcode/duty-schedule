@@ -40,9 +40,11 @@ export default class DataFate {
         console.error('未找到 Area:', areaName)
         return
       }
-      let taskList = findArea.taskList
-      // > 给该区域的 personList 中的所有人安排任务
-      _.forEach(taskList, (taskName) => {
+      let thisAreaTaskList = findArea.taskList
+      // 遍历该区域的所有 TASK
+      _.forEach(thisAreaTaskList, (taskName, taskIndex) => {
+        if (taskIndex +1 > personList.length) return // 如果 TASK index 超过 personList 人数
+        // > 给该区域中的所有人安排任务
         // 构建候选名单：[{name: 姓名, rec: 执行过该 task 的次数}]
         let personShortlist: {name: string, rec: number}[] = []
         _.forEach(personList, (personName, index) => {
@@ -50,10 +52,14 @@ export default class DataFate {
           if (personToTaskDict.hasOwnProperty(personName)) return
           // !! 如果这个人上一次扫地就是做这个 Task, 并且候选名单中还有其他人（至少一个人），那么就不加入候选名单中
           if (
-            ((personList.length > 1 && index === 0) // 小组成员数大于 1，并且这个人是第一个人
-            || personShortlist.length >= 1) // 或者，候选名单人数不少于 1
-            && DataQuery.getIsPersonJustDidTheTask(personName, taskName)
-          ) return
+            ((personList.length >= 2 && index === 0) // 如果 小组成员数至少两人，并且这个人是第一个人
+              || personShortlist.length >= 1) // 或者，候选名单中至少有一个人
+          ) {
+            // 才查询是否上次做过
+            if (DataQuery.getIsPersonJustDidTheTask(personName, taskName)) {
+              return
+            }
+          }
           // 查询这个人做过该 Task 的 Rec
           personShortlist.push({ name: personName, rec: DataQuery.getPersonTaskRec(personName, taskName) })
         })

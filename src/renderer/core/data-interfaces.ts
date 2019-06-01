@@ -64,6 +64,6 @@ export interface PlanGrp {
   grpId: number
   /** 小组工作区域 */
   area: string
-  /** 个人任务列表 {人名: 任务名} */
-  personTaskList: {[person: string]: string}
+  /** 个人任务列表 [{person: 人名, task: 任务名}] */
+  personTaskList: { person: string, task: string }[]
 }

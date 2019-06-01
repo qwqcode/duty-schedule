@@ -26,6 +26,8 @@ export default class DataAction {
   /** 删除计划 */
   public static delPlan (planId: number): void {
     _.remove(DataStore.PlanList, (plan) => plan.id === planId)
+    this.syncRec()
+    DataStore.save()
   }
 
   /** 同步 Rec */
@@ -55,7 +57,9 @@ export default class DataAction {
           rec.areaList[planGrp.area] += 1
         }
         // 更新该组的个人任务列表
-        _.forEach(planGrp.personTaskList, (task: string, person: string) => {
+        _.forEach(planGrp.personTaskList, (item) => {
+          let task = item.task
+          let person = item.person
           if (!rec.taskList.hasOwnProperty(task)) {
             rec.taskList[task] = {}
           }

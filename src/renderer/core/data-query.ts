@@ -56,7 +56,8 @@ export default class DataQuery {
     if (!planListLastest) return false
     let result = false
     _.forEach(planListLastest.grpList, (grp) => {
-      if (grp.personTaskList.hasOwnProperty(personName) && grp.personTaskList[personName] === taskName) {
+      let findOne = grp.personTaskList.find(o => o.person === personName)
+      if (findOne !== undefined && findOne.task === taskName) {
         result = true
         return false // 结束遍历
       }
