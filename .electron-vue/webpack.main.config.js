@@ -18,7 +18,7 @@ let mainConfig = {
   module: {
     rules: [
       {
-        test: /\.(js)$/,
+        test: /\.(js|ts)$/,
         enforce: 'pre',
         exclude: /node_modules/,
         use: {
@@ -27,6 +27,11 @@ let mainConfig = {
             formatter: require('eslint-friendly-formatter')
           }
         }
+      },
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        loader: 'ts-loader'
       },
       {
         test: /\.js$/,
@@ -52,7 +57,7 @@ let mainConfig = {
     new webpack.NoEmitOnErrorsPlugin()
   ],
   resolve: {
-    extensions: ['.js', '.json', '.node']
+    extensions: ['.js', '.json', '.node', '.ts']
   },
   target: 'electron-main'
 }

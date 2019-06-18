@@ -44,7 +44,6 @@ import {
   Tree,
   Alert,
   Slider,
-  Icon,
   Row,
   Col,
   Upload,
@@ -115,7 +114,6 @@ Vue.use(Tag)
 Vue.use(Tree)
 Vue.use(Alert)
 Vue.use(Slider)
-Vue.use(Icon)
 Vue.use(Row)
 Vue.use(Col)
 Vue.use(Upload)
@@ -138,7 +136,7 @@ Vue.use(Aside)
 Vue.use(Main)
 Vue.use(Footer)
 
-Vue.use(Loading.directive)
+Vue.use(Loading.directive as any)
 
 Vue.prototype.$loading = Loading.service
 Vue.prototype.$msgbox = MessageBox

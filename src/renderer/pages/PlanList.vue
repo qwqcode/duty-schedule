@@ -1,92 +1,101 @@
 <template>
-  <div class="task-list">
-    <div class="task-list-item"
-         v-for="task in taskList"
-         :key="task.title"
-         :class="{ 'selected': (task === selectedTask) }">
-      <div class="inner" @click="openTask(task)">
-        <div class="title">{{ task.title }}</div>
+  <div class="plan-list">
+    <div class="plan-list-item"
+         v-for="plan in planList"
+         :key="plan.id"
+         :class="{ 'selected': (plan === selectedPlan) }">
+      <div class="inner" @click="openPlan(plan)">
+        <div class="title">{{ plan.name }}</div>
         <div class="meta">
-          <span class="time">{{ timeAgo(new Date(task.time)) }}</span>
-          <span class="groups">组: <span class="group-item" v-for="(item, i) in getMemberGroupListNumbers(task)" :key="i">{{ item }}</span></span>
+          <span class="time">{{ timeAgo(new Date(plan.time)) }}</span>
+          <span class="groups">组: <span class="group-item" v-for="(item, i) in getPlanAllGrpIdList(plan)" :key="i">{{ item }}</span></span>
         </div>
       </div>
       <div class="flags">
         <span
           class="flag flag-green"
-          v-if="dateFormat(new Date(task.time)) === dateFormat(new Date())"
+          v-if="dateFormat(new Date(plan.time)) === dateFormat(new Date())"
         >今日</span>
-        <!--<span class="flag flag-red" v-if="task.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
+        <!--<span class="flag flag-red" v-if="plan.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
       <span class="act-btns">
-        <span class="btn-item" @click="deleteTask(task)"><i class="zmdi zmdi-delete"></i></span>
+        <span class="btn-item" @click="deletePlan(plan)"><i class="zmdi zmdi-delete"></i></span>
       </span>
     </div>
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import _ from 'lodash'
-export default {
-  props: ['selected-task'],
-  data () {
-    return {
-      deleteClickTime: 0,
-      deleteTaskTitle: null
+import Vue from 'vue'
+import { Prop, Watch, Component } from 'vue-property-decorator';
+import DataStore from '../core/data-store';
+import DataAction from '../core/data-action';
+import { Plan } from '../core/data-interfaces';
+
+@Component({})
+export default class PlanList extends Vue {
+  @Prop() readonly selectedPlan!: Plan
+  deleteBtnClickTime: number = 0
+  removingPlanId: number | null = null
+
+  get planList () {
+    return _.sortBy(DataStore.PlanList, (o) => -o.time)
+  }
+
+  get dataStore () {
+    return DataStore
+  }
+
+  openPlan (plan: Plan) {
+      this.$emit('openPlan', plan)
     }
-  },
-  computed: {
-    taskList () {
-      return _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
-    }
-  },
-  methods: {
-    openTask (task) {
-      this.$emit('openTask', task)
-    },
-    getMemberGroupListNumbers (task) {
-      let arr = []
-      _.each(task.memberGroupList, (group, i) => {
-        arr.push(this.getGroupNumByName(group.name))
+
+    getPlanAllGrpIdList (plan: Plan) {
+      let arr: number[] = []
+      _.each(plan.grpList, (group, i) => {
+        arr.push(group.grpId)
       })
       return _.sortBy(arr)
-    },
-    getGroupNumByName (groupName) {
-      return groupName.match(/第 (.*) 组/)[1]
-    },
-    padWithZeros (vNumber, width) {
+    }
+
+    padWithZeros (vNumber: number, width: number): string {
       var numAsString = vNumber.toString()
       while (numAsString.length < width) {
         numAsString = '0' + numAsString
       }
       return numAsString
-    },
+    }
+
     isDataAllowEdit () {
-      if (typeof window.SETTING_DATA_ALLOW_EDIT !== 'boolean' || window.SETTING_DATA_ALLOW_EDIT !== true) {
+      if (typeof (window as any).SETTING_DATA_ALLOW_EDIT !== 'boolean' || (window as any).SETTING_DATA_ALLOW_EDIT !== true) {
         window.notify('没有权限修改数据', 'w')
         console.log('[window.SETTING_DATA_ALLOW_EDIT]')
         return false
       } else {
         return true
       }
-    },
-    deleteTask (task) {
+    }
+
+    deletePlan (plan: Plan) {
       if (this.isDataAllowEdit()) {
-        if (this.deleteTaskTitle !== task.title) {
-          this.deleteTaskTitle = task.title
-          this.deleteClickTime = 0
+        if (this.removingPlanId !== plan.id) {
+          this.removingPlanId = plan.id
+          this.deleteBtnClickTime = 0
         }
-        if (this.deleteClickTime < 3 - 1) {
-          this.deleteClickTime++
-          window.notify(`危险操作，请再点 ${(3 - this.deleteClickTime)} 次`, 'e')
+        if (this.deleteBtnClickTime < 3 - 1) {
+          this.deleteBtnClickTime++
+          window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
           return
         }
-        this.$store.commit('Setting/REMOVE_TASK', task)
-        window.notify(`"${task.title}" 已删除`, 'i')
-        this.deleteClickTime = 0
+        DataAction.delPlan(plan.id)
+        window.notify(`"${plan.name}" 已删除`, 'i')
+        this.deleteBtnClickTime = 0
+        this.removingPlanId = null
       }
-    },
-    dateFormat (date) {
+    }
+
+    dateFormat (date: Date) {
       var vDay = this.padWithZeros(date.getDate(), 2)
       var vMonth = this.padWithZeros(date.getMonth() + 1, 2)
       var vYear = this.padWithZeros(date.getFullYear(), 2)
@@ -94,9 +103,9 @@ export default {
       // var vMinute = padWithZeros(date.getMinutes(), 2);
       // var vSecond = padWithZeros(date.getSeconds(), 2);
       return `${vYear}-${vMonth}-${vDay}`
-    },
+    }
 
-    timeAgo (date) {
+    timeAgo (date: Date) {
       try {
         var oldTime = date.getTime()
         var currTime = new Date().getTime()
@@ -132,17 +141,16 @@ export default {
         console.error(error)
       }
     }
-  }
 }
 </script>
 
 <style lang="scss" scoped>
-  .task-list {
+  .plan-list {
     padding: 5px;
     padding-top: 40px;
     background: #f4f4f4;
 
-    .task-list-item {
+    .plan-list-item {
       padding: 5px;
       position: relative;
 

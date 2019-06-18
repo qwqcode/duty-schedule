@@ -3,24 +3,31 @@
     <div class="top-bar">
       <div class="left">值日任务表 <span class="sub-title">{{ subTitle }}</span></div>
       <div class="right">
-        <button class="btn" data-action="minimize"><span class="icon window-minimize"></span></button>
-        <button class="btn" data-action="maximize"><span class="icon window-maximize" ref="IconWindowMaximize"></span></button>
-        <button class="btn" data-action="close"><span class="icon window-close"></span></button>
+        <button class="btn" data-action="minimize">
+          <span class="icon window-minimize"></span>
+        </button>
+        <button class="btn" data-action="maximize">
+          <span class="icon" :class="!isMaximize ? 'window-maximize' : 'window-unmaximize'"></span>
+        </button>
+        <button class="btn" data-action="close">
+          <span class="icon window-close"></span>
+        </button>
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script lang="ts">
+  import Vue from 'vue'
+  import { Prop, Component } from 'vue-property-decorator'
   const { remote } = require('electron')
 
-  export default {
-    props: {
-      subTitle: {
-        type: String,
-        default: ''
-      }
-    },
+  @Component
+  export default class TopBar extends Vue {
+    @Prop({ default: '' })
+    subTitle: string = ''
+    isMaximize = false
+
     mounted () {
       let btns = document.querySelectorAll('[data-action]')
       btns.forEach(btn => {
@@ -34,10 +41,10 @@
             case 'maximize':
               if (window.isMaximized()) {
                 window.unmaximize()
-                this.$refs.IconWindowMaximize.setAttribute('class', 'icon window-maximize')
+                this.isMaximize = false
               } else {
                 window.maximize()
-                this.$refs.IconWindowMaximize.setAttribute('class', 'icon window-unmaximize')
+                this.isMaximize = true
               }
               break
             case 'minimize':
@@ -46,8 +53,6 @@
           }
         })
       })
-    },
-    methods: {
     }
   }
 </script>

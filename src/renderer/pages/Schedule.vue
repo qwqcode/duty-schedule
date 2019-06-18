@@ -2,193 +2,269 @@
   <div class="page schedule-page fullscreen">
     <div class="task-list-sidebar" style="display: none">
       <div class="inner" ref="taskListSidebarInner">
-        <task-list class="task-list" @openTask="openTask" :selected-task="this.task"></task-list>
+        <plan-list class="plan-list" @openPlan="openPlan" :selected-plan="plan"></plan-list>
       </div>
     </div>
     <div class="inner">
       <div class="left-bar">
         <div class="card group-switch">
-          <div class="item" @click="showTaskListSidebar()"><i class="zmdi zmdi-menu"></i></div>
+          <div class="item" @click="showTaskListSidebar()">
+            <i class="zmdi zmdi-menu"></i>
+          </div>
           <div class="dividing"></div>
-          <div class="item"><i class="zmdi zmdi-flag"></i></div>
-        </div>
-        <div class="card group-switch">
-          <div class="title">组</div>
-          <div class="item"
-               v-for="(group, key) in task.memberGroupList"
-               :key="key"
-               :class="{ 'active': key == currentMemberGroupKey }"
-               @click="switchGroupByKey(key)">
-            {{ getGroupNumByName(group.name) }}
+          <div class="item">
+            <i class="zmdi zmdi-flag"></i>
           </div>
         </div>
+        <div class="card group-switch" v-if="plan !== null">
+          <div class="title">组</div>
+          <div
+            class="item"
+            v-for="(group, key) in plan.grpList"
+            :key="key"
+            :class="{ 'active': key == currGrpKey }"
+            @click="switchGrp(key)"
+          >{{ group.grpId }}</div>
+        </div>
         <div class="card group-switch">
-          <div class="item" @click="autoSwitch = !autoSwitch"><i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`"></i></div>
-          <div class="dividing"></div>
-          <router-link tag="div" class="item" :to="{ name: 'viewer', params: { title: task.title }}"><i class="zmdi zmdi-view-list"></i></router-link>
+          <div class="item" @click="autoSwitch = !autoSwitch">
+            <i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`"></i>
+          </div>
         </div>
       </div>
-      <div class="right-card">
+      <div class="right-card" v-if="plan !== null">
         <transition-group name="zoom" tag="div">
-        <div class="float-card group-info"
-             v-for="(group, key) in task.memberGroupList"
-             :key="group.name"
-             :ref="`groupInfoCard_${key}`"
-             v-show="key == currentMemberGroupKey">
-          <div class="inner">
-            <div class="auto-switch-bar" v-show="autoSwitch"></div>
-            <div class="content">
-              <div class="title">{{ currentMemberGroup.name }}</div>
-              <el-row class="task-type-group-wrap" :gutter="30">
-                <el-col class="task-type-group"
-                        v-for="(item, i) in taskMemberGroupListModeTaskType"
-                        :key="i"
-                        :span="8">
-                  <div class="type-name">{{ item.name }}</div>
-                  <div class="members">
-                    <div class="member-item" v-for="(member, mi) in item.data" :key="mi">{{ member }}</div>
-                  </div>
-                </el-col>
-              </el-row>
+          <div
+            class="float-card group-info"
+            v-for="(grp, key) in plan.grpList"
+            :key="grp.grpId"
+            :ref="`groupInfoCard_${key}`"
+            v-show="key == currGrpKey"
+          >
+            <div class="inner">
+              <div class="auto-switch-bar" v-show="autoSwitch"></div>
+              <div class="content">
+                <div class="title">第 {{ grp.grpId }} 组</div>
+                <el-row class="task-type-group-wrap" :gutter="30">
+                  <el-col
+                    class="task-type-group"
+                    v-for="(item, i) in tasksPersonNameList"
+                    :key="i"
+                    :span="8"
+                  >
+                    <div class="type-name">{{ item.task }}</div>
+                    <div class="members">
+                      <div
+                        class="member-item"
+                        v-for="(person, pi) in item.persons"
+                        :key="pi"
+                      >{{ person }}</div>
+                    </div>
+                  </el-col>
+                </el-row>
+              </div>
             </div>
           </div>
-        </div>
         </transition-group>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import TaskList from './TaskList.vue'
+<script lang="ts">
+import Vue from 'vue'
+import PlanList from './PlanList.vue'
 import _ from 'lodash'
-import { mapGetters } from 'vuex'
 import $ from 'jquery'
+import { Plan, PlanGrp } from '../core/data-interfaces'
+import DataStore from '../core/data-store'
+import DataFate from '../core/data-fate'
+import { Watch, Component } from 'vue-property-decorator'
+import { GrpList, AreaList } from '../core/data-localtest'
+import DataAction from '../core/data-action'
 
-export default {
-  components: { TaskList },
-  created () {
-    this.task = this.taskList[0]
-  },
-  data () {
-    return {
-      task: null,
-      currentMemberGroupKey: 0,
-      autoSwitch: false,
-      isTaskListSidebarShow: false
-    }
-  },
-  watch: {
-    task (newVal) {
-      this.$parent.setSubTitle(' ' + newVal.title)
-    },
-    currentMemberGroupKey (newVal, oldVal) {
-      if (this.autoSwitch) {
-        this.startAutoSwitchTimeout(this.$refs['groupInfoCard_' + newVal][0])
+@Component({
+  components: { PlanList }
+})
+export default class Schedule extends Vue {
+  plan: Plan | null = null
+  currGrpKey: number = 0
+  autoSwitch: boolean = false
+  isTaskListSidebarShow: boolean = false
+
+  created() {
+    // 测试
+    // DataStore.clearAll()
+    DataStore.GrpList = GrpList
+    DataStore.AreaList = AreaList
+    DataStore.save()
+
+    let createTestPlan = () => {
+      let selGrp = DataStore.GrpList.filter(o => [1, 2, 3, 4].includes(o.id))
+      console.log(`已选中的组：`, selGrp)
+
+      let areaDict: { [grpId: number]: string } = {
+        1: '教室',
+        2: '教室',
+        3: '公区',
+        4: '公区'
       }
-    },
-    autoSwitch (newVal) {
-      if (newVal === true) {
-        this.startAutoSwitchTimeout(this.$refs['groupInfoCard_' + this.currentMemberGroupKey][0])
-      }
-    }
-  },
-  computed: {
-    taskList () {
-      return _.sortBy(this.$store.state.Setting.taskList, (o) => -Number(o.time))
-    },
-    currentMemberGroup () {
-      return this.task.memberGroupList[this.currentMemberGroupKey]
-    },
-    taskMemberGroupListModeTaskType () {
-      let typesListUnique = []
-      _.forEach(this.currentMemberGroup.data, (member) => {
-        if (typesListUnique.indexOf(member.task) <= -1) {
-          typesListUnique.push(member.task)
+
+      let personToTask = DataFate.assignTaskToGrpListPersons(selGrp, areaDict)
+
+      let grpList2 = _.clone(selGrp)
+      let newPlanGrpList: PlanGrp[] = []
+
+      _.forEach(grpList2, (grp, key) => {
+        let nPl: { person: string, task: string }[] = []
+        _.forEach(grp.personList, (person, index) => {
+          if (!personToTask[person]) return
+          nPl.push({ person: person, task: personToTask[person]})
+        })
+
+        let planGrp: PlanGrp = {
+          grpId: grp.id,
+          personTaskList: nPl,
+          area: areaDict[grp.id]
         }
+
+        newPlanGrpList.push(planGrp)
       })
 
-      let list = []
-      _.forEach(typesListUnique, (taskType) => {
-        let members = []
-        _.forEach(this.currentMemberGroup.data, (member) => {
-          if (member.task === taskType) {
-            members.push(member.name)
-          }
-        })
+      let plan: Plan = {
+        id: +new Date(),
+        name: '测试计划',
+        grpList: newPlanGrpList,
+        time: +new Date()
+      }
 
-        list.push({
-          name: taskType,
-          data: members
-        })
-      })
+      console.log(plan)
 
-      return list
-    },
-    ...mapGetters('Setting', ['taskTypeGroupListUnique'])
-  },
-  methods: {
-    openTask (task) {
-      this.task = task
-      this.currentMemberGroupKey = 0
-      this.autoSwitch = false
-      this.hideTaskListSidebar()
-    },
-    getGroupNumByName (groupName) {
-      return groupName.match(/第 (.*) 组/)[1]
-    },
-    switchGroupByKey (key) {
-      this.autoSwitch = false
-      this.currentMemberGroupKey = key
-    },
-    startAutoSwitchTimeout (cardElem) {
-      const timeout = 10 * 1000
-      const perTime = 50
-
-      let timeLeft = 0
-      let switchBar = cardElem.querySelector('.auto-switch-bar')
-      switchBar.style.height = ''
-
-      let intervalKey = window.setInterval(() => {
-        if (this.autoSwitch === false) {
-          window.clearInterval(intervalKey)
-          return
-        }
-        switchBar.style.height = (((timeout - timeLeft) / timeout) * 100).toFixed(2) + '%'
-        timeLeft += perTime
-        if (timeLeft > timeout) {
-          // 切换组
-          if (this.currentMemberGroupKey + 1 < Object.keys(this.task.memberGroupList).length) {
-            this.currentMemberGroupKey++
-          } else {
-            this.currentMemberGroupKey = 0
-          }
-          window.clearInterval(intervalKey)
-        }
-      }, perTime)
-    },
-    showTaskListSidebar () {
-      $('.task-list-sidebar').show().css('background-color', 'rgba(110, 110, 110, 0.39)')
-      $(this.$refs.taskListSidebarInner).removeClass('show')
-      this.isTaskListSidebarShow = true
-      window.setTimeout(() => {
-        $(this.$refs.taskListSidebarInner).addClass('show')
-        $(document).bind('click.hideSidebar', (e) => {
-          if ($(e.target).is($('.task-list-sidebar')) || !$(e.target).closest(this.$refs.taskListSidebarInner)) {
-            this.hideTaskListSidebar()
-            $(document).unbind('click.hideSidebar')
-          }
-        })
-      }, 20)
-    },
-    hideTaskListSidebar () {
-      $(this.$refs.taskListSidebarInner).removeClass('show')
-      $('.task-list-sidebar').css('background-color', '')
-      window.setTimeout(() => {
-        this.isTaskListSidebarShow = false
-        $('.task-list-sidebar').hide()
-      }, 400)
+      DataAction.savePlan(plan)
     }
+
+    //createTestPlan()
+
+    for (let i = 0; i < 100; i++) {
+      //createTestPlan()
+    }
+
+    console.log(DataStore)
+
+    this.plan = this.planList[0]
+  }
+
+  @Watch('plan')
+  onPlanChanged(newPlan: Plan) {
+    (this.$parent as any).setSubTitle(' ' + newPlan.name)
+  }
+
+  @Watch('currGrpKey')
+  onCurrGrpKeyChanged(newKey: number, oldKey: number) {
+    // 当切换组时
+  }
+
+  @Watch('autoSwitch')
+  onAutoSwitchChanged(newVal: boolean) {
+    if (newVal === true) {
+      this.startAutoSwitch((this.$refs['groupInfoCard_' + this.currGrpKey] as Element[])[0] as Element)
+    }
+  }
+
+  /** 计划列表 */
+  get planList() {
+    return _.sortBy(DataStore.PlanList, o => -o.time)
+  }
+
+  /** 当前显示的组 */
+  get currGrp() {
+    return this.plan !== null ? this.plan.grpList[this.currGrpKey] || null : null
+  }
+
+  /** 每个任务下的成员名字 列表 */
+  get tasksPersonNameList() {
+    let list: Array<{ task: string; persons: string[] }> = []
+    _.forEach((this.currGrp as PlanGrp).personTaskList, (personTaskItem) => {
+      let person = personTaskItem.person,
+          task = personTaskItem.task
+      let item = list.find(o => o.task === task)
+      if (item === undefined) {
+        item = { task: task, persons: [] }
+        list.push(item)
+      }
+      item.persons.push(person)
+    })
+
+    return list
+  }
+
+  openPlan(plan: Plan) {
+    this.plan = plan
+    this.currGrpKey = 0
+    this.autoSwitch = false // 停止自动播放
+    this.hideTaskListSidebar()
+  }
+
+  switchGrp(grpKey: number) {
+    this.autoSwitch = false
+    this.currGrpKey = grpKey
+  }
+
+  startAutoSwitch(cardElem: Element) {
+    if (this.plan === null || !this.plan.grpList) {
+      return
+    }
+
+    const timeout = 10 * 1000
+    const perTime = 50
+
+    let timeLeft = 0
+    let switchBar = cardElem.querySelector('.auto-switch-bar') as HTMLElement
+    switchBar.style.height = ''
+
+    let intervalKey = window.setInterval(() => {
+      if (this.autoSwitch === false) {
+        window.clearInterval(intervalKey)
+        return
+      }
+      switchBar.style.height = (((timeout - timeLeft) / timeout) * 100).toFixed(2) + '%'
+      timeLeft += perTime
+      if (timeLeft > timeout) {
+        // 切换组
+        if (this.currGrpKey + 1 < Object.keys((this.plan as Plan).grpList).length) {
+          this.currGrpKey++
+        } else {
+          this.currGrpKey = 0
+        }
+        window.clearInterval(intervalKey)
+      }
+    }, perTime)
+  }
+
+  showTaskListSidebar() {
+    $('.task-list-sidebar')
+      .show()
+      .css('background-color', 'rgba(110, 110, 110, 0.39)')
+    $(this.$refs.taskListSidebarInner).removeClass('show')
+    this.isTaskListSidebarShow = true
+    window.setTimeout(() => {
+      $(this.$refs.taskListSidebarInner).addClass('show')
+      $(document).bind('click.hideSidebar', e => {
+        if ($(e.target).is($('.task-list-sidebar')) || !$(e.target).closest(this.$refs.taskListSidebarInner as Element)) {
+          this.hideTaskListSidebar()
+          $(document).unbind('click.hideSidebar')
+        }
+      })
+    }, 20)
+  }
+
+  hideTaskListSidebar() {
+    $(this.$refs.taskListSidebarInner).removeClass('show')
+    $('.task-list-sidebar').css('background-color', '')
+    window.setTimeout(() => {
+      this.isTaskListSidebarShow = false
+      $('.task-list-sidebar').hide()
+    }, 400)
   }
 }
 </script>
@@ -225,7 +301,7 @@ export default {
     }
 
     .task-list {
-      background: #FFF;
+      background: #fff;
     }
   }
 
@@ -240,9 +316,9 @@ export default {
     .card {
       width: 44px;
       min-height: 40px;
-      background: #FFF;
+      background: #fff;
       border-radius: 3px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 
       &:not(:last-child) {
         margin-bottom: 10px;
@@ -260,12 +336,12 @@ export default {
       .title {
         user-select: none;
         color: #1a73e8;
-        border-bottom: 1px solid #F4F4F4;
+        border-bottom: 1px solid #f4f4f4;
       }
 
       .dividing {
         height: 1px;
-        background: #F4F4F4;
+        background: #f4f4f4;
         width: 100%;
       }
 
@@ -273,7 +349,8 @@ export default {
         position: relative;
         cursor: pointer;
 
-        &.active, &:hover {
+        &.active,
+        &:hover {
           color: #1a73e8;
           font-weight: bold;
           background: rgba(66, 133, 244, 0.12);
@@ -307,7 +384,7 @@ export default {
       left: 15px;
       height: calc(100% - 100px);
       width: calc(100% - 40px);
-      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
       border-radius: 3px;
 
       & > .inner {
@@ -320,9 +397,9 @@ export default {
           height: 100%;
           width: 3px;
           position: absolute;
-          transition: height .2s;
+          transition: height 0.2s;
           background: linear-gradient(#1a73e8, #0eefff);
-          box-shadow: 0 1px 3px rgba(14, 239, 255, .40);
+          box-shadow: 0 1px 3px rgba(14, 239, 255, 0.4);
         }
 
         .content {

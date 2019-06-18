@@ -1,1 +1,11 @@
-{}
+{
+  "vetur.format.defaultFormatter.js": "prettier",
+  "vetur.format.defaultFormatter.html": "prettyhtml",
+  "vetur.experimental.templateInterpolationService": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ]
+}
