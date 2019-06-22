@@ -40,7 +40,7 @@ export default class DataFate {
         console.error('未找到 Area:', areaName)
         return
       }
-      let thisAreaTaskList = findArea.taskList
+      let thisAreaTaskList = DataQuery.getTaskListSorted(findArea.taskList, grpList)
       // 遍历该区域的所有 TASK
       _.forEach(thisAreaTaskList, (taskName, taskIndex) => {
         if (taskIndex +1 > personList.length) return // 如果 TASK index 超过 personList 人数

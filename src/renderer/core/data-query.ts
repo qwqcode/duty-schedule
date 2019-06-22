@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import DataStore from './data-store'
-import { Rec, Area, Plan } from './data-interfaces'
+import { Rec, Area, Plan, Grp } from './data-interfaces'
 
 /**
  * 数据查询类
@@ -75,5 +75,25 @@ export default class DataQuery {
       }
     })
     return result
+  }
+
+  /** 获取一定规则顺序的 TaskList */
+  public static getTaskListSorted (taskList: string[], rangeGrpList: Grp[]) {
+    let list: {task: string, diff: number}[] = []
+    _.forEach(taskList, (task) => list.push({task: task, diff: 0}))
+    _.forEach(rangeGrpList, (grp) => {
+      let grpRec = DataStore.RecList.find(o => o.grpId === grp.id)
+      if (grpRec !== undefined) {
+        _.forEach(grpRec.taskList, (personNumList, task) => {
+          let listTask = list.find(o => o.task === task)
+          if (listTask === undefined) return
+          let diff = (_.max(Object.values(personNumList)) || 0) - (_.min(Object.values(personNumList)) || 0)
+          if (diff < 0) diff = 0
+          if (diff > listTask.diff) listTask.diff = diff
+        })
+      }
+    })
+    let listSorted = _.sortBy(list, o => -o.diff)
+    return _.flatMap(listSorted, o => o.task)
   }
 }
