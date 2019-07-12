@@ -60,7 +60,7 @@
     "element-theme-chalk": "^2.6.1",
     "element-ui": "^2.6.1",
     "jquery": "^3.3.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.13",
     "normalize.css": "^8.0.1",
     "vue": "^2.5.18",
     "vue-electron": "^1.0.6",
