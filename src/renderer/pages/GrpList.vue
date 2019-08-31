@@ -1,6 +1,5 @@
 <template>
   <div class="page group-list-page" :class="{ 'as-selector': !!asSelector }">
-
     <div class="search">
       <el-input v-model="searchKeyWords" placeholder="搜索" autocomplete="off" clearable>
         <i slot="prefix" class="el-input__icon el-icon-search"></i>
@@ -9,7 +8,8 @@
 
     <el-row class="group-list">
       <el-col
-        v-for="grp in grpList" :key="grp.id"
+        v-for="grp in grpList"
+        :key="grp.id"
         class="group-item"
         :class="{ 'is-selected': isGrpSelected(grp) }"
         :span="6"
@@ -22,72 +22,97 @@
             </span>
           </div>
           <div class="item" v-for="person in grp.personList" :key="person">
-            <div class="name" v-html="searchHighlight(person)"></div>
+            <div class="name" @click="showProfile(person)" v-html="searchHighlight(person)"></div>
           </div>
         </div>
       </el-col>
     </el-row>
 
+    <Dialog :isOpened="profileDialog.isOpened" @close="hideProfile()">
+      <PersonProfile :personName="profileDialog.personName" />
+    </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
-import { Prop, Watch, Component } from 'vue-property-decorator';
-import DataStore from '../core/data-store';
-import { Grp } from '../core/data-interfaces';
+import { Prop, Watch, Component } from 'vue-property-decorator'
+import Dialog from '../components/Dialog.vue'
+import PersonProfile from '../components/PersonProfile.vue'
+import { Grp } from '../core/data-interfaces'
 
-@Component({})
+@Component({
+  components: { Dialog, PersonProfile }
+})
 export default class GrpList extends Vue {
-    grpSelList: Grp[] = []
-    searchKeyWords: string = ''
+  grpSelList: Grp[] = []
+  searchKeyWords: string = ''
 
-    @Prop() readonly asSelector!: boolean
-
-    get grpList () {
-      return DataStore.GrpList
-    }
-
-    @Watch('grpSelList')
-    onGrpSelListChanged (obj: Grp[]) {
-      // 让 this.groupSelectedList 和父 v-model="XXX" 的 XXX 对象联动
-      this.$emit('input', obj)
-    }
-
-    /**
-       * 选中 Group
-       */
-      selectGrp (grp: Grp) {
-        if (!this.isGrpSelected(grp)) {
-          // 若未选中
-          this.grpSelList.push(grp)
-        } else {
-          this.grpSelList.splice(this.grpSelList.indexOf(grp), 1)
-        }
-      }
-
-      /**
-       * 判断 Group 是否选中
-       */
-      isGrpSelected (grp: Grp) {
-        return this.grpSelList.indexOf(grp) > -1
-      }
-
-      /**
-       * 搜索文字高亮
-       */
-      searchHighlight (text: string) {
-        if (!this.searchKeyWords) {
-          return text
-        }
-        let index = text.indexOf(this.searchKeyWords)
-        if (index >= 0) {
-          text = text.substring(0, index) + '<span style="color: red;font-weight: bold;">' + text.substring(index, index + text.length) + '</span>' + text.substring(index + text.length)
-        }
-        return text
-      }
+  profileDialog = {
+    isOpened: false,
+    personName: ''
   }
+
+  @Prop() readonly asSelector!: boolean
+
+  get grpList() {
+    return this.$dataStore.GrpList
+  }
+
+  @Watch('grpSelList')
+  onGrpSelListChanged(obj: Grp[]) {
+    // 让 this.groupSelectedList 和父 v-model="XXX" 的 XXX 对象联动
+    this.$emit('input', obj)
+  }
+
+  /**
+   * 选中 Group
+   */
+  selectGrp(grp: Grp) {
+    if (!this.isGrpSelected(grp)) {
+      // 若未选中
+      this.grpSelList.push(grp)
+    } else {
+      this.grpSelList.splice(this.grpSelList.indexOf(grp), 1)
+    }
+  }
+
+  /**
+   * 判断 Group 是否选中
+   */
+  isGrpSelected(grp: Grp) {
+    return this.grpSelList.indexOf(grp) > -1
+  }
+
+  /**
+   * 搜索文字高亮
+   */
+  searchHighlight(text: string) {
+    if (!this.searchKeyWords) {
+      return text
+    }
+    let index = text.indexOf(this.searchKeyWords)
+    if (index >= 0) {
+      text =
+        text.substring(0, index) +
+        '<span style="color: red;font-weight: bold;">' +
+        text.substring(index, index + text.length) +
+        '</span>' +
+        text.substring(index + text.length)
+    }
+    return text
+  }
+
+  showProfile(personName: string) {
+    this.profileDialog.isOpened = true
+    this.profileDialog.personName = personName
+  }
+
+  hideProfile() {
+    this.profileDialog.isOpened = false
+  }
+}
 </script>
 
 <style lang="scss">
@@ -115,7 +140,7 @@ export default class GrpList extends Vue {
         background: rgba(255, 255, 255, 0.82);
         padding: 20px;
         padding-top: 15px;
-        transition: all .2s linear;
+        transition: all 0.2s linear;
         border: 3px solid transparent;
       }
 
@@ -151,6 +176,14 @@ export default class GrpList extends Vue {
 
       .item {
         padding: 5px 10px;
+
+        .name {
+          cursor: pointer;
+
+          &:hover {
+            color: #1a73e8;
+          }
+        }
       }
     }
   }

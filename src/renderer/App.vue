@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <DataHelper />
     <top-bar :sub-title="subTitle"></top-bar>
     <div class="page-wrap">
       <transition :name="transitionName">
@@ -13,18 +14,16 @@
 <script lang="ts">
   import Vue from 'vue'
   import { Watch, Component } from 'vue-property-decorator'
+  import DataHelper from './DataHelper.vue'
   import TopBar from './components/TopBar.vue'
   import BottomBar from './components/BottomBar.vue'
 
   @Component({
-    components: { TopBar, BottomBar }
+    components: { TopBar, BottomBar, DataHelper }
   })
   export default class App extends Vue {
     transitionName: string = ''
     subTitle: string = ''
-
-    created () {
-    }
 
     setSubTitle (str: string) {
       this.subTitle = str

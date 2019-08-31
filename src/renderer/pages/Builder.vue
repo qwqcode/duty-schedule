@@ -2,19 +2,25 @@
   <div class="page fullscreen builder-page">
     <div class="grp-selector">
       <div class="sel-action-bar">
-        <span class="action-btn"><i class="zmdi zmdi-flare"></i> 一键安排</span>
-        <span class="action-btn"><i class="zmdi zmdi-graphic-eq"></i> 自动选组</span>
+        <span class="action-btn">
+          <i class="zmdi zmdi-flare"></i> 一键安排
+        </span>
+        <span class="action-btn">
+          <i class="zmdi zmdi-graphic-eq"></i> 自动选组
+        </span>
       </div>
       <div class="grp-list">
-        <div class="grp-item"
-            v-for="grp in dataStore.GrpList" :key="grp.id"
-            :class="{ 'is-selected': isGrpSelected(grp) }"
-            @click="selectGrp(grp)"
+        <div
+          class="grp-item"
+          v-for="grp in $dataStore.GrpList"
+          :key="grp.id"
+          :class="{ 'is-selected': isGrpSelected(grp) }"
+          @click="selectGrp(grp)"
         >
-        <div class="grp-sel-icon">
-          <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
-        </div>
-        <div class="grp-name">第 {{ grp.id }} 组</div>
+          <div class="grp-sel-icon">
+            <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+          </div>
+          <div class="grp-name">第 {{ grp.id }} 组</div>
         </div>
       </div>
     </div>
@@ -24,67 +30,91 @@
         <div class="base-info form-box">
           <el-form class="center-form">
             <el-form-item label="标题">
-              <el-input placeholder="输入文字" :value="plan.name"></el-input>
+              <div class="grp-input">
+                <input v-model="plan.name" type="text" autocomplete="off" placeholder="输入文字" />
+              </div>
             </el-form-item>
           </el-form>
         </div>
 
         <div class="plan-grp-list">
-          <div class="grp-item form-box anim-fade-in" v-for="planGrp in plan.grpList" :key="planGrp.grpId">
+          <div
+            class="grp-item form-box anim-fade-in"
+            v-for="planGrp in plan.grpList"
+            :key="planGrp.grpId"
+          >
             <div class="grp-head">第 {{ planGrp.grpId }} 组</div>
-            <div class="grp-person-item" v-for="(item, index) in planGrp.personTaskList" :key="index">
-              <el-row>
-                <el-col :span="3">
-                  <el-input placeholder="名字" v-model="item.person" class="person-input"></el-input>
-                </el-col>
-                <el-col :span="21">
-                  <el-input
-                    class="task-input"
-                    placeholder="任务"
-                    :readonly="true"
-                    :value="item.task"></el-input>
-                  </el-col>
-              </el-row>
+
+            <div
+              class="grp-person-item"
+              v-for="(item, index) in planGrp.personTaskList"
+              :key="index"
+            >
+              <div class="item-form">
+                <div class="left-part">
+                  <div class="grp-input person-input">
+                    <input v-model="item.person" type="text" autocomplete="off" placeholder="名字" />
+                  </div>
+                </div>
+                <div class="right-part">
+                  <div class="grp-input task-input">
+                    <input
+                      :value="item.task"
+                      @focus="showTaskSelDialog(item)"
+                      type="text"
+                      readonly="readonly"
+                      autocomplete="off"
+                      placeholder="任务"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-
     <div class="plan-action-bar">
-      <div class="plan-save-btn" @click="savePlan()">保存 <i class="zmdi zmdi-save"></i></div>
+      <div class="plan-save-btn" @click="savePlan()">
+        保存
+        <i class="zmdi zmdi-save"></i>
+      </div>
     </div>
 
+    <Dialog :isOpened="taskSelDialog.isShow" @close="hideTaskSelDialog()">
+    </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import GrpList from './GrpList.vue'
+import Dialog from '../components/Dialog.vue'
 import $ from 'jQuery'
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component, Watch } from 'vue-property-decorator'
-import { Plan, Grp, PlanGrp } from '../core/data-interfaces'
-import DataAction from '../core/data-action'
-import DataStore from '../core/data-store'
-import DataFate from '../core/data-fate'
+import { Plan, Grp, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
 
 @Component({
-  components: { GrpList }
+  components: { GrpList, Dialog }
 })
 export default class Builder extends Vue {
-  plan: Plan = DataAction.newEmptyPlan()
+  plan: Plan = this.$dataAction.newEmptyPlan()
   selGrpList: Grp[] = []
 
-  created () {
+  taskSelDialog = {
+    isShow: false,
+    personTaskItem: <PersonTaskItem>{}
   }
 
-  get dataStore () {
-    return DataStore
-  }
+  created() {}
 
-  selectGrp (grp: Grp) {
+  ///
+  /// 小组选择
+  ///
+
+  selectGrp(grp: Grp) {
     if (!this.isGrpSelected(grp)) {
       // 若未选中
       this.selGrpList.push(grp)
@@ -93,47 +123,60 @@ export default class Builder extends Vue {
     }
   }
 
-  isGrpSelected (grp: Grp) {
+  isGrpSelected(grp: Grp) {
     return this.selGrpList.indexOf(grp) > -1
   }
 
+
+  ///
+  /// 小组成员任务安排
+  ///
+
   @Watch('selGrpList')
-  onSelGrpListChanged (grpList: Grp[]) {
+  onSelGrpListChanged(selGrpList: Grp[]) {
     let areaOrder = ['教室', '教室', '公区', '公区']
-    let areaDict: { [grpId: number]: string } = {}
-    _.forEach(grpList, (grp, index) => {
-      areaDict[grp.id] = areaOrder[index]
+    let grpToAreaDict: { [grpId: number]: string } = {}
+    _.forEach(selGrpList, (grp, index) => {
+      grpToAreaDict[grp.id] = areaOrder[index]
     })
 
-    let personToTask = DataFate.assignTaskToGrpListPersons(grpList, areaDict)
+    let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
 
-    let grpList2 = _.clone(grpList)
-    let newPlanGrpList: PlanGrp[] = []
+    // 创建新 grpList
+    let PlanGrpList: PlanGrp[] = []
 
-    _.forEach(grpList2, (grp, key) => {
-      let nPl: { person: string, task: string }[] = []
+    _.forEach(selGrpList, (grp, key) => {
+      let nPl: { person: string; task: string }[] = []
       _.forEach(grp.personList, (person, index) => {
-        if (!personToTask[person]) return
-        nPl.push({ person: person, task: personToTask[person]})
+        nPl.push({ person: person, task: personToTask[person] || '' })
       })
 
       let planGrp: PlanGrp = {
         grpId: grp.id,
         personTaskList: nPl,
-        area: areaDict[grp.id]
+        area: grpToAreaDict[grp.id]
       }
 
-      newPlanGrpList.push(planGrp)
+      PlanGrpList.push(planGrp)
     })
 
-    this.plan.grpList = newPlanGrpList
+    this.plan.grpList = PlanGrpList
   }
 
-  savePlan () {
+  savePlan() {
     // 刷新时间
     this.plan.time = new Date().getTime()
-    DataAction.savePlan(this.plan)
+    this.$dataAction.savePlan(this.plan)
     this.$router.replace('/')
+  }
+
+  showTaskSelDialog (personTaskItem: PersonTaskItem) {
+    this.taskSelDialog.isShow = true
+    this.taskSelDialog.personTaskItem = personTaskItem
+  }
+
+  hideTaskSelDialog () {
+    this.taskSelDialog.isShow = false
   }
 }
 </script>
@@ -176,7 +219,7 @@ export default class Builder extends Vue {
 
         &:hover {
           color: #1a73e8;
-          background: rgba(66,133,244,0.12);
+          background: rgba(66, 133, 244, 0.12);
         }
       }
     }
@@ -187,33 +230,33 @@ export default class Builder extends Vue {
       height: calc(100% - 45px - $bar-height);
       padding-top: 10px;
 
-     .grp-item {
-       display: flex;
-       cursor: pointer;
-       flex-flow: row;
+      .grp-item {
+        display: flex;
+        cursor: pointer;
+        flex-flow: row;
 
-       &:hover {
-         background: rgba(190, 190, 190, 0.12);
-       }
-
-       .grp-sel-icon {
-         color: rgb(190, 190, 190);
-         padding: 10px 20px 10px 27px;
-       }
-
-       .grp-name {
-         padding: 10px 30px 10px 0px;
-       }
-
-       &.is-selected {
-         color: #1a73e8;
-         background: rgba(66,133,244,0.12);
+        &:hover {
+          background: rgba(190, 190, 190, 0.12);
+        }
 
         .grp-sel-icon {
+          color: rgb(190, 190, 190);
+          padding: 10px 20px 10px 27px;
+        }
+
+        .grp-name {
+          padding: 10px 30px 10px 0px;
+        }
+
+        &.is-selected {
           color: #1a73e8;
+          background: rgba(66, 133, 244, 0.12);
+
+          .grp-sel-icon {
+            color: #1a73e8;
+          }
         }
       }
-     }
     }
   }
 
@@ -231,6 +274,38 @@ export default class Builder extends Vue {
         border-bottom: 1px solid rgba(117, 117, 117, 0.12);
       }
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+      .grp-input {
+        position: relative;
+        font-size: 14px;
+        display: inline-block;
+        width: 100%;
+      }
+
+      .grp-input > input {
+        border-radius: 2px;
+        height: 34px;
+        line-height: 34px;
+        padding: 0 12px;
+        background-color: #fff;
+        border: 2px solid #dcdfe6;
+        color: #606266;
+        display: inline-block;
+        font-size: inherit;
+        outline: 0;
+        transition: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+        width: 100%;
+        box-sizing: border-box;
+
+        &:hover {
+          border-color: #c0c4cc;
+        }
+
+        &:focus {
+          border-color: #409eff;
+          outline: 0;
+        }
+      }
     }
 
     .base-info {
@@ -264,12 +339,31 @@ export default class Builder extends Vue {
             }
           }
 
-          .task-input {
-            cursor: pointer;
+          .item-form {
+            display: flex;
+            flex-direction: row;
 
-            & > input {
-              margin-left: -2px;
+            & > * {
+              display: flex;
+            }
+
+            & > .left-part {
+              flex-basis: 12.5%;
+            }
+
+            & > .right-part {
+              flex-basis: 87.5%;
+            }
+
+            .grp-input {
+              & > input {
+              }
+            }
+
+            .task-input,
+            .task-input > input {
               cursor: pointer;
+              margin-left: -2px;
             }
           }
         }
@@ -299,23 +393,26 @@ export default class Builder extends Vue {
     bottom: 25px;
     right: 30px;
     background: rgba(255, 255, 255, 0.82);
-    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 
     .plan-save-btn {
       cursor: pointer;
       padding: 7px 15px;
       background: rgba(35, 209, 96, 0.85);
-      color: #FFF;
+      color: #fff;
       user-select: none;
 
       &:hover {
-        opacity: .9;
+        opacity: 0.9;
       }
 
       i {
         margin-left: 10px;
       }
     }
+  }
+
+  .task-sel-dialog {
   }
 }
 </style>

@@ -77,11 +77,8 @@ import PlanList from './PlanList.vue'
 import _ from 'lodash'
 import $ from 'jquery'
 import { Plan, PlanGrp } from '../core/data-interfaces'
-import DataStore from '../core/data-store'
-import DataFate from '../core/data-fate'
 import { Watch, Component } from 'vue-property-decorator'
 import { GrpList, AreaList } from '../core/data-localtest'
-import DataAction from '../core/data-action'
 
 @Component({
   components: { PlanList }
@@ -94,13 +91,13 @@ export default class Schedule extends Vue {
 
   created() {
     // 测试
-    // DataStore.clearAll()
-    DataStore.GrpList = GrpList
-    DataStore.AreaList = AreaList
-    DataStore.save()
+    // this.$dataStore.clearAll()
+    this.$dataStore.GrpList = GrpList
+    this.$dataStore.AreaList = AreaList
+    this.$dataStore.save()
 
     let createTestPlan = () => {
-      let selGrp = DataStore.GrpList.filter(o => [1, 2, 3, 4].includes(o.id))
+      let selGrp = this.$dataStore.GrpList.filter(o => [1, 2, 3, 4].includes(o.id))
       console.log(`已选中的组：`, selGrp)
 
       let areaDict: { [grpId: number]: string } = {
@@ -110,7 +107,7 @@ export default class Schedule extends Vue {
         4: '公区'
       }
 
-      let personToTask = DataFate.assignTaskToGrpListPersons(selGrp, areaDict)
+      let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrp, areaDict)
 
       let grpList2 = _.clone(selGrp)
       let newPlanGrpList: PlanGrp[] = []
@@ -140,7 +137,7 @@ export default class Schedule extends Vue {
 
       console.log(plan)
 
-      DataAction.savePlan(plan)
+      this.$dataAction.savePlan(plan)
     }
 
     //createTestPlan()
@@ -149,7 +146,7 @@ export default class Schedule extends Vue {
       //createTestPlan()
     }
 
-    console.log(DataStore)
+    console.log(this.$dataStore)
 
     this.plan = this.planList[0]
   }
@@ -173,7 +170,7 @@ export default class Schedule extends Vue {
 
   /** 计划列表 */
   get planList() {
-    return _.sortBy(DataStore.PlanList, o => -o.time)
+    return _.sortBy(this.$dataStore.PlanList, o => -o.time)
   }
 
   /** 当前显示的组 */

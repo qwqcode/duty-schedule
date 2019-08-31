@@ -1,20 +1,26 @@
 import _ from 'lodash'
-import DataStore from './data-store'
-import { Rec, Area, Plan, Grp } from './data-interfaces'
+import Vue from 'vue'
+import { Component } from 'vue-property-decorator'
+import { Rec, Area, Plan, Grp, PersonProfile, PlanGrp } from './data-interfaces'
 
 /**
  * 数据查询类
  */
-export default class DataQuery {
+@Component({})
+export default class DataQuery extends Vue {
+  public created () {
+    Vue.prototype.$dataQuery = this
+  }
+
   /** 获取计划（通过 ID） */
-  public static getPlan (planId: number): Plan | undefined {
-    return _.find(DataStore.PlanList, (o) => o.id === planId)
+  public getPlan (planId: number): Plan | undefined {
+    return _.find(this.$dataStore.PlanList, (o) => o.id === planId)
   }
 
   /** 获取所有区域的全部任务类型 */
-  public static getAllTaskInAllArea (): string[] {
+  public getAllTaskInAllArea (): string[] {
     let arr: string[] = []
-    _.forEach(DataStore.AreaList, (area) => {
+    _.forEach(this.$dataStore.AreaList, (area) => {
       _.forEach(area.taskList, (taskName) => {
         arr.push(taskName)
       })
@@ -23,13 +29,13 @@ export default class DataQuery {
   }
 
   /** 获取所有区域的全部任务类型（去除重复） */
-  public static getAllUniqueTaskInAllArea (): string[] {
+  public getAllUniqueTaskInAllArea (): string[] {
     return _.uniq(this.getAllTaskInAllArea())
   }
 
   /** 获取 TaskList 已去除重复的 AreaList */
-  public static getAreaListWithUniqueTask (): Area[] {
-    let cloneAreaList = _.clone(DataStore.AreaList)
+  public getAreaListWithUniqueTask (): Area[] {
+    let cloneAreaList = _.clone(this.$dataStore.AreaList)
     _.forEach(cloneAreaList, (area) => {
       area.taskList = _.uniq(area.taskList)
     })
@@ -37,20 +43,37 @@ export default class DataQuery {
   }
 
   /** 获取某个组的 Rec 实例 */
-  public static getGrpRec (grpId: number): Rec | undefined {
-    return _.find(DataStore.RecList, (o) => o.grpId === grpId)
+  public getGrpRec (grpId: number): Rec | undefined {
+    return _.find(this.$dataStore.RecList, (o) => o.grpId === grpId)
   }
 
   /** 获取某个组的区域次数记录 */
-  public static getGrpAreaRec (grpId: number, areaName: string): number {
+  public getGrpAreaRec (grpId: number, areaName: string): number {
     let grpRec = this.getGrpRec(grpId)
     if (grpRec === undefined) return 0
     return grpRec.areaList[areaName] || 0
   }
 
-  /** 某个人是否上一次就是做的该 Task */
-  public static getIsPersonJustDidTheTask (personName: string, taskName: string) {
-    let planList = DataStore.PlanList
+  /** 获取某个人最后一次执行的 Plan */
+  public getPersonLastWorkPlan (personName: string) {
+    let planList = this.$dataStore.PlanList
+    if (!planList) return null
+    let planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
+    if (!planListSorted) return null
+    let plan: Plan|null = null
+    _.forEach(planListSorted, (planItem) => {
+      let isExisting = _.flatMap(_.flatMap(planItem.grpList, o => o.personTaskList), o => o.person).includes(personName)
+      if (isExisting) {
+        plan = planItem
+        return false // 停止遍历
+      }
+    })
+    return plan
+  }
+
+  /** 某个人是否上存在于最新的 Plan 中 */
+  public getIsPersonJustDidTheTask (personName: string, taskName: string) {
+    let planList = this.$dataStore.PlanList
     if (!planList) return false
     let planListLastest: Plan | null = _.sortBy(planList, (o) => -o.time)[0] || null
     if (!planListLastest) return false
@@ -66,9 +89,9 @@ export default class DataQuery {
   }
 
   /** 获取某个人的任务次数记录 */
-  public static getPersonTaskRec (personName: string, taskName: string): number {
+  public getPersonTaskRec (personName: string, taskName: string): number {
     let result: number = 0
-    _.find(DataStore.RecList, (rec) => {
+    _.find(this.$dataStore.RecList, (rec) => {
       if (rec.taskList.hasOwnProperty(taskName) && rec.taskList[taskName].hasOwnProperty(personName)) {
         result = rec.taskList[taskName][personName] || 0
         return false
@@ -77,15 +100,58 @@ export default class DataQuery {
     return result
   }
 
-  /** 获取一定规则顺序的 TaskList */
-  public static getTaskListSorted (taskList: string[], rangeGrpList: Grp[]) {
-    let list: {task: string, diff: number}[] = []
-    _.forEach(taskList, (task) => list.push({task: task, diff: 0}))
+  /** 获取个人资料 */
+  public getPersonProfile (personName: string) {
+    let findPerson = _.flatMap(this.$dataStore.GrpList, (o) => o.personList).includes(personName)
+    if (!findPerson) { return null }
+
+    let profile: PersonProfile = {
+      name: personName,
+      lastWorkPlan: this.getPersonLastWorkPlan(personName)
+    }
+
+    return profile
+  }
+
+  /**
+   * 构建一个 AreaName->PersonNames 的表（区域名->全部负责该区域的人名）
+   * @param grpToAreaDict 小组区域指定表 { [grpId]: areaName }
+   */
+  public getPersonsOfAreaNameDict (grpToAreaDict: {[grpId: number]: string}) {
+    let personNamesOfAreas: {[areaName: string]: string[]} = {}
+    _.forEach(grpToAreaDict, (area, grpId) => {
+      let persons: string[] = []
+      if (!personNamesOfAreas.hasOwnProperty(area)) {
+        personNamesOfAreas[area] = persons // 初始化
+      } else {
+        persons = personNamesOfAreas[area]
+      }
+      // 查询该组的全部人
+      let findGrp = this.$dataStore.GrpList.find((o) => o.id === Number(grpId))
+      if (findGrp !== undefined) {
+        // 名字丢进 personNamesOfAreas[某区域] 里
+        _.forEach(findGrp.personList, (personName) => persons.push(personName))
+      }
+    })
+    return personNamesOfAreas
+  }
+
+  /**
+   * 获取一定规则顺序的 TaskNameArray
+   *
+   * @param taskList
+   * @param rangeGrpList
+   * @returns 根据 rangeGrpList 的全部组中全部人的 “Task RecList 记录” 极差值生成倒序排列 ["TaskName.1", ...]
+   * (TaskName 按全部组中全部人在 RecList 中做过该 Task 次数极差 (最大次数值 - 最小次数值) 值倒序排列)
+   */
+  public getTaskNameArrSorted (taskList: string[], rangeGrpList: Grp[]) {
+    let arr: {task: string, diff: number}[] = []
+    _.forEach(taskList, (task) => arr.push({task: task, diff: 0}))
     _.forEach(rangeGrpList, (grp) => {
-      let grpRec = DataStore.RecList.find(o => o.grpId === grp.id)
+      let grpRec = this.$dataStore.RecList.find(o => o.grpId === grp.id)
       if (grpRec !== undefined) {
         _.forEach(grpRec.taskList, (personNumList, task) => {
-          let listTask = list.find(o => o.task === task)
+          let listTask = arr.find(o => o.task === task)
           if (listTask === undefined) return
           let diff = (_.max(Object.values(personNumList)) || 0) - (_.min(Object.values(personNumList)) || 0)
           if (diff < 0) diff = 0
@@ -93,7 +159,7 @@ export default class DataQuery {
         })
       }
     })
-    let listSorted = _.sortBy(list, o => -o.diff)
-    return _.flatMap(listSorted, o => o.task)
+    let arrSorted = _.sortBy(arr, o => -o.diff)
+    return _.flatMap(arrSorted, o => o.task)
   }
 }

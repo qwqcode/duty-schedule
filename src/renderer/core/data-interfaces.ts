@@ -16,7 +16,7 @@
 export interface Grp {
   id: number
   /** 成员名字列表 */
-  personList: Array<string>
+  personList: string[]
 }
 
 /**
@@ -40,7 +40,7 @@ export interface Area {
   /** 区域名（例如：教室、公区） */
   name: string
   /** 工作类型列表 */
-  taskList: Array<string>
+  taskList: string[]
 }
 
 /**
@@ -64,6 +64,26 @@ export interface PlanGrp {
   grpId: number
   /** 小组工作区域 */
   area: string
-  /** 个人任务列表 [{person: 人名, task: 任务名}] */
-  personTaskList: { person: string, task: string }[]
+  /** 个人任务列表 */
+  personTaskList: PersonTaskItem[]
+}
+
+/**
+ * 个人任务
+ */
+export interface PersonTaskItem {
+  /** 人名 */
+  person: string
+  /** 任务名 */
+  task: string
+}
+
+/**
+ * 个人资料
+ */
+export interface PersonProfile {
+  /** 人名 */
+  name: string
+  /** 最后一次执行的 Plan */
+  lastWorkPlan: Plan|null
 }

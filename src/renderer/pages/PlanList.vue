@@ -29,8 +29,6 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Watch, Component } from 'vue-property-decorator';
-import DataStore from '../core/data-store';
-import DataAction from '../core/data-action';
 import { Plan } from '../core/data-interfaces';
 
 @Component({})
@@ -40,11 +38,7 @@ export default class PlanList extends Vue {
   removingPlanId: number | null = null
 
   get planList () {
-    return _.sortBy(DataStore.PlanList, (o) => -o.time)
-  }
-
-  get dataStore () {
-    return DataStore
+    return _.sortBy(this.$dataStore.PlanList, (o) => -o.time)
   }
 
   openPlan (plan: Plan) {
@@ -88,7 +82,7 @@ export default class PlanList extends Vue {
           window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
           return
         }
-        DataAction.delPlan(plan.id)
+        this.$dataAction.delPlan(plan)
         window.notify(`"${plan.name}" 已删除`, 'i')
         this.deleteBtnClickTime = 0
         this.removingPlanId = null

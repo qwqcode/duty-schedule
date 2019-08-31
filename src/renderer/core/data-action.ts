@@ -1,13 +1,19 @@
 import _ from 'lodash'
+import Vue from 'vue'
+import { Component } from 'vue-property-decorator'
 import { Plan, Rec, PlanGrp } from './data-interfaces'
-import DataStore from './data-store'
 
 /**
  * 数据操作类
  */
-export default class DataAction {
+@Component({})
+export default class DataAction extends Vue {
+  public created () {
+    Vue.prototype.$dataAction = this
+  }
+
   /** 获取一个空 Plan */
-  public static newEmptyPlan () : Plan {
+  public newEmptyPlan () : Plan {
     return {
       id: new Date().getTime(),
       name: `${this.getDateText()}`,
@@ -17,24 +23,24 @@ export default class DataAction {
   }
 
   /** 保存计划 */
-  public static savePlan (plan: Plan): void {
-    DataStore.PlanList.push(plan)
+  public savePlan (plan: Plan): void {
+    this.$dataStore.PlanList.push(plan)
     this.syncRec()
-    DataStore.save()
+    this.$dataStore.save()
   }
 
   /** 删除计划 */
-  public static delPlan (planId: number): void {
-    _.remove(DataStore.PlanList, (plan) => plan.id === planId)
+  public delPlan (plan: Plan): void {
+    this.$dataStore.PlanList.splice(this.$dataStore.PlanList.indexOf(plan), 1)
     this.syncRec()
-    DataStore.save()
+    this.$dataStore.save()
   }
 
   /** 同步 Rec */
-  public static syncRec (): void {
+  public syncRec (): void {
     let recList: Rec[] = []
     // 遍历计划列表
-    _.forEach(DataStore.PlanList, (plan: Plan) => {
+    _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
         // 初始化 recList 中的该组数据 rec
@@ -72,27 +78,27 @@ export default class DataAction {
       })
     })
     // 保存数据
-    DataStore.RecList = recList
-    DataStore.save()
+    this.$dataStore.RecList = recList
+    this.$dataStore.save()
   }
 
   /** 为设置界面提供的数据修改 */
-  public static settingSetData (key: string, obj: object) {
-    if (DataStore.DATA_FIELDS.indexOf(key) <= -1) {
+  public settingSetData (key: string, obj: object) {
+    if (this.$dataStore.DATA_FIELDS.indexOf(key) <= -1) {
       window.notify(`[settingSetData()] 参数 key: ${key} 无效`, 'e')
     }
-    (DataStore as any)[key] = obj
-    DataStore.save()
+    (this.$dataStore as any)[key] = obj
+    this.$dataStore.save()
     window.notify(`配置 ${key} 已保存`)
   }
 
   /** 为设置界面提供的数据清空 */
-  public static settingClearData () {
-    DataStore.clearAll()
+  public settingClearData () {
+    this.$dataStore.clearAll()
   }
 
   /** 获取日期文字 */
-  public static getDateText () {
+  public getDateText () {
     let myDate = new Date()
     let year = myDate.getFullYear()
     let month = myDate.getMonth() + 1

@@ -14,8 +14,8 @@
             <span class="item-text">{{ taskIndex + 1 }}. {{ task }}</span>
 
             <span class="item-info" v-if="asSelector">
-              <span :title="`${dataValue.person} 已做过 ${dataQuery.getPersonTaskRec(dataValue.person, task)} 次该任务`">
-                <i class="zmdi zmdi-account"></i> {{ dataQuery.getPersonTaskRec(dataValue.person, task) }}
+              <span :title="`${dataValue.person} 已做过 ${$dataQuery.getPersonTaskRec(dataValue.person, task)} 次该任务`">
+                <i class="zmdi zmdi-account"></i> {{ $dataQuery.getPersonTaskRec(dataValue.person, task) }}
               </span>
               <span :title="`共有 ${getSelectedTotal(task)} 人参与该任务`">
                 <i class="zmdi zmdi-accounts"></i> {{ getSelectedTotal(task) }}
@@ -32,8 +32,6 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component, Prop } from 'vue-property-decorator'
-import DataStore from '../core/data-store';
-import DataQuery from '../core/data-query';
 import { Plan } from '../core/data-interfaces';
 
 @Component({})
@@ -53,15 +51,11 @@ export default class AreaList extends Vue {
       return this.value
     }
 
-    get dataQuery () {
-      return DataQuery
-    }
-
     get areaList () {
         if (!this.isUniqueMode)
-          return DataStore.AreaList
+          return this.$dataStore.AreaList
         else
-          return DataQuery.getAreaListWithUniqueTask()
+          return this.$dataQuery.getAreaListWithUniqueTask()
       }
 
     selectType (taskName: string) {

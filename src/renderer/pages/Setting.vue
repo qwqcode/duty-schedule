@@ -8,7 +8,7 @@
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
-              <template v-for="(fieldName, index) in dataStore.DATA_FIELDS">
+              <template v-for="(fieldName, index) in $dataStore.DATA_FIELDS">
                 <el-button
                   size="small"
                   :key="index"
@@ -72,8 +72,6 @@
 import _ from 'lodash'
 import { ipcRenderer, shell } from 'electron'
 import Vue from 'vue'
-import DataAction from "../core/data-action"
-import DataStore from "../core/data-store"
 import { Component } from 'vue-property-decorator';
 
 @Component({})
@@ -89,10 +87,6 @@ export default class Setting extends Vue {
 
   get version() {
     return require("../../../package.json").version
-  }
-
-  get dataStore () {
-    return DataStore
   }
 
   isDataAllowEdit() {
@@ -118,12 +112,12 @@ export default class Setting extends Vue {
     let jsonObj = {}
     if (fieldName === "__ALL__") {
       let allJson: any = {}
-      _.forEach(DataStore.DATA_FIELDS, (key) => {
-        allJson[key] = (DataStore as any)[key]
+      _.forEach(this.$dataStore.DATA_FIELDS, (key) => {
+        allJson[key] = (this.$dataStore as any)[key]
       })
       jsonObj = allJson
     } else {
-      jsonObj = (DataStore as any)[fieldName]
+      jsonObj = (this.$dataStore as any)[fieldName]
     }
 
     this.dataEditorVal = JSON.stringify(
@@ -144,16 +138,16 @@ export default class Setting extends Vue {
       if (targetKey === "__ALL__") {
         let obj = JSON.parse(this.dataEditorVal)
         for (let key in obj) {
-          DataAction.settingSetData(key, obj[key])
+          this.$dataAction.settingSetData(key, obj[key])
         }
       } else {
-        DataAction.settingSetData(targetKey, JSON.parse(this.dataEditorVal))
+        this.$dataAction.settingSetData(targetKey, JSON.parse(this.dataEditorVal))
       }
     }
   }
 
   syncRecList() {
-    DataAction.syncRec()
+    this.$dataAction.syncRec()
     window.notify('RecList 已同步')
   }
   deleteVuexStoreData() {
@@ -170,7 +164,7 @@ export default class Setting extends Vue {
     if (el.clickTime < 5) {
       window.notify("危险操作，请再点 " + (5 - el.clickTime) + " 次", 'e')
     } else {
-      DataStore.clearAll()
+      this.$dataStore.clearAll()
     }
   }
 

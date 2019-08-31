@@ -11,7 +11,6 @@ import './css/main.scss'
 import 'vue2-animate/dist/vue2-animate.min.css'
 import 'material-design-iconic-font/dist/css/material-design-iconic-font.min.css'
 import $ from 'jquery'
-import DataStore from './core/data-store';
 
 Vue.use(require('vue2-transitions'))
 
@@ -66,9 +65,6 @@ window.notify = (message: string, level?: string, timeout?: number): void => {
 ipcRenderer.on('reload-page', (evt, args) => {
   window.location.reload()
 }) */
-
-// 初始化数据存储器
-DataStore.init()
 
 /* eslint-disable no-new */
 new Vue({
