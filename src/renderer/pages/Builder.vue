@@ -5,7 +5,7 @@
         <span class="action-btn">
           <i class="zmdi zmdi-flare"></i> 一键安排
         </span>
-        <span class="action-btn">
+        <span class="action-btn" @click="autoSelectGrp()">
           <i class="zmdi zmdi-graphic-eq"></i> 自动选组
         </span>
       </div>
@@ -138,6 +138,65 @@ export default class Builder extends Vue {
 
   isGrpSelected(grp: Grp) {
     return this.selGrpList.indexOf(grp) > -1
+  }
+
+  /** 自动选组 */
+  autoSelectGrp () {
+    // 1. 让组 根据 Rec值 小->大 排列
+    type areaGrpListItem = { area: string, grpList: Grp[] }
+    let areaCanSelectGrpList: areaGrpListItem[] = []
+
+    _.forEach(this.$dataStore.AreaList, (area) => {
+      let grpRecNumListSorted: { grpId: number, num: number }[] = []
+      _.forEach(this.$dataStore.GrpList, (grp) => grpRecNumListSorted.push({
+        grpId: grp.id, num: this.$dataQuery.getGrpAreaRec(grp.id, area.name)
+      }))
+      grpRecNumListSorted = _.sortBy(grpRecNumListSorted, o => o.num)
+      // 生成 AreaGrpList
+      let areaGrpList: areaGrpListItem = { area: area.name, grpList: [] }
+      _.forEach(grpRecNumListSorted, item => areaGrpList.grpList.push(this.$dataStore.GrpList.find(o => o.id === item.grpId) as Grp))
+      areaCanSelectGrpList.push(areaGrpList)
+    })
+    console.log(1, areaCanSelectGrpList)
+
+    // 为了 先分配 Area 给组多的
+    areaCanSelectGrpList = _.sortBy(areaCanSelectGrpList, o => o.grpList.length)
+
+    // 2. 安排小组
+    let areaSelectedGrpList: areaGrpListItem[] = []
+    _.forEach(areaCanSelectGrpList, (item) => {
+      let grpList: Grp[] = Object.assign([], item.grpList)
+      let exceptedNum: number = 0
+      let hadUse: number = 0
+      grpList = _.filter(item.grpList, o => {
+        if (hadUse >= 2) return false
+        if (_.flatMap(areaSelectedGrpList, k => k.grpList).find(k => k.id === o.id)) {
+          return false
+        }
+        if (item.grpList.length - exceptedNum <= 2) { // 保持至少留两个组
+          hadUse++
+          return true
+        }
+        let isGrpExitsInLatestPlan = this.$dataQuery.getIsGrpExitsInLatestPlan(o.id)
+        let isGrpLastDidTheArea = this.$dataQuery.getIsGrpLastDidTheArea(o.id, item.area)
+        if (isGrpExitsInLatestPlan || isGrpLastDidTheArea) {
+          exceptedNum++
+          return false
+        }
+        hadUse++
+        return true
+      })
+      areaSelectedGrpList.push({ area: item.area, grpList: grpList })
+    })
+    console.log(2, areaSelectedGrpList)
+
+    let map = _.mapKeys(areaSelectedGrpList, (item) => item.area)
+    this.selGrpList = [
+      map['教室'].grpList[0],
+      map['教室'].grpList[1],
+      map['公区'].grpList[0],
+      map['公区'].grpList[1]
+    ]
   }
 
 

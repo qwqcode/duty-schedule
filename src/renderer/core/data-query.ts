@@ -117,6 +117,34 @@ export default class DataQuery extends Vue {
     return !!latestPlan.grpList.find(o => o.grpId === grpId)
   }
 
+  /** 获取某组最后一次执行的 Plan */
+  public getGrpLastWorkPlan (grpId: number): Plan|null {
+    let planList = this.$dataStore.PlanList
+    if (!planList) return null
+    let planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
+    if (!planListSorted) return null
+    let plan: Plan|null = null
+    _.forEach(planListSorted, (planItem) => {
+      if (planItem.grpList.find(o => o.grpId === grpId)) {
+        plan = planItem
+        return false // 停止遍历
+      }
+    })
+    return plan
+  }
+
+  /** 某组最后做的是否为这个 Area */
+  public getIsGrpLastDidTheArea (grpId: number, areaName: string) {
+    let planList = this.$dataStore.PlanList
+    if (!planList) return false
+    let lastWorkPlan = this.getGrpLastWorkPlan(grpId)
+    if (!lastWorkPlan) return false
+    let findOne = lastWorkPlan.grpList.find((o) => {
+      return o.grpId === grpId && o.area === areaName
+    })
+    return !!findOne
+  }
+
   /**
    * 构建一个 AreaName->PersonNames 的表（区域名->全部负责该区域的人名）
    * @param grpToAreaDict 小组区域指定表 { [grpId]: areaName }
