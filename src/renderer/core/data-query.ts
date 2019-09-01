@@ -47,6 +47,18 @@ export default class DataQuery extends Vue {
     return _.find(this.$dataStore.RecList, (o) => o.grpId === grpId)
   }
 
+  /** 获取某个人的任务次数记录 */
+  public getPersonTaskRec (personName: string, taskName: string): number {
+    let result: number = 0
+    _.find(this.$dataStore.RecList, (rec) => {
+      if (rec.taskList.hasOwnProperty(taskName) && rec.taskList[taskName].hasOwnProperty(personName)) {
+        result = rec.taskList[taskName][personName] || 0
+        return false
+      }
+    })
+    return result
+  }
+
   /** 获取某个组的区域次数记录 */
   public getGrpAreaRec (grpId: number, areaName: string): number {
     let grpRec = this.getGrpRec(grpId)
@@ -71,8 +83,8 @@ export default class DataQuery extends Vue {
     return plan
   }
 
-  /** 某人上次是否就是做的这个 Task */
-  public getIsPersonJustDidTheTask (personName: string, taskName: string) {
+  /** 某人最后做的是否为这个 Task */
+  public getIsPersonLastDidTheTask (personName: string, taskName: string) {
     let planList = this.$dataStore.PlanList
     if (!planList) return false
     let lastWorkPlan = this.getPersonLastWorkPlan(personName)
@@ -81,18 +93,6 @@ export default class DataQuery extends Vue {
       return o.person === personName && o.task === taskName
     })
     return !!findOne
-  }
-
-  /** 获取某个人的任务次数记录 */
-  public getPersonTaskRec (personName: string, taskName: string): number {
-    let result: number = 0
-    _.find(this.$dataStore.RecList, (rec) => {
-      if (rec.taskList.hasOwnProperty(taskName) && rec.taskList[taskName].hasOwnProperty(personName)) {
-        result = rec.taskList[taskName][personName] || 0
-        return false
-      }
-    })
-    return result
   }
 
   /** 获取个人资料 */
@@ -106,6 +106,13 @@ export default class DataQuery extends Vue {
     }
 
     return profile
+  }
+
+  /** 某组是否存在于最新的 Plan 中 */
+  public getIsGrpExitsInLatestPlan (grpId: number) {
+    let latestPlan = _.sortBy(this.$dataStore.PlanList, o => -o.time)[0]
+    if (!latestPlan) return false
+    return !!latestPlan.grpList.find(o => o.grpId === grpId)
   }
 
   /**

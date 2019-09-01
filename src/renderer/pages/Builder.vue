@@ -21,6 +21,13 @@
             <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
           </div>
           <div class="grp-name">第 {{ grp.id }} 组</div>
+          <div class="badge-box">
+            <span v-if="$dataQuery.getIsGrpExitsInLatestPlan(grp.id)" class="warn">上次</span>
+            <span>
+              {{ $dataQuery.getGrpAreaRec(grp.id, '教室') + $dataQuery.getGrpAreaRec(grp.id, '公区') }} =
+              {{ $dataQuery.getGrpAreaRec(grp.id, '教室') }} + {{ $dataQuery.getGrpAreaRec(grp.id, '公区') }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -67,7 +74,7 @@
                       placeholder="任务"
                     />
                     <div class="badge-box">
-                      <span v-if="$dataQuery.getIsPersonJustDidTheTask(item.person, item.task)" class="warn">上次做过</span>
+                      <span v-if="$dataQuery.getIsPersonLastDidTheTask(item.person, item.task)" class="warn">上次做过</span>
                       <span>{{ $dataQuery.getPersonTaskRec(item.person, item.task) }}</span>
                     </div>
                   </div>
@@ -192,11 +199,39 @@ export default class Builder extends Vue {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .builder-page {
   overflow: hidden !important;
   display: flex;
   flex-flow: row;
+
+  .badge-box {
+    position: absolute;
+    right: 10px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    place-items: center;
+
+    & > span {
+      height: 23px;
+      line-height: 23px;
+      background: rgba(66, 133, 244, 0.12);
+      padding: 0 10px;
+      border-radius: 1px;
+      font-size: 12px;
+
+      &:not(:last-child) {
+        margin-right: 5px;
+      }
+
+      &.warn {
+        background: rgba(255, 166, 32, 0.264);
+      }
+    }
+  }
 
   .grp-selector {
     flex-basis: 280px;
@@ -242,6 +277,7 @@ export default class Builder extends Vue {
       padding-top: 10px;
 
       .grp-item {
+        position: relative;
         display: flex;
         cursor: pointer;
         flex-flow: row;
@@ -376,25 +412,6 @@ export default class Builder extends Vue {
               &, & > input {
                 cursor: pointer;
                 margin-left: -2px;
-              }
-
-              .badge-box {
-                position: absolute;
-                right: 10px;
-                top: 0;
-
-                & > span {
-                  height: 34px;
-                  line-height: 34px;
-                  background: rgba(66,133,244,.12);
-                  padding: 3px 10px;
-                  border-radius: 1px;
-                  font-size: 12px;
-
-                  &.warn {
-                    background: rgba(255, 166, 32, 0.264);
-                  }
-                }
               }
             }
           }

@@ -8,7 +8,7 @@
         <div class="title">{{ plan.name }}</div>
         <div class="meta">
           <span class="time">{{ $dataQuery.timeAgo(new Date(plan.time)) }}</span>
-          <span class="groups">组: <span class="group-item" v-for="(item, i) in getPlanAllGrpIdList(plan)" :key="i">{{ item }}</span></span>
+          <span class="groups">组: {{ getPlanGrpDesc(plan) }}</span>
         </div>
       </div>
       <div class="flags">
@@ -45,12 +45,22 @@ export default class PlanList extends Vue {
       this.$emit('openPlan', plan)
     }
 
-    getPlanAllGrpIdList (plan: Plan) {
-      let arr: number[] = []
-      _.each(plan.grpList, (group, i) => {
-        arr.push(group.grpId)
+    getPlanGrpDesc (plan: Plan) {
+      let str = ''
+      let areaList: { [areaName: string]: number[] } = {}
+      _.forEach(plan.grpList, (group, i) => {
+        if (!areaList.hasOwnProperty(group.area)) {
+          areaList[group.area] = []
+        }
+        areaList[group.area].push(group.grpId)
       })
-      return _.sortBy(arr)
+
+      _.forEach(areaList, (grsIdList, areaName) => {
+        str += _.sortBy(grsIdList).join(', ')
+        str += ' - '
+      })
+
+      return _.trimEnd(str, ' - ')
     }
 
     isDataAllowEdit () {
@@ -148,11 +158,6 @@ export default class PlanList extends Vue {
           }
 
           &.groups {
-            .group-item {
-              &:not(:last-child) {
-                margin-right: 5px;
-              }
-            }
           }
         }
       }

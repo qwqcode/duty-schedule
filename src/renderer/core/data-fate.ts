@@ -43,7 +43,7 @@ export default class DataFate extends Vue {
               || personShortlist.length >= 1) // 或者，候选名单中已经有了一个人
           ) {
             // 才查询是否上次做过
-            if (this.$dataQuery.getIsPersonJustDidTheTask(personName, taskName)) {
+            if (this.$dataQuery.getIsPersonLastDidTheTask(personName, taskName)) {
               return // 如果他上次就做过该任务，那么就不安排给他
             }
           }

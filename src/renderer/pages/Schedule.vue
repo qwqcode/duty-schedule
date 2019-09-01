@@ -59,6 +59,7 @@
                         class="member-item"
                         v-for="(person, pi) in item.persons"
                         :key="pi"
+                        @click="showProfile(person)"
                       >{{ person }}</div>
                     </div>
                   </el-col>
@@ -69,12 +70,18 @@
         </transition-group>
       </div>
     </div>
+
+    <Dialog :isOpened="profileDialog.isOpened" @close="hideProfile()">
+      <PersonProfile :personName="profileDialog.personName" />
+    </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
 import PlanList from './PlanList.vue'
+import Dialog from '../components/Dialog.vue'
+import PersonProfile from '../components/PersonProfile.vue'
 import _ from 'lodash'
 import $ from 'jquery'
 import { Plan, PlanGrp } from '../core/data-interfaces'
@@ -82,7 +89,7 @@ import { Watch, Component } from 'vue-property-decorator'
 import { GrpList, AreaList } from '../core/data-localtest'
 
 @Component({
-  components: { PlanList }
+  components: { PlanList, Dialog, PersonProfile }
 })
 export default class Schedule extends Vue {
   plan: Plan | null = null
@@ -223,7 +230,7 @@ export default class Schedule extends Vue {
       return
     }
 
-    const timeout = 3 * 1000
+    const timeout = 10 * 1000 // 10s
     const perTime = 50
 
     let timeLeft = 0
@@ -271,6 +278,20 @@ export default class Schedule extends Vue {
       this.isTaskListSidebarShow = false
       $('.task-list-sidebar').hide()
     }, 400)
+  }
+
+  profileDialog = {
+    isOpened: false,
+    personName: ''
+  }
+
+  showProfile(personName: string) {
+    this.profileDialog.isOpened = true
+    this.profileDialog.personName = personName
+  }
+
+  hideProfile() {
+    this.profileDialog.isOpened = false
   }
 }
 </script>
@@ -438,9 +459,16 @@ export default class Schedule extends Vue {
             .members {
               margin-left: 10px;
               .member-item {
+                display: block;
+                width: fit-content;
+                cursor: pointer;
                 font-size: 25px;
                 &:not(:last-child) {
                   margin-bottom: 10px;
+                }
+
+                &:hover {
+                  color: #1a73e8;
                 }
               }
             }
