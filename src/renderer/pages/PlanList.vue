@@ -7,14 +7,14 @@
       <div class="inner" @click="openPlan(plan)">
         <div class="title">{{ plan.name }}</div>
         <div class="meta">
-          <span class="time">{{ timeAgo(new Date(plan.time)) }}</span>
+          <span class="time">{{ $dataQuery.timeAgo(new Date(plan.time)) }}</span>
           <span class="groups">组: <span class="group-item" v-for="(item, i) in getPlanAllGrpIdList(plan)" :key="i">{{ item }}</span></span>
         </div>
       </div>
       <div class="flags">
         <span
           class="flag flag-green"
-          v-if="dateFormat(new Date(plan.time)) === dateFormat(new Date())"
+          v-if="$dataQuery.dateFormat(new Date(plan.time)) === $dataQuery.dateFormat(new Date())"
         >今日</span>
         <!--<span class="flag flag-red" v-if="plan.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
@@ -53,14 +53,6 @@ export default class PlanList extends Vue {
       return _.sortBy(arr)
     }
 
-    padWithZeros (vNumber: number, width: number): string {
-      var numAsString = vNumber.toString()
-      while (numAsString.length < width) {
-        numAsString = '0' + numAsString
-      }
-      return numAsString
-    }
-
     isDataAllowEdit () {
       if (typeof (window as any).SETTING_DATA_ALLOW_EDIT !== 'boolean' || (window as any).SETTING_DATA_ALLOW_EDIT !== true) {
         window.notify('没有权限修改数据', 'w')
@@ -86,53 +78,6 @@ export default class PlanList extends Vue {
         window.notify(`"${plan.name}" 已删除`, 'i')
         this.deleteBtnClickTime = 0
         this.removingPlanId = null
-      }
-    }
-
-    dateFormat (date: Date) {
-      var vDay = this.padWithZeros(date.getDate(), 2)
-      var vMonth = this.padWithZeros(date.getMonth() + 1, 2)
-      var vYear = this.padWithZeros(date.getFullYear(), 2)
-      // var vHour = padWithZeros(date.getHours(), 2);
-      // var vMinute = padWithZeros(date.getMinutes(), 2);
-      // var vSecond = padWithZeros(date.getSeconds(), 2);
-      return `${vYear}-${vMonth}-${vDay}`
-    }
-
-    timeAgo (date: Date) {
-      try {
-        var oldTime = date.getTime()
-        var currTime = new Date().getTime()
-        var diffValue = currTime - oldTime
-
-        var days = Math.floor(diffValue / (24 * 3600 * 1000))
-        if (days === 0) {
-          // 计算相差小时数
-          var leave1 = diffValue % (24 * 3600 * 1000) // 计算天数后剩余的毫秒数
-          var hours = Math.floor(leave1 / (3600 * 1000))
-          if (hours === 0) {
-            // 计算相差分钟数
-            var leave2 = leave1 % (3600 * 1000) // 计算小时数后剩余的毫秒数
-            var minutes = Math.floor(leave2 / (60 * 1000))
-            if (minutes === 0) {
-              // 计算相差秒数
-              var leave3 = leave2 % (60 * 1000) // 计算分钟数后剩余的毫秒数
-              var seconds = Math.round(leave3 / 1000)
-              return seconds + ' 秒前'
-            }
-            return minutes + ' 分钟前'
-          }
-          return hours + ' 小时前'
-        }
-        if (days < 0) return '刚刚'
-
-        if (days < 8) {
-          return days + ' 天前'
-        } else {
-          return this.dateFormat(date)
-        }
-      } catch (error) {
-        console.error(error)
       }
     }
 }

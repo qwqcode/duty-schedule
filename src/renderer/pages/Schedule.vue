@@ -96,20 +96,17 @@ export default class Schedule extends Vue {
     this.$dataStore.AreaList = AreaList
     this.$dataStore.save()
 
-    let createTestPlan = () => {
-      let selGrp = this.$dataStore.GrpList.filter(o => [1, 2, 3, 4].includes(o.id))
-      console.log(`已选中的组：`, selGrp)
+    let createTestPlan = (grpIdList: number[] = [1, 2, 3, 4], areaArr: string[] = ['教室', '教室', '公区', '公区']) => {
+      let selGrp = this.$dataStore.GrpList.filter(o => grpIdList.includes(o.id))
 
-      let areaDict: { [grpId: number]: string } = {
-        1: '教室',
-        2: '教室',
-        3: '公区',
-        4: '公区'
-      }
+      let areaDict: { [grpId: number]: string } = {}
+      grpIdList.forEach((id, index) => {
+        areaDict[id] = areaArr[index]
+      })
 
       let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrp, areaDict)
 
-      let grpList2 = _.clone(selGrp)
+      let grpList2 = JSON.parse(JSON.stringify(selGrp))
       let newPlanGrpList: PlanGrp[] = []
 
       _.forEach(grpList2, (grp, key) => {
@@ -140,10 +137,9 @@ export default class Schedule extends Vue {
       this.$dataAction.savePlan(plan)
     }
 
-    //createTestPlan()
-
     for (let i = 0; i < 100; i++) {
-      //createTestPlan()
+      //createTestPlan([1, 2, 3, 4], ['教室', '教室', '公区', '公区'])
+      //createTestPlan([3, 4, 1, 2], ['教室', '教室', '公区', '公区'])
     }
 
     console.log(this.$dataStore)

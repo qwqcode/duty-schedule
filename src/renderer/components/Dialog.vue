@@ -1,5 +1,5 @@
 <template>
-  <transition name="fadeDown">
+  <slide-y-up-transition>
     <div
       v-if="isOpened"
       class="dialog"
@@ -14,7 +14,7 @@
         </div>
       </div>
     </div>
-  </transition>
+  </slide-y-up-transition>
 </template>
 
 <script lang="ts">
@@ -46,9 +46,11 @@ export default class Dialog extends Vue {
     background: rgba(105, 105, 105, 0.65);
 
     & > .body {
-      margin-top: 160px;
-      margin-bottom: 70px;
       padding: 0 10vw;
+      display: flex;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
     }
   }
 

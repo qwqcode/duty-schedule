@@ -35,11 +35,11 @@ export default class DataQuery extends Vue {
 
   /** 获取 TaskList 已去除重复的 AreaList */
   public getAreaListWithUniqueTask (): Area[] {
-    let cloneAreaList = _.clone(this.$dataStore.AreaList)
-    _.forEach(cloneAreaList, (area) => {
+    let areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
+    _.forEach(areaList, (area) => {
       area.taskList = _.uniq(area.taskList)
     })
-    return cloneAreaList
+    return areaList
   }
 
   /** 获取某个组的 Rec 实例 */
@@ -55,7 +55,7 @@ export default class DataQuery extends Vue {
   }
 
   /** 获取某个人最后一次执行的 Plan */
-  public getPersonLastWorkPlan (personName: string) {
+  public getPersonLastWorkPlan (personName: string): Plan|null {
     let planList = this.$dataStore.PlanList
     if (!planList) return null
     let planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
@@ -71,21 +71,16 @@ export default class DataQuery extends Vue {
     return plan
   }
 
-  /** 某个人是否上存在于最新的 Plan 中 */
+  /** 某人上次是否就是做的这个 Task */
   public getIsPersonJustDidTheTask (personName: string, taskName: string) {
     let planList = this.$dataStore.PlanList
     if (!planList) return false
-    let planListLastest: Plan | null = _.sortBy(planList, (o) => -o.time)[0] || null
-    if (!planListLastest) return false
-    let result = false
-    _.forEach(planListLastest.grpList, (grp) => {
-      let findOne = grp.personTaskList.find(o => o.person === personName)
-      if (findOne !== undefined && findOne.task === taskName) {
-        result = true
-        return false // 结束遍历
-      }
+    let lastWorkPlan = this.getPersonLastWorkPlan(personName)
+    if (!lastWorkPlan) return false
+    let findOne = _.flatMap(lastWorkPlan.grpList, o => o.personTaskList).find((o) => {
+      return o.person === personName && o.task === taskName
     })
-    return result
+    return !!findOne
   }
 
   /** 获取某个人的任务次数记录 */
@@ -161,5 +156,60 @@ export default class DataQuery extends Vue {
     })
     let arrSorted = _.sortBy(arr, o => -o.diff)
     return _.flatMap(arrSorted, o => o.task)
+  }
+
+  public padWithZeros (vNumber: number, width: number): string {
+    var numAsString = vNumber.toString()
+    while (numAsString.length < width) {
+      numAsString = '0' + numAsString
+    }
+    return numAsString
+  }
+
+  public dateFormat (date: Date) {
+    var vDay = this.padWithZeros(date.getDate(), 2)
+    var vMonth = this.padWithZeros(date.getMonth() + 1, 2)
+    var vYear = this.padWithZeros(date.getFullYear(), 2)
+    // var vHour = padWithZeros(date.getHours(), 2);
+    // var vMinute = padWithZeros(date.getMinutes(), 2);
+    // var vSecond = padWithZeros(date.getSeconds(), 2);
+    return `${vYear}-${vMonth}-${vDay}`
+  }
+
+  public timeAgo (date: Date) {
+    try {
+      var oldTime = date.getTime()
+      var currTime = new Date().getTime()
+      var diffValue = currTime - oldTime
+
+      var days = Math.floor(diffValue / (24 * 3600 * 1000))
+      if (days === 0) {
+        // 计算相差小时数
+        var leave1 = diffValue % (24 * 3600 * 1000) // 计算天数后剩余的毫秒数
+        var hours = Math.floor(leave1 / (3600 * 1000))
+        if (hours === 0) {
+          // 计算相差分钟数
+          var leave2 = leave1 % (3600 * 1000) // 计算小时数后剩余的毫秒数
+          var minutes = Math.floor(leave2 / (60 * 1000))
+          if (minutes === 0) {
+            // 计算相差秒数
+            var leave3 = leave2 % (60 * 1000) // 计算分钟数后剩余的毫秒数
+            var seconds = Math.round(leave3 / 1000)
+            return seconds + ' 秒前'
+          }
+          return minutes + ' 分钟前'
+        }
+        return hours + ' 小时前'
+      }
+      if (days < 0) return '刚刚'
+
+      if (days < 8) {
+        return days + ' 天前'
+      } else {
+        return this.dateFormat(date)
+      }
+    } catch (error) {
+      console.error(error)
+    }
   }
 }

@@ -66,6 +66,10 @@
                       autocomplete="off"
                       placeholder="任务"
                     />
+                    <div class="badge-box">
+                      <span v-if="$dataQuery.getIsPersonJustDidTheTask(item.person, item.task)" class="warn">上次做过</span>
+                      <span>{{ $dataQuery.getPersonTaskRec(item.person, item.task) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -83,12 +87,14 @@
     </div>
 
     <Dialog :isOpened="taskSelDialog.isShow" @close="hideTaskSelDialog()">
+      <PersonProfile v-model="taskSelDialog.personTaskItem" :asSel="true" :personName="taskSelDialog.personTaskItem.person" />
     </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import GrpList from './GrpList.vue'
+import PersonProfile from '../components/PersonProfile.vue'
 import Dialog from '../components/Dialog.vue'
 import $ from 'jQuery'
 import _ from 'lodash'
@@ -97,7 +103,7 @@ import { Component, Watch } from 'vue-property-decorator'
 import { Plan, Grp, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
 
 @Component({
-  components: { GrpList, Dialog }
+  components: { GrpList, Dialog, PersonProfile }
 })
 export default class Builder extends Vue {
   plan: Plan = this.$dataAction.newEmptyPlan()
@@ -139,6 +145,7 @@ export default class Builder extends Vue {
     _.forEach(selGrpList, (grp, index) => {
       grpToAreaDict[grp.id] = areaOrder[index]
     })
+    console.log(grpToAreaDict)
 
     let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
 
@@ -360,10 +367,31 @@ export default class Builder extends Vue {
               }
             }
 
-            .task-input,
-            .task-input > input {
-              cursor: pointer;
-              margin-left: -2px;
+            .task-input {
+              position: relative;
+              &, & > input {
+                cursor: pointer;
+                margin-left: -2px;
+              }
+
+              .badge-box {
+                position: absolute;
+                right: 10px;
+                top: 0;
+
+                & > span {
+                  height: 34px;
+                  line-height: 34px;
+                  background: rgba(66,133,244,.12);
+                  padding: 3px 10px;
+                  border-radius: 1px;
+                  font-size: 12px;
+
+                  &.warn {
+                    background: rgba(255, 166, 32, 0.264);
+                  }
+                }
+              }
             }
           }
         }

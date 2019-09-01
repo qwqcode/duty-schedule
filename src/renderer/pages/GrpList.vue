@@ -56,6 +56,9 @@ export default class GrpList extends Vue {
 
   @Prop() readonly asSelector!: boolean
 
+  mounted () {
+  }
+
   get grpList() {
     return this.$dataStore.GrpList
   }

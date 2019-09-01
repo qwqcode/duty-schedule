@@ -1,6 +1,6 @@
 {
   "name": "duty-schedule",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "author": "qwqcode <1149527164@qq.com>",
   "description": "A duty schedule.",
   "license": null,
@@ -118,6 +118,7 @@
     "ts-loader": "^6.0.1",
     "typescript": "^3.4.5",
     "url-loader": "^1.0.1",
+    "vue-calendar-heatmap": "^0.8.4",
     "vue-class-component": "^7.1.0",
     "vue-devtools": "^5.0.0-beta.1",
     "vue-html-loader": "^1.2.4",

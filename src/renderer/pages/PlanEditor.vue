@@ -113,7 +113,7 @@ export default {
       let memberGroupList = {}
 
       _.forEach(memberGroupListInit, (rawGroup, groupI) => {
-        let group = memberGroupList[groupI] = _.cloneDeep(rawGroup)
+        let group = memberGroupList[groupI] = JSON.parse(JSON.stringify(rawGroup))
         group.data = {}
 
         _.forEach(rawGroup.data, (memberName, memberI) => {
@@ -172,7 +172,7 @@ export default {
       // 遍历 taskType list 出所有的 ^taskType 组^
       _.forEach(this.taskTypeGroupList, (taskTypeGroup, taskTypeGroupI) => {
         // 克隆一份 memberGroupList（可任意操作数据，不改变原始数据）
-        let memberGroupList = _.cloneDeep(this.task.memberGroupList)
+        let memberGroupList = JSON.parse(JSON.stringify(this.task.memberGroupList))
         // 仅选择*一个组* 对应 ^taskType 的一个组^（用来抽取成员，并分配任务）
         let selectedGroupIndex = groupSelectList[taskTypeGroupI]
         // 对这个组设置 taskTypeGroupName

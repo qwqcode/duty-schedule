@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import axios from 'axios'
 import Router from 'vue-router'
+import Transitions from 'vue2-transitions'
 
 import App from './App.vue'
 import router from './router'
@@ -12,7 +13,7 @@ import 'vue2-animate/dist/vue2-animate.min.css'
 import 'material-design-iconic-font/dist/css/material-design-iconic-font.min.css'
 import $ from 'jquery'
 
-Vue.use(require('vue2-transitions'))
+Vue.use(Transitions)
 
 Vue.use(Router)
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
