@@ -12,6 +12,8 @@ export default class DataQuery extends Vue {
     Vue.prototype.$dataQuery = this
   }
 
+  render () { return '' }
+
   /** 获取计划（通过 ID） */
   public getPlan (planId: number): Plan | undefined {
     return _.find(this.$dataStore.PlanList, (o) => o.id === planId)

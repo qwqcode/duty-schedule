@@ -42,6 +42,8 @@ class DataStore extends Vue {
     }
   }
 
+  render () { return '' /* 消除 Vue 警告 */ }
+
   /** 保存数据 */
   public save (): void {
     let obj: any = {}

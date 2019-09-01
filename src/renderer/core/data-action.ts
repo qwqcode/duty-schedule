@@ -12,6 +12,8 @@ export default class DataAction extends Vue {
     Vue.prototype.$dataAction = this
   }
 
+  render () { return '' }
+
   /** 获取一个空 Plan */
   public newEmptyPlan () : Plan {
     return {

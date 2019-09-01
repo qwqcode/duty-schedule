@@ -29,7 +29,10 @@ function createWindow () {
     minHeight: 670,
     minWidth: 1020,
     show: false,
-    frame: false
+    frame: false,
+    webPreferences: {
+      nodeIntegration: true // 集成 node
+    }
   })
 
   mainWindow.loadURL(winURL)

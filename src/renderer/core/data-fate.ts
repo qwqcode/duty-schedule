@@ -9,6 +9,8 @@ export default class DataFate extends Vue {
     Vue.prototype.$dataFate = this
   }
 
+  render () { return '' }
+
   /**
    * 向 GrpList 中全部 Grp 下的 Person 分配任务
    *
