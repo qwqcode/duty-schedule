@@ -140,6 +140,8 @@ export default class Builder extends Vue {
 
   @Watch('selGrpList')
   onSelGrpListChanged(selGrpList: Grp[]) {
+    console.log(selGrpList)
+
     let areaOrder = ['教室', '教室', '公区', '公区']
     let grpToAreaDict: { [grpId: number]: string } = {}
     _.forEach(selGrpList, (grp, index) => {
@@ -148,6 +150,7 @@ export default class Builder extends Vue {
     console.log(grpToAreaDict)
 
     let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
+    console.log(personToTask)
 
     // 创建新 grpList
     let PlanGrpList: PlanGrp[] = []
@@ -168,6 +171,7 @@ export default class Builder extends Vue {
     })
 
     this.plan.grpList = PlanGrpList
+    console.log("\n\n")
   }
 
   savePlan() {

@@ -16,6 +16,7 @@
                 >{{ fieldName }}</el-button>
               </template>
               <el-button size="small" @click="toggleDataEditor('__ALL__')">__ALL__</el-button>
+              <el-button size="small" @click="toggleDataEditor('__ALL_OLD_VERSION__')">__ALL__ (旧版)</el-button>
             </div>
           </div>
           <div
@@ -72,6 +73,7 @@
 import _ from 'lodash'
 import { ipcRenderer, shell } from 'electron'
 import Vue from 'vue'
+import * as DataType from '@/core/data-interfaces'
 import { Component } from 'vue-property-decorator';
 
 @Component({})
@@ -109,6 +111,12 @@ export default class Setting extends Vue {
       return
     }
 
+    if (fieldName === "__ALL_OLD_VERSION__") {
+      this.dataEditorVal = ''
+      this.dataEditorTargetFieldName = fieldName
+      return
+    }
+
     let jsonObj = {}
     if (fieldName === "__ALL__") {
       let allJson: any = {}
@@ -135,6 +143,11 @@ export default class Setting extends Vue {
 
     let targetKey = this.dataEditorTargetFieldName
     if (targetKey !== null) {
+      if (targetKey === "__ALL_OLD_VERSION__") {
+        this.oldVersionDataImport(JSON.parse(this.dataEditorVal))
+        return
+      }
+
       if (targetKey === "__ALL__") {
         let obj = JSON.parse(this.dataEditorVal)
         for (let key in obj) {
@@ -174,6 +187,71 @@ export default class Setting extends Vue {
 
   openBlog() {
     shell.openExternal("https://qwqaq.com")
+  }
+
+  oldVersionDataImport(data: any) {
+    let PlanList: DataType.Plan[] = []
+    let GrpList: DataType.Grp[] = []
+    let AreaList: DataType.Area[] = []
+
+    const getGrpIdByStr = (str: string) => { return Number((str.match(/第 ([0-9]+) 组/) as any)[1]) }
+    const getHandledAreaName = (str: string) => {
+      return ({ '教室': '教室', '工区': '公区', '公区': '公区' } as any)[
+        (str.match(/(教室|工区|公区)/) as any)[1]
+      ]
+    }
+
+    // PlanList
+    _.forEach(data.taskList, (item, i) => {
+      let planGrpList: DataType.PlanGrp[] = []
+
+      _.forEach(item.memberGroupList, (grpItem, i) => {
+        let personTaskList: DataType.PersonTaskItem[] = []
+        _.forEach(grpItem.data, (personTaskItem, i) => {
+          personTaskList.push({ person: personTaskItem.name, task: personTaskItem.task })
+        })
+
+        planGrpList.push({
+          grpId: getGrpIdByStr(grpItem.name),
+          area: getHandledAreaName(grpItem.taskTypeGroupName),
+          personTaskList: personTaskList
+        })
+      })
+
+      PlanList.push({
+        id: Number(item.time),
+        name: item.title as string,
+        time: Number(item.time),
+        grpList: planGrpList
+      })
+    })
+
+    // GrpList
+    _.forEach(data.memberGroupList, (grpItem, i) => {
+      GrpList.push({
+        id: getGrpIdByStr(grpItem.name),
+        personList: grpItem.data
+      })
+    })
+
+    // AreaList
+    _.forEach(data.taskTypeGroupList, (areaItem, i) => {
+      let findArea = AreaList.find(o => o.name === getHandledAreaName(areaItem.name))
+      if (!findArea) {
+        findArea = { name: getHandledAreaName(areaItem.name), taskList: areaItem.data }
+        AreaList.push(findArea)
+      } else {
+        _.forEach(areaItem.data, (item) => { if (!!findArea) { findArea.taskList.push(item) } })
+      }
+    })
+
+
+    this.$dataAction.settingSetData('PlanList', PlanList)
+    this.$dataAction.settingSetData('GrpList', GrpList)
+    this.$dataAction.settingSetData('AreaList', AreaList)
+
+    // 同步 Res
+    this.$dataAction.syncRec()
   }
 }
 </script>

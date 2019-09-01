@@ -51,6 +51,7 @@
                     v-for="(item, i) in tasksPersonNameList"
                     :key="i"
                     :span="8"
+                    style="margin-bottom: 20px;"
                   >
                     <div class="type-name">{{ item.task }}</div>
                     <div class="members">
@@ -87,14 +88,15 @@ export default class Schedule extends Vue {
   plan: Plan | null = null
   currGrpKey: number = 0
   autoSwitch: boolean = false
+  autoSwitchInterval: number|null = null
   isTaskListSidebarShow: boolean = false
 
   created() {
     // 测试
     // this.$dataStore.clearAll()
-    this.$dataStore.GrpList = GrpList
+    /*this.$dataStore.GrpList = GrpList
     this.$dataStore.AreaList = AreaList
-    this.$dataStore.save()
+    this.$dataStore.save()*/
 
     let createTestPlan = (grpIdList: number[] = [1, 2, 3, 4], areaArr: string[] = ['教室', '教室', '公区', '公区']) => {
       let selGrp = this.$dataStore.GrpList.filter(o => grpIdList.includes(o.id))
@@ -160,7 +162,11 @@ export default class Schedule extends Vue {
   @Watch('autoSwitch')
   onAutoSwitchChanged(newVal: boolean) {
     if (newVal === true) {
-      this.startAutoSwitch((this.$refs['groupInfoCard_' + this.currGrpKey] as Element[])[0] as Element)
+      this.startAutoSwitch()
+    } else {
+      if (this.autoSwitchInterval !== null) {
+        window.clearInterval(this.autoSwitchInterval)
+      }
     }
   }
 
@@ -199,27 +205,33 @@ export default class Schedule extends Vue {
   }
 
   switchGrp(grpKey: number) {
-    this.autoSwitch = false
     this.currGrpKey = grpKey
+    if (this.autoSwitch === true) {
+      this.autoSwitch = false
+      window.setTimeout(() => {
+        this.autoSwitch = true
+      }, 80)
+    }
   }
 
-  startAutoSwitch(cardElem: Element) {
+  getSwitchBar () {
+    return ((this.$refs[`groupInfoCard_${this.currGrpKey}`] as Element[])[0] as Element).querySelector('.auto-switch-bar') as HTMLElement
+  }
+
+  startAutoSwitch() {
     if (this.plan === null || !this.plan.grpList) {
       return
     }
 
-    const timeout = 10 * 1000
+    const timeout = 3 * 1000
     const perTime = 50
 
     let timeLeft = 0
-    let switchBar = cardElem.querySelector('.auto-switch-bar') as HTMLElement
-    switchBar.style.height = ''
 
-    let intervalKey = window.setInterval(() => {
-      if (this.autoSwitch === false) {
-        window.clearInterval(intervalKey)
-        return
-      }
+    this.getSwitchBar().style.height = '100%';
+
+    this.autoSwitchInterval = window.setInterval(() => {
+      let switchBar = this.getSwitchBar()
       switchBar.style.height = (((timeout - timeLeft) / timeout) * 100).toFixed(2) + '%'
       timeLeft += perTime
       if (timeLeft > timeout) {
@@ -229,7 +241,8 @@ export default class Schedule extends Vue {
         } else {
           this.currGrpKey = 0
         }
-        window.clearInterval(intervalKey)
+        timeLeft = 0
+        switchBar.style.height = '100%';
       }
     }, perTime)
   }
