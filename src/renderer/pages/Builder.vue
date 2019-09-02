@@ -23,6 +23,7 @@
           <div class="grp-name">第 {{ grp.id }} 组</div>
           <div class="badge-box">
             <span v-if="$dataQuery.getIsGrpExitsInLatestPlan(grp.id)" class="warn">上次</span>
+            <span>{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
             <span>
               {{ $dataQuery.getGrpAreaRec(grp.id, '教室') + $dataQuery.getGrpAreaRec(grp.id, '公区') }} =
               {{ $dataQuery.getGrpAreaRec(grp.id, '教室') }} + {{ $dataQuery.getGrpAreaRec(grp.id, '公区') }}
@@ -107,7 +108,7 @@ import $ from 'jQuery'
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component, Watch } from 'vue-property-decorator'
-import { Plan, Grp, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
+import { Plan, Grp, PlanGrp, PersonTaskItem, Area } from '../core/data-interfaces'
 
 @Component({
   components: { GrpList, Dialog, PersonProfile }
@@ -142,60 +143,47 @@ export default class Builder extends Vue {
 
   /** 自动选组 */
   autoSelectGrp () {
-    // 1. 让组 根据 Rec值 小->大 排列
-    type areaGrpListItem = { area: string, grpList: Grp[] }
-    let areaCanSelectGrpList: areaGrpListItem[] = []
+    let areaGrpList: { [areaName: string]: Grp[] } = {}
 
-    _.forEach(this.$dataStore.AreaList, (area) => {
-      let grpRecNumListSorted: { grpId: number, num: number }[] = []
-      _.forEach(this.$dataStore.GrpList, (grp) => grpRecNumListSorted.push({
-        grpId: grp.id, num: this.$dataQuery.getGrpAreaRec(grp.id, area.name)
-      }))
-      grpRecNumListSorted = _.sortBy(grpRecNumListSorted, o => o.num)
-      // 生成 AreaGrpList
-      let areaGrpList: areaGrpListItem = { area: area.name, grpList: [] }
-      _.forEach(grpRecNumListSorted, item => areaGrpList.grpList.push(this.$dataStore.GrpList.find(o => o.id === item.grpId) as Grp))
-      areaCanSelectGrpList.push(areaGrpList)
-    })
-    console.log(1, areaCanSelectGrpList)
-
-    // 为了 先分配 Area 给组多的
-    areaCanSelectGrpList = _.sortBy(areaCanSelectGrpList, o => o.grpList.length)
-
-    // 2. 安排小组
-    let areaSelectedGrpList: areaGrpListItem[] = []
-    _.forEach(areaCanSelectGrpList, (item) => {
-      let grpList: Grp[] = Object.assign([], item.grpList)
-      let exceptedNum: number = 0
-      let hadUse: number = 0
-      grpList = _.filter(item.grpList, o => {
-        if (hadUse >= 2) return false
-        if (_.flatMap(areaSelectedGrpList, k => k.grpList).find(k => k.id === o.id)) {
-          return false
-        }
-        if (item.grpList.length - exceptedNum <= 2) { // 保持至少留两个组
-          hadUse++
-          return true
-        }
-        let isGrpExitsInLatestPlan = this.$dataQuery.getIsGrpExitsInLatestPlan(o.id)
-        let isGrpLastDidTheArea = this.$dataQuery.getIsGrpLastDidTheArea(o.id, item.area)
-        if (isGrpExitsInLatestPlan || isGrpLastDidTheArea) {
-          exceptedNum++
-          return false
-        }
-        hadUse++
-        return true
+    _.forEach(this.$dataStore.AreaList, area => {
+      let grpList: Grp[] = areaGrpList[area.name] = []
+      let grpListSorted = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id, area.name))
+      _.forEach(grpListSorted, grp => {
+        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
+        if (Object.values(grpList).length >= 2) { return } // 若已排满
+        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return } // 条件 1
+        if (this.$dataQuery.getIsGrpLastDidTheArea(grp.id, area.name)) { return } // 条件 2
+        grpList.push(grp)
       })
-      areaSelectedGrpList.push({ area: item.area, grpList: grpList })
     })
-    console.log(2, areaSelectedGrpList)
 
-    let map = _.mapKeys(areaSelectedGrpList, (item) => item.area)
+    // 补充缺的组（上次做同样的 Area 也满足条件）
+    let grpListSortedByRecSum = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id))
+    _.forEach(areaGrpList, (grpList, areaName) => {
+      if (grpList.length >= 2) { return }
+      _.forEach(grpListSortedByRecSum, grp => {
+        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
+        if (Object.values(grpList).length >= 2) { return } // 若已排满
+        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return } // 条件 1
+        grpList.push(grp)
+      })
+    })
+
+    // 补充缺的组（上周刚做了的也满足条件）
+    _.forEach(areaGrpList, (grpList, areaName) => {
+      if (grpList.length >= 2) { return }
+      _.forEach(grpListSortedByRecSum, grp => {
+        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
+        if (Object.values(grpList).length >= 2) { return } // 若已排满
+        grpList.push(grp)
+      })
+    })
+
     this.selGrpList = [
-      map['教室'].grpList[0],
-      map['教室'].grpList[1],
-      map['公区'].grpList[0],
-      map['公区'].grpList[1]
+      areaGrpList['教室'][0],
+      areaGrpList['教室'][1],
+      areaGrpList['公区'][0],
+      areaGrpList['公区'][1]
     ]
   }
 

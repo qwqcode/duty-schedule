@@ -62,9 +62,13 @@ export default class DataQuery extends Vue {
   }
 
   /** 获取某个组的区域次数记录 */
-  public getGrpAreaRec (grpId: number, areaName: string): number {
+  public getGrpAreaRec (grpId: number, areaName: string|null = null): number {
     let grpRec = this.getGrpRec(grpId)
     if (grpRec === undefined) return 0
+    if (areaName === null) {
+      // 所有 Area 次数之和
+      return _.sum(_.flatMap(grpRec.areaList))
+    }
     return grpRec.areaList[areaName] || 0
   }
 
@@ -131,6 +135,17 @@ export default class DataQuery extends Vue {
       }
     })
     return plan
+  }
+
+  /** 某组最后做的 Area */
+  public getGrpLastDidArea (grpId: number) {
+    let planList = this.$dataStore.PlanList
+    if (!planList) return null
+    let lastWorkPlan = this.getGrpLastWorkPlan(grpId)
+    if (!lastWorkPlan) return null
+    let find = lastWorkPlan.grpList.find(o => o.grpId === grpId)
+    if (!find) return null
+    return find.area
   }
 
   /** 某组最后做的是否为这个 Area */
