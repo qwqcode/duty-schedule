@@ -1,7 +1,6 @@
 'use strict'
 
 import { app, BrowserWindow, ipcMain } from 'electron'
-import fs from 'fs'
 
 /**
  * Set `__static` path to static files in production
@@ -24,12 +23,15 @@ function createWindow () {
    */
   mainWindow = new BrowserWindow({
     useContentSize: true,
-    height: 563,
-    width: 1000,
-    minWidth: 1000,
-    minHeight: 563,
+    height: 670,
+    width: 1020,
+    minHeight: 670,
+    minWidth: 1020,
     show: false,
-    frame: false
+    frame: false,
+    webPreferences: {
+      nodeIntegration: true // 集成 node
+    }
   })
 
   mainWindow.loadURL(winURL)
@@ -63,18 +65,6 @@ ipcMain.on('close-me', (evt, arg) => {
 
 ipcMain.on('open-dev-tools', (evt, arg) => {
   mainWindow.webContents.openDevTools()
-})
-
-ipcMain.on('delete-vuex-store-data', (evt, arg) => {
-  let vuexJsonPath = app.getPath('userData') + '/vuex.json'
-
-  fs.unlink(vuexJsonPath, (err) => {
-    if (err) {
-      evt.sender.send('show-notify', ['清除所有内容和设定失败：' + err.errno, 'e'])
-      return
-    }
-    evt.sender.send('reload-page')
-  })
 })
 
 /**

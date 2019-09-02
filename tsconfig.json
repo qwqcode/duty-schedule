@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "*": ["types/*"],
+      "@*": ["src/renderer*"],
+      "~*": ["./*"]
+    },
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "module": "es2015",
+    "moduleResolution": "node",
+    "target": "es5",
+    "strict": true,
+    "allowJs": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+  },
+  "include": [
+    "./src/**/*",
+    "./types/**/*"
+  ]
+}
