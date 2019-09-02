@@ -22,7 +22,7 @@
             class="item"
             v-for="(group, key) in plan.grpList"
             :key="key"
-            :class="{ 'active': key == currGrpKey }"
+            :class="{ 'active': key == curtGrpKey }"
             @click="switchGrp(key)"
           >{{ group.grpId }}</div>
         </div>
@@ -39,7 +39,7 @@
             v-for="(grp, key) in plan.grpList"
             :key="grp.grpId"
             :ref="`groupInfoCard_${key}`"
-            v-show="key == currGrpKey"
+            v-show="key == curtGrpKey"
           >
             <div class="inner">
               <div class="auto-switch-bar" v-show="autoSwitch"></div>
@@ -93,7 +93,7 @@ import { GrpList, AreaList } from '../core/data-localtest'
 })
 export default class Schedule extends Vue {
   plan: Plan | null = null
-  currGrpKey: number = 0
+  curtGrpKey: number = 0
   autoSwitch: boolean = false
   autoSwitchInterval: number|null = null
   isTaskListSidebarShow: boolean = false
@@ -161,8 +161,8 @@ export default class Schedule extends Vue {
     (this.$parent as any).setSubTitle(' ' + newPlan.name)
   }
 
-  @Watch('currGrpKey')
-  onCurrGrpKeyChanged(newKey: number, oldKey: number) {
+  @Watch('curtGrpKey')
+  onCurtGrpKeyChanged(newKey: number, oldKey: number) {
     // 当切换组时
   }
 
@@ -184,7 +184,7 @@ export default class Schedule extends Vue {
 
   /** 当前显示的组 */
   get currGrp() {
-    return this.plan !== null ? this.plan.grpList[this.currGrpKey] || null : null
+    return this.plan !== null ? this.plan.grpList[this.curtGrpKey] || null : null
   }
 
   /** 每个任务下的成员名字 列表 */
@@ -206,13 +206,13 @@ export default class Schedule extends Vue {
 
   openPlan(plan: Plan) {
     this.plan = plan
-    this.currGrpKey = 0
+    this.curtGrpKey = 0
     this.autoSwitch = false // 停止自动播放
     this.hideTaskListSidebar()
   }
 
   switchGrp(grpKey: number) {
-    this.currGrpKey = grpKey
+    this.curtGrpKey = grpKey
     if (this.autoSwitch === true) {
       this.autoSwitch = false
       window.setTimeout(() => {
@@ -222,7 +222,7 @@ export default class Schedule extends Vue {
   }
 
   getSwitchBar () {
-    return ((this.$refs[`groupInfoCard_${this.currGrpKey}`] as Element[])[0] as Element).querySelector('.auto-switch-bar') as HTMLElement
+    return ((this.$refs[`groupInfoCard_${this.curtGrpKey}`] as Element[])[0] as Element).querySelector('.auto-switch-bar') as HTMLElement
   }
 
   startAutoSwitch() {
@@ -243,10 +243,10 @@ export default class Schedule extends Vue {
       timeLeft += perTime
       if (timeLeft > timeout) {
         // 切换组
-        if (this.currGrpKey + 1 < Object.keys((this.plan as Plan).grpList).length) {
-          this.currGrpKey++
+        if (this.curtGrpKey + 1 < Object.keys((this.plan as Plan).grpList).length) {
+          this.curtGrpKey++
         } else {
-          this.currGrpKey = 0
+          this.curtGrpKey = 0
         }
         timeLeft = 0
         switchBar.style.height = '100%';
