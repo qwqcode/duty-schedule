@@ -12,11 +12,11 @@
                 <el-button
                   size="small"
                   :key="index"
-                  @click="toggleDataEditor(fieldName)"
+                  @click="adminBtn(() => { toggleDataEditor(fieldName) })"
                 >{{ fieldName }}</el-button>
               </template>
-              <el-button size="small" @click="toggleDataEditor('__ALL__')">__ALL__</el-button>
-              <el-button size="small" @click="toggleDataEditor('__ALL_OLD_VERSION__')">__ALL__ (旧版)</el-button>
+              <el-button size="small" @click="adminBtn(() => { toggleDataEditor('__ALL__') })">__ALL__</el-button>
+              <el-button size="small" @click="adminBtn(() => { toggleDataEditor('__ALL_OLD_VERSION__') })">__ALL__ (旧版)</el-button>
             </div>
           </div>
           <div
@@ -31,7 +31,7 @@
                 v-model="dataEditorVal"
               ></el-input>
             </div>
-            <el-button type="success" size="mini" @click="dataEditorSave">
+            <el-button type="success" size="mini" @click="adminBtn(dataEditorSave)">
               <i class="zmdi zmdi-save"></i> 保存
             </el-button>
           </div>
@@ -43,11 +43,12 @@
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
-              <el-button size="small" @click="syncRecList()">同步 RecList</el-button>
-              <el-button size="small" @click="openDevTools()">打开调试工具</el-button>
+              <el-button size="small" @click="adminBtn(() => { openPasswordDialog('modify') })">修改密码</el-button>
+              <el-button size="small" @click="adminBtn(syncRecList)">同步 RecList</el-button>
+              <el-button size="small" @click="adminBtn(openDevTools)">打开调试工具</el-button>
               <el-button
                 size="small"
-                @click="deleteVuexStoreData()"
+                @click="adminBtn(deleteVuexStoreData)"
                 ref="deleteVuexStoreDataBtn"
               >清除所有内容和设定</el-button>
             </div>
@@ -65,6 +66,28 @@
         <span @click="openBlog()" style="cursor: pointer;color: #1a73e8">qwqaq.com</span>
       </div>
 
+      <Dialog :isOpened="passwordDialog.isOpened" @close="passwordDialog.isOpened = false">
+        <div class="password-dialog">
+          <div class="desc">{{ { 'input': '请求管理员权限', 'modify': '修改管理员密码' }[passwordDialog.type] }}</div>
+          <el-form :inline="true">
+            <el-form-item>
+              <el-input
+                ref="passwordInput"
+                v-model="passwordDialog.value"
+                :type="{ 'input': 'password', 'modify': 'text' }[passwordDialog.type]"
+                placeholder="输入密码"
+                autocomplete="off"
+              >
+                <i slot="prefix" class="el-input__icon el-icon-lock"></i>
+              </el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" native-type="submit" plain size="small" @click="passwordAction()">确认</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </Dialog>
+
     </div>
   </div>
 </template>
@@ -73,13 +96,22 @@
 import _ from 'lodash'
 import { ipcRenderer, shell } from 'electron'
 import Vue from 'vue'
+import Dialog from '../components/Dialog.vue'
 import * as DataType from '@/core/data-interfaces'
 import { Component } from 'vue-property-decorator';
 
-@Component({})
+@Component({
+  components: { Dialog }
+})
 export default class Setting extends Vue {
   dataEditorTargetFieldName: string | null = null
   dataEditorVal: string = ""
+  passwordDialog = {
+    isOpened: false,
+    type: <'input'|'modify'|null> null,
+    value: '',
+    onSuccess: () => {}
+  }
 
   mounted() {
     if (typeof (window as any).SETTING_DATA_ALLOW_EDIT === "undefined") {
@@ -91,17 +123,48 @@ export default class Setting extends Vue {
     return require("../../../package.json").version
   }
 
-  isDataAllowEdit() {
-    if (
-      typeof (window as any).SETTING_DATA_ALLOW_EDIT !== "boolean" ||
-      (window as any).SETTING_DATA_ALLOW_EDIT !== true
-    ) {
-      window.notify("没有权限修改数据", "w")
-      console.log("[window.SETTING_DATA_ALLOW_EDIT]")
-      return false
-    } else {
-      return true
+  openPasswordDialog (type: 'input'|'modify'|null) {
+    this.passwordDialog.value = ''
+    this.passwordDialog.isOpened = true
+    this.passwordDialog.type = type
+    window.setTimeout(() => {
+      (this.$refs.passwordInput as HTMLElement).focus()
+    }, 80)
+  }
+
+  passwordAction () {
+    switch (this.passwordDialog.type) {
+      case 'input':
+        if (this.passwordDialog.value === this.$dataStore.Settings.password) {
+          this.passwordDialog.isOpened = false
+          this.passwordDialog.onSuccess()
+        } else {
+          this.passwordDialog.value = ''
+          window.notify('密码错误', 'e')
+        }
+        break
+      case 'modify':
+        this.$dataStore.Settings.password = this.passwordDialog.value
+        this.$dataStore.save()
+        window.notify('密码修改成功', 's')
+        this.passwordDialog.isOpened = false
+        this.passwordDialog.value = ''
+        break
     }
+  }
+
+  adminBtn (evt: () => void) {
+    if (
+      typeof this.$dataStore.Settings.password === 'undefined' ||
+      this.$dataStore.Settings.password === '' ||
+      this.passwordDialog.value === this.$dataStore.Settings.password
+    ) {
+      evt()
+      return
+    }
+
+    this.openPasswordDialog('input')
+    this.passwordDialog.onSuccess = evt
   }
 
   toggleDataEditor(fieldName: string) {
@@ -137,10 +200,6 @@ export default class Setting extends Vue {
   }
 
   dataEditorSave() {
-    if (!this.isDataAllowEdit()) {
-      return
-    }
-
     let targetKey = this.dataEditorTargetFieldName
     if (targetKey !== null) {
       if (targetKey === "__ALL_OLD_VERSION__") {
@@ -164,10 +223,6 @@ export default class Setting extends Vue {
     window.notify('RecList 已同步')
   }
   deleteVuexStoreData() {
-    if (!this.isDataAllowEdit()) {
-      return
-    }
-
     let el = this.$refs.deleteVuexStoreDataBtn as any
     if (typeof el.clickTime !== "number") {
       el.clickTime = 1
@@ -282,6 +337,16 @@ export default class Setting extends Vue {
         }
       }
     }
+  }
+}
+
+.password-dialog {
+  background: #fff;
+  padding: 20px 30px;
+
+  .desc {
+    margin-top: 15px;
+    margin-bottom: 15px;
   }
 }
 </style>

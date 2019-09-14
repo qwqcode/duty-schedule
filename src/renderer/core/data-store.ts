@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
-import { Grp, Rec, Area, Plan } from './data-interfaces'
+import { Grp, Rec, Area, Plan, Settings } from './data-interfaces'
 
 /**
  * 数据储存类
@@ -16,11 +16,13 @@ class DataStore extends Vue {
   public RecList: Rec[] = []
   /** 工作区域列表 */
   public AreaList: Area[] = []
+  /** 设置 */
+  public Settings: Settings = {}
 
   /** LocalStorage 数据的 KEY */
   public readonly LS_KEY = 'DS_DATASTORE'
   /** LocalStorage 数据中所包含的字段（属于 this 中的字段名） */
-  public readonly DATA_FIELDS = ['PlanList', 'GrpList', 'RecList', 'AreaList']
+  public readonly DATA_FIELDS = ['PlanList', 'GrpList', 'RecList', 'AreaList', 'Settings']
 
   /** 初始化数据 */
   public created (): void {

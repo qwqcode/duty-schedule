@@ -23,14 +23,12 @@ export interface Grp {
  * 小组内工作次数记录
  */
 export interface Rec {
-  /** 小组 ID */
-  grpId: number
-  /** 小组区域记录表 (key: 区域名) */
-  areaList: {[area: string]: number}
-  /** 个人任务记录表 (key: 任务名.人名) */
-  taskList: {[task: string]: {
-    [person: string]: number
-  }}
+  /** Rec 名 */
+  name: string
+  /** 类别 */
+  type: 'Area'|'Task'
+  /** 数据 */
+  data: {[key: string]: number}
 }
 
 /**
@@ -86,4 +84,12 @@ export interface PersonProfile {
   name: string
   /** 最后一次执行的 Plan */
   lastWorkPlan: Plan|null
+}
+
+/**
+ * 设置
+ */
+export interface Settings {
+  /** 密码 */
+  password?: string
 }

@@ -45,36 +45,30 @@ export default class DataAction extends Vue {
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
-        // 初始化 recList 中的该组数据 rec
-        let rec: Rec
-        let findRec = _.find(recList, (o) => o.grpId === planGrp.grpId)
-        if (findRec === undefined) {
-          rec = {
-            grpId: planGrp.grpId,
-            areaList: {},
-            taskList: {}
-          }
-          recList.push(rec)
-        } else {
-          rec = findRec
+        let areaRec = _.find(recList, (o) => o.type === 'Area' && o.name === planGrp.area)
+        if (!areaRec) {
+          areaRec = { name: planGrp.area, type: 'Area', data: {} }
+          recList.push(areaRec)
         }
-        // 更新该组的区域列表
-        if (!rec.areaList.hasOwnProperty(planGrp.area)) {
-          rec.areaList[planGrp.area] = 1
+        if (!areaRec.data.hasOwnProperty(planGrp.grpId)) {
+          areaRec.data[planGrp.grpId] = 1
         } else {
-          rec.areaList[planGrp.area] += 1
+          areaRec.data[planGrp.grpId] += 1
         }
+
         // 更新该组的个人任务列表
         _.forEach(planGrp.personTaskList, (item) => {
           let task = item.task
           let person = item.person
-          if (!rec.taskList.hasOwnProperty(task)) {
-            rec.taskList[task] = {}
+          let taskRec = _.find(recList, (o) => o.type === 'Task' && o.name === task)
+          if (!taskRec) {
+            taskRec = { name: task, type: 'Task', data: {} }
+            recList.push(taskRec)
           }
-          if (!rec.taskList[task].hasOwnProperty(person)) {
-            rec.taskList[task][person] = 1
+          if (!taskRec.data.hasOwnProperty(person)) {
+            taskRec.data[person] = 1
           } else {
-            rec.taskList[task][person] += 1
+            taskRec.data[person] += 1
           }
         })
       })

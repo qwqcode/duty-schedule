@@ -44,32 +44,28 @@ export default class DataQuery extends Vue {
     return areaList
   }
 
-  /** 获取某个组的 Rec 实例 */
-  public getGrpRec (grpId: number): Rec | undefined {
-    return _.find(this.$dataStore.RecList, (o) => o.grpId === grpId)
-  }
-
   /** 获取某个人的任务次数记录 */
   public getPersonTaskRec (personName: string, taskName: string): number {
-    let result: number = 0
-    _.find(this.$dataStore.RecList, (rec) => {
-      if (rec.taskList.hasOwnProperty(taskName) && rec.taskList[taskName].hasOwnProperty(personName)) {
-        result = rec.taskList[taskName][personName] || 0
-        return false
-      }
-    })
-    return result
+    let taskRec = this.$dataStore.RecList.find(o => o.type === 'Task' && o.name === taskName)
+    if (!taskRec) { return 0 }
+    return taskRec.data[personName] || 0
   }
 
   /** 获取某个组的区域次数记录 */
   public getGrpAreaRec (grpId: number, areaName: string|null = null): number {
-    let grpRec = this.getGrpRec(grpId)
-    if (grpRec === undefined) return 0
+    let result = 0
     if (areaName === null) {
       // 所有 Area 次数之和
-      return _.sum(_.flatMap(grpRec.areaList))
+      let allAreaRec = _.filter(this.$dataStore.RecList, o => o.type === 'Area')
+      if (!allAreaRec) { return 0 }
+      _.forEach(allAreaRec, (rec) => {
+        result += rec.data[grpId] || 0
+      })
+    } else {
+      let rec = this.$dataStore.RecList.find(o => o.type === 'Area' && o.name === areaName)
+      result = rec ? (rec.data[grpId] || 0) : 0
     }
-    return grpRec.areaList[areaName] || 0
+    return result
   }
 
   /** 获取某个人最后一次执行的 Plan */
@@ -183,6 +179,39 @@ export default class DataQuery extends Vue {
     return personNamesOfAreas
   }
 
+  public getOldTaskRecList (rangeGrpList: Grp[]) {
+    let allTaskRec = _.filter(this.$dataStore.RecList, o => o.type === 'Task')
+    type OldRec = {
+      grpId: number
+      /** 小组区域记录表 (key: 区域名) */
+      areaList: {[area: string]: number}
+      /** 个人任务记录表 (key: 任务名.人名) */
+      taskList: {[task: string]: {
+        [person: string]: number
+      }}
+    }
+    let recList: OldRec[] = []
+    _.forEach(rangeGrpList, (grp) => {
+      let resultRec: OldRec = {
+        grpId: grp.id,
+        areaList: {},
+        taskList: {}
+      }
+      _.forEach(allTaskRec, (recItem) => {
+        _.forEach(recItem.data, (num, personName) => {
+          if (grp.personList.includes(personName)) {
+            if (!resultRec.taskList.hasOwnProperty(recItem.name)) {
+              resultRec.taskList[recItem.name] = {}
+            }
+            resultRec.taskList[recItem.name][personName] = num
+          }
+        })
+      })
+      recList.push(resultRec)
+    })
+    return recList
+  }
+
   /**
    * 获取一定规则顺序的 TaskNameArray
    *
@@ -192,10 +221,11 @@ export default class DataQuery extends Vue {
    * (TaskName 按全部组中全部人在 RecList 中做过该 Task 次数极差 (最大次数值 - 最小次数值) 值倒序排列)
    */
   public getTaskNameArrSorted (taskList: string[], rangeGrpList: Grp[]) {
+    let oldRecList = this.getOldTaskRecList(rangeGrpList)
     let arr: {task: string, diff: number}[] = []
     _.forEach(taskList, (task) => arr.push({task: task, diff: 0}))
     _.forEach(rangeGrpList, (grp) => {
-      let grpRec = this.$dataStore.RecList.find(o => o.grpId === grp.id)
+      let grpRec = oldRecList.find(o => o.grpId === grp.id)
       if (grpRec !== undefined) {
         _.forEach(grpRec.taskList, (personNumList, task) => {
           let listTask = arr.find(o => o.task === task)
