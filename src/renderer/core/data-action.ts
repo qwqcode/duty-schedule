@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import axios from 'axios'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
 import { Plan, Rec, PlanGrp } from './data-interfaces'
@@ -101,5 +102,37 @@ export default class DataAction extends Vue {
     let date = myDate.getDate()
     let str = '星期' + '日一二三四五六'.charAt(new Date().getDay())
     return year + '-' + month + '-' + date + ' ' + str
+  }
+
+  /** 从远程同步数据 */
+  public remoteSyncDownload () {
+    axios.get(this.$dataStore.Settings.remoteSync.server, {
+      params: { 'op': 'download' }
+    }).then(({ data }) => {
+      if (data.success) {
+        const jsonData = data.data
+        if (!!jsonData && String(jsonData).trim() !== '') {
+          this.$dataStore.loadDataByJsonStr(jsonData)
+          this.$dataStore.save()
+          window.notify('数据已成功从云端同步', 's')
+        } else {
+          window.notify('数据从云端同步失败', 'e')
+        }
+      }
+    })
+  }
+
+  public remoteSyncUpload () {
+    let data = new FormData()
+    data.append('data', this.$dataStore.getAllDataAsJsonStr())
+    axios.post(this.$dataStore.Settings.remoteSync.server, data, {
+      params: { 'op': 'upload' }
+    }).then(({ data }) => {
+      if (data.success) {
+        window.notify('数据已成功上传到云端', 's')
+      } else {
+        window.notify('数据上传到云端失败', 'e')
+      }
+    })
   }
 }

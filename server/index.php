@@ -1,4 +1,6 @@
 <?php
+header('Content-type: application/json');
+header('Access-Control-Allow-Origin: *');
 initDataFile();
 tokenCheck(DataArr['token']);
 
@@ -40,11 +42,9 @@ function tokenCheck($token = '') {
 }
 
 function success(array $data = []) {
-  header('Content-type: application/json');
   exit(json_encode(array_merge(['success' => true], $data)));
 }
 
 function error(array $data = []) {
-  header('Content-type: application/json');
   exit(json_encode(array_merge(['success' => false], $data)));
 }

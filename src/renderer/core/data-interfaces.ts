@@ -85,11 +85,3 @@ export interface PersonProfile {
   /** 最后一次执行的 Plan */
   lastWorkPlan: Plan|null
 }
-
-/**
- * 设置
- */
-export interface Settings {
-  /** 密码 */
-  password?: string
-}
