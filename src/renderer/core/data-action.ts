@@ -105,26 +105,47 @@ export default class DataAction extends Vue {
   }
 
   /** 从远程同步数据 */
-  public remoteSyncDownload () {
+  public remoteSyncDownload (onFinished?: () => void) {
+    if (!this.$dataStore.Settings.remoteSync.enabled) {
+      window.notify('云端同步功能未开启', 'w')
+      return
+    }
+
     axios.get(this.$dataStore.Settings.remoteSync.server, {
       params: { 'op': 'download' }
     }).then(({ data }) => {
       if (data.success) {
         const jsonData = data.data
         if (!!jsonData && String(jsonData).trim() !== '') {
-          this.$dataStore.loadDataByJsonStr(jsonData)
-          this.$dataStore.save()
+          try {
+            this.$dataStore.loadDataByJsonStr(jsonData)
+            this.$dataStore.save()
+          } catch (err) {
+            window.notify('数据从云端同步失败', 'e')
+            if (onFinished !== undefined) { onFinished() }
+            throw new Error(err)
+          }
+          if (onFinished !== undefined) { onFinished() }
           window.notify('数据已成功从云端同步', 's')
         } else {
+          if (onFinished !== undefined) { onFinished() }
           window.notify('数据从云端同步失败', 'e')
         }
+      } else {
+        window.notify('数据从云端同步失败', 'e')
+        if (onFinished !== undefined) { onFinished() }
       }
     })
   }
 
   public remoteSyncUpload () {
+    if (!this.$dataStore.Settings.remoteSync.enabled) {
+      window.notify('云端同步功能未开启', 'w')
+      return
+    }
+
     let data = new FormData()
-    data.append('data', this.$dataStore.getAllDataAsJsonStr())
+    data.append('data', this.$dataStore.getAllDataAsJsonStr(this.$dataStore.DATA_ALLOW_UPLOAD_FIELDS))
     axios.post(this.$dataStore.Settings.remoteSync.server, data, {
       params: { 'op': 'upload' }
     }).then(({ data }) => {

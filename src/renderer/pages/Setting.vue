@@ -39,7 +39,7 @@
       </div>
 
       <div class="setting-card">
-        <div class="title">其他操作</div>
+        <div class="title">维护操作</div>
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
@@ -51,6 +51,25 @@
                 @click="adminBtn(deleteVuexStoreData)"
                 ref="deleteVuexStoreDataBtn"
               >清除所有内容和设定</el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="title">云端同步</div>
+        <div class="inner">
+          <div class="setting-item">
+            <el-form class="form" @submit.native.prevent>
+              <el-checkbox :checked="$dataStore.Settings.remoteSync.enabled" @change="remoteSyncSwitch('enabled', $event)">启用</el-checkbox>
+              <el-checkbox :checked="$dataStore.Settings.remoteSync.autoSync" @change="remoteSyncSwitch('autoSync', $event)">自动同步</el-checkbox>
+              <el-form-item label="服务器">
+                <el-input v-model="$dataStore.Settings.remoteSync.server" placeholder="输入 Server URL" @input="$dataStore.save()"></el-input>
+              </el-form-item>
+            </el-form>
+            <div class="buttons">
+              <el-button size="small" @click="adminBtn($dataAction.remoteSyncUpload)">上传数据到云端</el-button>
+              <el-button size="small" @click="adminBtn($dataAction.remoteSyncDownload)">从云端同步数据</el-button>
             </div>
           </div>
         </div>
@@ -69,7 +88,7 @@
       <Dialog :isOpened="passwordDialog.isOpened" @close="passwordDialog.isOpened = false">
         <div class="password-dialog">
           <div class="desc">{{ { 'input': '请求管理员权限', 'modify': '修改管理员密码' }[passwordDialog.type] }}</div>
-          <el-form :inline="true">
+          <el-form :inline="true" @submit.native.prevent>
             <el-form-item>
               <el-input
                 ref="passwordInput"
@@ -244,6 +263,18 @@ export default class Setting extends Vue {
     shell.openExternal("https://qwqaq.com")
   }
 
+  remoteSyncSwitch (fieldName: string, isEnabled: boolean) {
+    if (!this.$dataStore.Settings.remoteSync.hasOwnProperty(fieldName)) {
+      let err = 'remoteSyncSwitch() "'+fieldName+'" fieldName not found.'
+      window.notify(err, 'e')
+      throw new Error(err)
+    }
+    this.adminBtn(() => {
+      (this.$dataStore.Settings.remoteSync as any)[fieldName] = isEnabled
+      this.$dataStore.save()
+    })
+  }
+
   oldVersionDataImport(data: any) {
     let PlanList: DataType.Plan[] = []
     let GrpList: DataType.Grp[] = []
@@ -333,6 +364,10 @@ export default class Setting extends Vue {
 
       .setting-item {
         &:not(:last-child) {
+          margin-bottom: 10px;
+        }
+
+        & > *:not(:last-child) {
           margin-bottom: 10px;
         }
       }

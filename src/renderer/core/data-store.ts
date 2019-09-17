@@ -22,6 +22,7 @@ class DataStore extends Vue {
     password: '',
     /** 远程同步 */
     remoteSync: {
+      enabled: false,
       server: '',
       autoSync: false
     }
@@ -31,6 +32,8 @@ class DataStore extends Vue {
   public readonly LS_KEY = 'DS_DATASTORE'
   /** LocalStorage 数据中所包含的字段（属于 this 中的字段名） */
   public readonly DATA_FIELDS = ['PlanList', 'GrpList', 'RecList', 'AreaList', 'Settings']
+  /** 允许上传到云端的字段 */
+  public readonly DATA_ALLOW_UPLOAD_FIELDS = ['PlanList', 'GrpList', 'RecList', 'AreaList']
 
   /** 初始化数据 */
   public created (): void {
@@ -60,9 +63,9 @@ class DataStore extends Vue {
   }
 
   /** 获取所有数据为 Json Str */
-  public getAllDataAsJsonStr () {
+  public getAllDataAsJsonStr (dataFields: string[] = this.DATA_FIELDS) {
     let obj: any = {}
-    _.forEach(this.DATA_FIELDS, (key) => {
+    _.forEach(dataFields, (key) => {
       obj[key] = (this as any)[key]
     })
     return JSON.stringify(obj)
