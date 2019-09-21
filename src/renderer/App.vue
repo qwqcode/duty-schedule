@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <DataHelper />
+    <component v-for="name in serviceNames" :is="name" :key="name" />
     <top-bar :sub-title="subTitle"></top-bar>
     <div class="page-wrap">
       <transition :name="transitionName">
@@ -14,12 +14,12 @@
 <script lang="ts">
   import Vue from 'vue'
   import { Watch, Component } from 'vue-property-decorator'
-  import DataHelper from './DataHelper.vue'
+  import Services from './services'
   import TopBar from './components/TopBar.vue'
   import BottomBar from './components/BottomBar.vue'
 
   @Component({
-    components: { TopBar, BottomBar, DataHelper }
+    components: { TopBar, BottomBar, ...Services }
   })
   export default class App extends Vue {
     transitionName: string = ''
@@ -35,6 +35,10 @@
       const fromDepth = from.path.split('/').length
       this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
       this.setSubTitle('')
+    }
+
+    get serviceNames () {
+      return Object.keys(Services)
     }
   }
 </script>

@@ -55,6 +55,8 @@ class DataStore extends Vue {
         if (Array.isArray(obj[key])) {
           (this as any)[key] = []
           _.forEach(obj[key], (item) => (this as any)[key].push(item))
+        } else if (typeof obj[key] === 'object') {
+          (this as any)[key] = Object.assign((this as any)[key], obj[key])
         } else {
           (this as any)[key] = obj[key]
         }

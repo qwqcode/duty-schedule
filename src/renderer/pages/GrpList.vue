@@ -22,15 +22,11 @@
             </span>
           </div>
           <div class="item" v-for="person in grp.personList" :key="person">
-            <div class="name" @click="showProfile(person)" v-html="searchHighlight(person)"></div>
+            <div class="name" @click="$personProfile.open(person)" v-html="searchHighlight(person)"></div>
           </div>
         </div>
       </el-col>
     </el-row>
-
-    <Dialog :isOpened="profileDialog.isOpened" @close="hideProfile()">
-      <PersonProfile :personName="profileDialog.personName" />
-    </Dialog>
   </div>
 </template>
 
@@ -39,18 +35,16 @@ import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Watch, Component } from 'vue-property-decorator'
 import Dialog from '../components/Dialog.vue'
-import PersonProfile from '../components/PersonProfile.vue'
 import { Grp } from '../core/data-interfaces'
 
 @Component({
-  components: { Dialog, PersonProfile }
+  components: { Dialog }
 })
 export default class GrpList extends Vue {
   grpSelList: Grp[] = []
   searchKeyWords: string = ''
 
   profileDialog = {
-    isOpened: false,
     personName: ''
   }
 
@@ -105,15 +99,6 @@ export default class GrpList extends Vue {
         text.substring(index + text.length)
     }
     return text
-  }
-
-  showProfile(personName: string) {
-    this.profileDialog.isOpened = true
-    this.profileDialog.personName = personName
-  }
-
-  hideProfile() {
-    this.profileDialog.isOpened = false
   }
 }
 </script>

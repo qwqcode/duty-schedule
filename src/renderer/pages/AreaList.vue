@@ -15,10 +15,10 @@
 
             <span class="item-info" v-if="asSelector">
               <span :title="`${dataValue.person} 已做过 ${$dataQuery.getPersonTaskRec(dataValue.person, task)} 次该任务`">
-                <i class="zmdi zmdi-account"></i> {{ $dataQuery.getPersonTaskRec(dataValue.person, task) }}
+                <i class="zmdi zmdi-account" /> {{ $dataQuery.getPersonTaskRec(dataValue.person, task) }}
               </span>
               <span :title="`共有 ${getSelectedTotal(task)} 人参与该任务`">
-                <i class="zmdi zmdi-accounts"></i> {{ getSelectedTotal(task) }}
+                <i class="zmdi zmdi-accounts" /> {{ getSelectedTotal(task) }}
               </span>
             </span>
           </div>

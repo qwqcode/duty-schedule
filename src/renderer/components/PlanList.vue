@@ -29,7 +29,7 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Watch, Component } from 'vue-property-decorator';
-import { Plan } from '../core/data-interfaces';
+import { Plan } from '@/core/data-interfaces';
 
 @Component({})
 export default class PlanList extends Vue {

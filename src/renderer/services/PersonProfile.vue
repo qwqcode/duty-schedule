@@ -1,10 +1,9 @@
 <template>
-  <div class="person-profile" :class="{ 'as-selector': !!asSel, 'hide-task-sel': !showTaskSel }">
+  <Dialog ref="dialog">
+  <div v-if="!!profile" class="person-profile" :class="{ 'as-selector': !!selMode, 'hide-task-sel': !showTaskSel }">
     <div class="base-info">
       <span class="name">{{ personName }}</span>
-      <template v-if="profile">
-        <span>最后执行：{{ profile.lastWorkPlan ? `${profile.lastWorkPlan.name} (${$dataQuery.timeAgo(new Date(profile.lastWorkPlan.time))})` : '无' }}</span>
-      </template>
+      <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
 
       <slide-y-up-transition>
         <div v-if="taskRecView.show" class="task-rec-view">
@@ -22,8 +21,8 @@
             <div
               v-for="(task, taskI) in area.taskList"
               :key="taskI"
-              class="task-item" @click="asSel ? selectTask(task) : null"
-              :class="{ 'selected': !!asSel && task === value.task }"
+              class="task-item" @click="selectTask(task)"
+              :class="{ 'selected': !!selMode && task === selMode.data.task }"
             >
               <div class="name">{{ task }}</div>
               <div class="badge-box">
@@ -41,6 +40,7 @@
       </div>
     </div>
   </div>
+  </Dialog>
 </template>
 
 <script lang="ts">
@@ -49,39 +49,46 @@ import Vue from 'vue'
 import { Component, Prop } from 'vue-property-decorator'
 import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
 import { CalendarHeatmap } from 'vue-calendar-heatmap'
+import Dialog from '@/components/Dialog.vue'
+
+type SelMode = {
+  data: PersonTaskItem
+  beforeSel?: ((taskName: string) => boolean|void)
+}
 
 @Component({
-  components: { CalendarHeatmap }
+  components: { CalendarHeatmap, Dialog }
 })
 export default class PersonProfile extends Vue {
+  personName: string = ''
+  selMode: SelMode|null = null
   showTaskSel = true
   taskRecView = {
     show: false,
     taskName: <string|null>null
   }
 
-  @Prop({
-    type: Boolean,
-    default: false
-  }) readonly asSel!: boolean
-  @Prop({
-    required: true
-  }) readonly personName!: string
-  @Prop() readonly value!: PersonTaskItem
-  @Prop() readonly plan!: Plan
-
-  created() {
+  created () {
+    Vue.prototype.$personProfile = this
   }
 
   mounted () {
   }
 
-  selectTask (taskName: string) {
-    this.$emit('input', Object.assign(this.value, { task: taskName }))
+  open (personName: string, selMode?: SelMode) {
+    this.personName = personName
+    this.selMode = selMode || null;
+
+    (this.$refs.dialog as Dialog).show()
   }
 
-  get DataValue(): any {
-    return this.value
+  selectTask (taskName: string) {
+    if (!!this.selMode) {
+      if (this.selMode.beforeSel !== undefined && (this.selMode.beforeSel(taskName) === false)) {
+        return
+      }
+      this.selMode.data.task = taskName
+    }
   }
 
   get areaList () {
@@ -89,7 +96,15 @@ export default class PersonProfile extends Vue {
   }
 
   get profile () {
-    return this.$dataQuery.getPersonProfile(this.personName)
+    return !!this.personName ? this.$dataQuery.getPersonProfile(this.personName) : null
+  }
+
+  get profileDetails (): {[label: string]: string} {
+    if (!this.profile) { return {} }
+
+    return {
+      '最后执行': this.profile.lastWorkPlan ? `${this.profile.lastWorkPlan.name} (${this.$dataQuery.timeAgo(new Date(this.profile.lastWorkPlan.time))})` : '无'
+    }
   }
 
   get taskRecViewData () {

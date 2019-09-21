@@ -1,7 +1,7 @@
 <template>
   <div>
     <component v-for="key in dataHelpersKeys" :is="key" :key="key"></component>
-    <Dialog class="remote-sync-dialog" :isOpened="remoteSyncDialog.isOpened" :showCloseBtn="false">
+    <Dialog ref="remoteSyncDialog" class="remote-sync-dialog" :showCloseBtn="false">
       <div class="msg"><i class="zmdi zmdi-download" /> 数据正在从云端同步中{{ remoteSyncDialog.dots }}</div>
     </Dialog>
   </div>
@@ -27,8 +27,7 @@ const dataHelpers = {
 export default class DataHelper extends Vue {
   remoteSyncDialog = {
     dots: '',
-    dotsInterval: <number|undefined>undefined,
-    isOpened: false
+    dotsInterval: <number|undefined>undefined
   }
 
   get dataHelpersKeys () {
@@ -51,7 +50,7 @@ export default class DataHelper extends Vue {
 
   setRemoteSyncLoading (isLoading: boolean) {
     if (isLoading) {
-      this.remoteSyncDialog.isOpened = true
+      (this.$refs.remoteSyncDialog as Dialog).show()
       let n = 0
       this.remoteSyncDialog.dotsInterval = window.setInterval(() => {
         if (n === 0) {
@@ -67,7 +66,7 @@ export default class DataHelper extends Vue {
       }, 500)
     } else {
       if (this.remoteSyncDialog.dotsInterval !== undefined) {
-        this.remoteSyncDialog.isOpened = false
+        (this.$refs.remoteSyncDialog as Dialog).hide()
         this.remoteSyncDialog.dots = ''
         window.clearInterval(this.remoteSyncDialog.dotsInterval)
       }

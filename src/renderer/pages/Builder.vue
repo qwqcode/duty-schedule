@@ -68,7 +68,7 @@
                   <div class="grp-input task-input">
                     <input
                       :value="item.task"
-                      @focus="showTaskSelDialog(item)"
+                      @focus="$personProfile.open(item.person, { data: item })"
                       type="text"
                       readonly="readonly"
                       autocomplete="off"
@@ -93,16 +93,11 @@
         <i class="zmdi zmdi-save"></i>
       </div>
     </div>
-
-    <Dialog :isOpened="taskSelDialog.isShow" @close="hideTaskSelDialog()">
-      <PersonProfile v-model="taskSelDialog.personTaskItem" :asSel="true" :personName="taskSelDialog.personTaskItem.person" />
-    </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import GrpList from './GrpList.vue'
-import PersonProfile from '../components/PersonProfile.vue'
 import Dialog from '../components/Dialog.vue'
 import $ from 'jQuery'
 import _ from 'lodash'
@@ -111,16 +106,11 @@ import { Component, Watch } from 'vue-property-decorator'
 import { Plan, Grp, PlanGrp, PersonTaskItem, Area } from '../core/data-interfaces'
 
 @Component({
-  components: { GrpList, Dialog, PersonProfile }
+  components: { GrpList, Dialog }
 })
 export default class Builder extends Vue {
   plan: Plan = this.$dataAction.newEmptyPlan()
   selGrpList: Grp[] = []
-
-  taskSelDialog = {
-    isShow: false,
-    personTaskItem: <PersonTaskItem>{}
-  }
 
   created() {}
 
@@ -233,15 +223,6 @@ export default class Builder extends Vue {
     this.plan.time = new Date().getTime()
     this.$dataAction.savePlan(this.plan)
     this.$router.replace('/')
-  }
-
-  showTaskSelDialog (personTaskItem: PersonTaskItem) {
-    this.taskSelDialog.isShow = true
-    this.taskSelDialog.personTaskItem = personTaskItem
-  }
-
-  hideTaskSelDialog () {
-    this.taskSelDialog.isShow = false
   }
 }
 </script>

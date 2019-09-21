@@ -2,7 +2,8 @@ import DataStore from '@/core/data-store'
 import DataAction from '@/core/data-action'
 import DataQuery from '@/core/data-query'
 import DataFate from '@/core/data-fate'
-import DataHelper from '@/DataHelper.vue'
+import DataHelper from '@/services/DataHelper.vue'
+import PersonProfile from '@/services/PersonProfile.vue'
 
 declare module 'vue/types/vue' {
   interface Vue {
@@ -11,5 +12,13 @@ declare module 'vue/types/vue' {
     $dataQuery: DataQuery
     $dataFate: DataFate
     $dataHelper: DataHelper
+    $personProfile: PersonProfile
+  }
+}
+
+declare global {
+  interface Window {
+    notify(message: string, level?: string, timeout?: number): void
+    test: any
   }
 }

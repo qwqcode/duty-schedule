@@ -1,12 +1,12 @@
 <template>
   <slide-y-up-transition>
     <div
-      v-if="isOpened"
+      v-if="isShow"
       class="dialog"
       style="animation-duration: 0.3s"
     >
       <div class="inner">
-        <div v-if="showCloseBtn" class="close-btn" @click="$emit('close')">
+        <div v-if="showCloseBtn" class="close-btn" @click="onCloseBtnClick">
           <i class="zmdi zmdi-close" />
         </div>
         <div class="body">
@@ -23,10 +23,23 @@ import { Prop, Watch, Component } from 'vue-property-decorator'
 
 @Component({})
 export default class Dialog extends Vue {
-  @Prop() readonly isOpened!: boolean
+  isShow: boolean = false
   @Prop({
     default: true
   }) readonly showCloseBtn!: boolean
+
+  show () {
+    this.isShow = true
+  }
+
+  hide () {
+    this.isShow = false
+  }
+
+  onCloseBtnClick () {
+    this.isShow = false
+    this.$emit('onclosed')
+  }
 }
 </script>
 

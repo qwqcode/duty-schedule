@@ -85,7 +85,7 @@
         <span @click="openBlog()" style="cursor: pointer;color: #1a73e8">qwqaq.com</span>
       </div>
 
-      <Dialog :isOpened="passwordDialog.isOpened" @close="passwordDialog.isOpened = false">
+      <Dialog ref="passwordDialog">
         <div class="password-dialog">
           <div class="desc">{{ { 'input': '请求管理员权限', 'modify': '修改管理员密码' }[passwordDialog.type] }}</div>
           <el-form :inline="true" @submit.native.prevent>
@@ -126,7 +126,6 @@ export default class Setting extends Vue {
   dataEditorTargetFieldName: string | null = null
   dataEditorVal: string = ""
   passwordDialog = {
-    isOpened: false,
     type: <'input'|'modify'|null> null,
     value: '',
     onSuccess: () => {}
@@ -143,8 +142,8 @@ export default class Setting extends Vue {
   }
 
   openPasswordDialog (type: 'input'|'modify'|null) {
-    this.passwordDialog.value = ''
-    this.passwordDialog.isOpened = true
+    this.passwordDialog.value = '';
+    (this.$refs.passwordDialog as Dialog).show()
     this.passwordDialog.type = type
     window.setTimeout(() => {
       (this.$refs.passwordInput as HTMLElement).focus()
@@ -155,7 +154,7 @@ export default class Setting extends Vue {
     switch (this.passwordDialog.type) {
       case 'input':
         if (this.passwordDialog.value === this.$dataStore.Settings.password) {
-          this.passwordDialog.isOpened = false
+          (this.$refs.passwordDialog as Dialog).hide()
           this.passwordDialog.onSuccess()
         } else {
           this.passwordDialog.value = ''
@@ -165,8 +164,8 @@ export default class Setting extends Vue {
       case 'modify':
         this.$dataStore.Settings.password = this.passwordDialog.value
         this.$dataStore.save()
-        window.notify('密码修改成功', 's')
-        this.passwordDialog.isOpened = false
+        window.notify('密码修改成功', 's');
+        (this.$refs.passwordDialog as Dialog).hide()
         this.passwordDialog.value = ''
         break
     }
