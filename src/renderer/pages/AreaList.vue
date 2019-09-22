@@ -1,31 +1,58 @@
 <template>
-  <div :class="{ 'as-selector': !!asSelector }" class="page area-list-page">
-    <div class="area-list">
-      <div v-if="!asSelector" class="page-title">
-        任务类型
+  <div class="page area-list-page">
+    <div :class="{ 'edit-mode': editMode }" class="area-list">
+      <div class="page-title">
+        区域任务
+        <div class="action-box">
+          <span v-if="!editMode" @click="editMode = true">
+            <i class="zmdi zmdi-edit" /> 编辑
+          </span>
+          <span v-if="editMode" @click="editSave()">
+            <i class="zmdi zmdi-save" /> 保存
+          </span>
+          <span v-if="editMode" @click="editCancel()">
+            <i class="zmdi zmdi-close" /> 放弃
+          </span>
+        </div>
       </div>
       <div class="inner">
         <div v-for="(area, areaIndex) in areaList" :key="areaIndex" class="group">
           <div class="group-title">
-            {{ !isUniqueMode ? area.name : `为 ${dataValue.person} 分配任务` }}
+            <EditableContent :editable="editMode" :value="area.name" :on-editing="(val) => modifyAreaName(area, val)">
+              {{ area.name }}
+            </EditableContent>
           </div>
 
           <div
-            v-for="(task, taskIndex) in area.taskList"
-            :key="taskIndex"
-            @click="!!asSelector ? selectType(task) : null"
-            :class="{ 'selected': !!asSelector && dataValue.task === task }"
+            v-for="(count, task) in getAreaTaskUniqueList(area)"
+            :key="task"
             class="item"
           >
-            <span class="item-text">{{ taskIndex + 1 }}. {{ task }}</span>
+            <span class="item-text">
+              <EditableContent :editable="editMode" :value="task" :on-editing="(val) => modifyTaskName(area, task, val)">
+                {{ task }}
+              </EditableContent>
+            </span>
 
-            <span v-if="asSelector" class="item-info">
-              <span :title="`${dataValue.person} 已做过 ${$dataQuery.getPersonTaskRec(dataValue.person, task)} 次该任务`">
-                <i class="zmdi zmdi-account" /> {{ $dataQuery.getPersonTaskRec(dataValue.person, task) }}
+            <span class="item-info">
+              <span v-if="!editMode" :title="`一次需要 ${count} 个人做该任务`">
+                <span class="count">x{{ count }}</span>
               </span>
-              <span :title="`共有 ${getSelectedTotal(task)} 人参与该任务`">
-                <i class="zmdi zmdi-accounts" /> {{ getSelectedTotal(task) }}
+              <span v-else class="count-input">
+                <input
+                  :value="count"
+                  @change="modifyTaskQuantity(area, task, $event.target.value)"
+                  type="number"
+                  min="1"
+                >
               </span>
+              <span v-if="editMode" @click="removeTask(area, task)" class="clickable"><i class="zmdi zmdi-delete" /></span>
+            </span>
+          </div>
+
+          <div v-if="editMode" class="item">
+            <span class="item-info">
+              <span @click="addNewTask(area)"><i class="zmdi zmdi-plus" /></span>
             </span>
           </div>
         </div>
@@ -37,55 +64,80 @@
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
-import { Component, Prop } from 'vue-property-decorator'
-import { Plan } from '../core/data-interfaces';
+import { Component, Prop, Watch } from 'vue-property-decorator'
+import { Plan, Area } from '../core/data-interfaces'
+import EditableContent from '../components/EditableContent.vue'
 
-@Component({})
+@Component({
+  components: { EditableContent }
+})
 export default class AreaList extends Vue {
-    isUniqueMode: boolean = false
+  editMode = false
 
-    @Prop() readonly asSelector!: boolean
+  areaList: Area[] = []
 
-    @Prop() readonly value!: Object
-
-    @Prop() readonly plan!: Plan
-
-    created () {
-      if (this.asSelector) {
-        this.isUniqueMode = true
-      }
-    }
-
-    get dataValue (): any {
-      return this.value
-    }
-
-    get areaList () {
-        if (!this.isUniqueMode)
-          return this.$dataStore.AreaList
-        return this.$dataQuery.getAreaListWithUniqueTask()
-      }
-
-    selectType (taskName: string) {
-        this.$emit('input', Object.assign(this.value, { task: taskName }))
-      }
-
-      getSelectedTotal (taskName: string) {
-        let count = 0
-        _.forEach(this.plan.grpList, (group) => {
-          _.forEach(group.personTaskList, (item) => {
-            if (item.task === taskName) {
-              count++
-            }
-          })
-        })
-
-        return count
-      }
+  created () {
+    this.areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
   }
+
+  getAreaTaskUniqueList (area: Area) {
+    const list: { [taskName: string]: number } = {}
+    _.forEach(area.taskList, (taskName) => {
+      if (!_.has(list, taskName)) {
+        list[taskName] = 1
+      } else {
+        list[taskName]++
+      }
+    })
+
+    return list
+  }
+
+  modifyAreaName (area: Area, toVal: string) {
+    area.name = toVal
+  }
+
+  modifyTaskName (area: Area, taskName: string, toVal: string) {
+    area.taskList = _.map(area.taskList, (item) => item === taskName ? toVal : item)
+  }
+
+  modifyTaskQuantity (area: Area, taskName: string, numStr?: string) {
+    if (numStr === undefined || Number.isNaN(Number(numStr))) { return }
+    const num = Number(numStr)
+    if (num <= 0) { return }
+
+    let firstIndex = area.taskList.indexOf(taskName)
+    if (firstIndex <= -1) { firstIndex = 0 }
+    const newList = _.filter(area.taskList, o => o !== taskName)
+    for (let i = 0; i < num; i++) {
+      newList.splice(firstIndex + i, 0, taskName)
+    }
+    area.taskList = newList
+  }
+
+  removeTask (area: Area, taskName: string) {
+    area.taskList = _.filter(area.taskList, o => o !== taskName)
+  }
+
+  addNewTask (area: Area) {
+    area.taskList.push(`新任务 ${area.taskList.filter(o => o.startsWith('新任务')).length + 1}`)
+  }
+
+  editSave () {
+    this.$dataStore.AreaList = this.areaList
+    this.$dataStore.save()
+    window.notify('数据已保存', 's')
+    this.editMode = false
+  }
+
+  editCancel () {
+    this.areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
+    this.editMode = false
+  }
+}
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .area-list-page {
   .area-list {
     max-width: 40%;
@@ -108,59 +160,55 @@ export default class AreaList extends Vue {
         }
 
         .item {
+          display: flex;
+          flex-direction: row;
           padding: 5px 10px;
           position: relative;
 
-          .item-info {
-            position: absolute;
-            right: 10px;
+          .item-text {
+            flex: 1;
+            margin-right: 10px;
+          }
 
+          .item-info {
             & > span {
               background: rgba(66,133,244,0.12);
               padding: 3px 10px;
               border-radius: 50px;
               font-size: 12px;
 
-              & > i {
-                margin-right: 2px;
-              }
-
               &:not(:last-child) {
                 margin-right: 5px;
               }
+
+              &.clickable {
+                cursor: pointer;
+
+                &:hover {
+                  color: #FFF;
+                  background: #0083ff;
+                }
+              }
+            }
+
+            .count-input {
+              input {
+                display: inline-block;
+                border: 0;
+                outline: none;
+                background: transparent;
+                font-size: inherit;
+                box-sizing: border-box;
+                width: 15px;
+                text-align: center;
+
+                &::-webkit-outer-spin-button, &::-webkit-inner-spin-button {
+                  -webkit-appearance: none;
+                  margin: 0;
+                }
+              }
             }
           }
-        }
-      }
-    }
-  }
-
-  &.as-selector {
-    .area-list {
-      max-width: 50%;
-    }
-
-    .area-list .inner .group .item {
-      cursor: pointer;
-      padding-right: 100px;
-
-      &:not(:last-child) {
-        margin-bottom: 3px;
-      }
-
-      &:hover {
-        background: rgba(66,133,244,0.12);
-        color: #1a73e8;
-      }
-
-      &.selected {
-        color: #fff;
-        background: #67C23A;
-
-        &:before {
-          content: '\F26B';
-          font: normal normal normal 14px/1 'Material-Design-Iconic-Font';
-          margin-right: 10px;
         }
       }
     }

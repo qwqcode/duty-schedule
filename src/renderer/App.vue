@@ -75,6 +75,26 @@
   .page-title {
     font-size: 2em;
     margin-bottom: 10px;
+
+    .action-box {
+      display: inline-block;
+      font-size: 14px;
+      vertical-align: sub;
+
+      & > span {
+        float: left;
+        padding: 1px 6px;
+        cursor: pointer;
+
+        &:hover {
+          color: #1a73e8;
+        }
+
+        &:not(:last-child) {
+          margin-right: 2px;
+        }
+      }
+    }
   }
 }
 

@@ -35,7 +35,7 @@ export default class DataQuery extends Vue {
     return _.uniq(this.getAllTaskInAllArea())
   }
 
-  /** 获取 TaskList 已去除重复的 AreaList */
+  /** 获取 已去重 TaskList 的 AreaList */
   public getAreaListWithUniqueTask (): Area[] {
     const areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
     _.forEach(areaList, (area) => {
