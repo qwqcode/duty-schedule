@@ -1,66 +1,77 @@
 <template>
   <div class="page schedule-page fullscreen">
     <div class="task-list-sidebar" style="display: none">
-      <div class="inner" ref="taskListSidebarInner">
-        <plan-list class="plan-list" @openPlan="openPlan" :selected-plan="plan"></plan-list>
+      <div ref="taskListSidebarInner" class="inner">
+        <plan-list @openPlan="openPlan" :selected-plan="plan" class="plan-list" />
       </div>
     </div>
     <div class="inner">
       <div class="left-bar">
         <div class="card group-switch">
-          <div class="item" @click="showTaskListSidebar()">
-            <i class="zmdi zmdi-menu"></i>
+          <div @click="showTaskListSidebar()" class="item">
+            <i class="zmdi zmdi-menu" />
           </div>
-          <div class="dividing"></div>
+          <div class="dividing" />
           <div class="item">
-            <i class="zmdi zmdi-flag"></i>
+            <i class="zmdi zmdi-flag" />
           </div>
         </div>
-        <div class="card group-switch" v-if="plan !== null">
-          <div class="title">组</div>
+        <div v-if="plan !== null" class="card group-switch">
+          <div class="title">
+            组
+          </div>
           <div
-            class="item"
             v-for="(group, key) in plan.grpList"
             :key="key"
-            :class="{ 'active': key == curtGrpKey }"
             @click="switchGrp(key)"
-          >{{ group.grpId }}</div>
+            :class="{ 'active': key == curtGrpKey }"
+            class="item"
+          >
+            {{ group.grpId }}
+          </div>
         </div>
         <div class="card group-switch">
-          <div class="item" @click="autoSwitch = !autoSwitch">
-            <i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`"></i>
+          <div @click="autoSwitch = !autoSwitch" class="item">
+            <i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`" />
           </div>
         </div>
       </div>
-      <div class="right-card" v-if="plan !== null">
+
+      <div v-if="plan !== null" class="right-card">
         <transition-group name="zoom" tag="div">
           <div
-            class="float-card group-info"
             v-for="(grp, key) in plan.grpList"
             :key="grp.grpId"
             :ref="`groupInfoCard_${key}`"
             v-show="key == curtGrpKey"
+            class="float-card group-info"
           >
             <div class="inner">
-              <div class="auto-switch-bar" v-show="autoSwitch"></div>
+              <div v-show="autoSwitch" class="auto-switch-bar" />
               <div class="content">
-                <div class="title">第 {{ grp.grpId }} 组</div>
-                <el-row class="task-type-group-wrap" :gutter="30">
+                <div class="title">
+                  第 {{ grp.grpId }} 组
+                </div>
+                <el-row :gutter="30" class="task-type-group-wrap">
                   <el-col
-                    class="task-type-group"
                     v-for="(item, i) in tasksPersonNameList"
                     :key="i"
                     :span="8"
+                    class="task-type-group"
                     style="margin-bottom: 20px;"
                   >
-                    <div class="type-name">{{ item.task }}</div>
+                    <div class="type-name">
+                      {{ item.task }}
+                    </div>
                     <div class="members">
                       <div
-                        class="member-item"
                         v-for="(person, pi) in item.persons"
                         :key="pi"
                         @click="$personProfile.open(person)"
-                      >{{ person }}</div>
+                        class="member-item"
+                      >
+                        {{ person }}
+                      </div>
                     </div>
                   </el-col>
                 </el-row>
@@ -75,52 +86,56 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import PlanList from '../components/PlanList.vue'
-import Dialog from '../components/Dialog.vue'
 import _ from 'lodash'
 import $ from 'jquery'
-import { Plan, PlanGrp } from '../core/data-interfaces'
 import { Watch, Component } from 'vue-property-decorator'
+import { Plan, PlanGrp } from '../core/data-interfaces'
 import { GrpList, AreaList } from '../core/data-localtest'
+import PlanList from '../components/PlanList.vue'
+import Dialog from '../components/Dialog.vue'
 
 @Component({
   components: { PlanList, Dialog }
 })
 export default class Schedule extends Vue {
   plan: Plan | null = null
+
   curtGrpKey: number = 0
+
   autoSwitch: boolean = false
+
   autoSwitchInterval: number|null = null
+
   isTaskListSidebarShow: boolean = false
 
   created() {
     // 测试
     // this.$dataStore.clearAll()
-    /*this.$dataStore.GrpList = GrpList
+    /* this.$dataStore.GrpList = GrpList
     this.$dataStore.AreaList = AreaList
-    this.$dataStore.save()*/
+    this.$dataStore.save() */
 
-    let createTestPlan = (grpIdList: number[] = [1, 2, 3, 4], areaArr: string[] = ['教室', '教室', '公区', '公区']) => {
-      let selGrp = this.$dataStore.GrpList.filter(o => grpIdList.includes(o.id))
+    const createTestPlan = (grpIdList: number[] = [1, 2, 3, 4], areaArr: string[] = ['教室', '教室', '公区', '公区']) => {
+      const selGrp = this.$dataStore.GrpList.filter(o => grpIdList.includes(o.id))
 
-      let areaDict: { [grpId: number]: string } = {}
+      const areaDict: { [grpId: number]: string } = {}
       grpIdList.forEach((id, index) => {
         areaDict[id] = areaArr[index]
       })
 
-      let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrp, areaDict)
+      const personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrp, areaDict)
 
-      let grpList2 = JSON.parse(JSON.stringify(selGrp))
-      let newPlanGrpList: PlanGrp[] = []
+      const grpList2 = JSON.parse(JSON.stringify(selGrp))
+      const newPlanGrpList: PlanGrp[] = []
 
       _.forEach(grpList2, (grp, key) => {
-        let nPl: { person: string, task: string }[] = []
+        const nPl: { person: string, task: string }[] = []
         _.forEach(grp.personList, (person, index) => {
           if (!personToTask[person]) return
-          nPl.push({ person: person, task: personToTask[person]})
+          nPl.push({ person, task: personToTask[person]})
         })
 
-        let planGrp: PlanGrp = {
+        const planGrp: PlanGrp = {
           grpId: grp.id,
           personTaskList: nPl,
           area: areaDict[grp.id]
@@ -129,31 +144,32 @@ export default class Schedule extends Vue {
         newPlanGrpList.push(planGrp)
       })
 
-      let plan: Plan = {
+      const plan: Plan = {
         id: +new Date(),
         name: '测试计划',
         grpList: newPlanGrpList,
         time: +new Date()
       }
 
-      console.log(plan)
+      window.console.log(plan)
 
       this.$dataAction.savePlan(plan)
     }
 
     for (let i = 0; i < 100; i++) {
-      //createTestPlan([1, 2, 3, 4], ['教室', '教室', '公区', '公区'])
-      //createTestPlan([3, 4, 1, 2], ['教室', '教室', '公区', '公区'])
+      // createTestPlan([1, 2, 3, 4], ['教室', '教室', '公区', '公区'])
+      // createTestPlan([3, 4, 1, 2], ['教室', '教室', '公区', '公区'])
     }
 
-    console.log(this.$dataStore)
+    window.console.log(this.$dataStore)
 
+    // eslint-disable-next-line prefer-destructuring
     this.plan = this.planList[0]
   }
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    (this.$parent as any).setSubTitle(' ' + newPlan.name)
+    (this.$parent as any).setSubTitle(` ${  newPlan.name}`)
   }
 
   @Watch('curtGrpKey')
@@ -165,11 +181,9 @@ export default class Schedule extends Vue {
   onAutoSwitchChanged(newVal: boolean) {
     if (newVal === true) {
       this.startAutoSwitch()
-    } else {
-      if (this.autoSwitchInterval !== null) {
+    } else if (this.autoSwitchInterval !== null) {
         window.clearInterval(this.autoSwitchInterval)
       }
-    }
   }
 
   /** 计划列表 */
@@ -184,13 +198,13 @@ export default class Schedule extends Vue {
 
   /** 每个任务下的成员名字 列表 */
   get tasksPersonNameList() {
-    let list: Array<{ task: string; persons: string[] }> = []
+    const list: Array<{ task: string; persons: string[] }> = []
     _.forEach((this.currGrp as PlanGrp).personTaskList, (personTaskItem) => {
-      let person = personTaskItem.person,
-          task = personTaskItem.task
+      const {person} = personTaskItem;
+          const {task} = personTaskItem
       let item = list.find(o => o.task === task)
       if (item === undefined) {
-        item = { task: task, persons: [] }
+        item = { task, persons: [] }
         list.push(item)
       }
       item.persons.push(person)
@@ -233,8 +247,8 @@ export default class Schedule extends Vue {
     this.getSwitchBar().style.height = '100%';
 
     this.autoSwitchInterval = window.setInterval(() => {
-      let switchBar = this.getSwitchBar()
-      switchBar.style.height = (((timeout - timeLeft) / timeout) * 100).toFixed(2) + '%'
+      const switchBar = this.getSwitchBar()
+      switchBar.style.height = `${(((timeout - timeLeft) / timeout) * 100).toFixed(2)  }%`
       timeLeft += perTime
       if (timeLeft > timeout) {
         // 切换组

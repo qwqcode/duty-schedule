@@ -3,24 +3,26 @@
     <div class="grp-selector">
       <div class="sel-action-bar">
         <span class="action-btn">
-          <i class="zmdi zmdi-flare"></i> 一键安排
+          <i class="zmdi zmdi-flare" /> 一键安排
         </span>
-        <span class="action-btn" @click="autoSelectGrp()">
-          <i class="zmdi zmdi-graphic-eq"></i> 自动选组
+        <span @click="autoSelectGrp()" class="action-btn">
+          <i class="zmdi zmdi-graphic-eq" /> 自动选组
         </span>
       </div>
       <div class="grp-list">
         <div
-          class="grp-item"
           v-for="grp in $dataStore.GrpList"
           :key="grp.id"
-          :class="{ 'is-selected': isGrpSelected(grp) }"
           @click="selectGrp(grp)"
+          :class="{ 'is-selected': isGrpSelected(grp) }"
+          class="grp-item"
         >
           <div class="grp-sel-icon">
-            <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+            <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
           </div>
-          <div class="grp-name">第 {{ grp.id }} 组</div>
+          <div class="grp-name">
+            第 {{ grp.id }} 组
+          </div>
           <div class="badge-box">
             <span v-if="$dataQuery.getIsGrpExitsInLatestPlan(grp.id)" class="warn">上次</span>
             <span>{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
@@ -39,7 +41,7 @@
           <el-form class="center-form">
             <el-form-item label="标题">
               <div class="grp-input">
-                <input v-model="plan.name" type="text" autocomplete="off" placeholder="输入文字" />
+                <input v-model="plan.name" type="text" autocomplete="off" placeholder="输入文字">
               </div>
             </el-form-item>
           </el-form>
@@ -47,21 +49,23 @@
 
         <div class="plan-grp-list">
           <div
-            class="grp-item form-box anim-fade-in"
             v-for="planGrp in plan.grpList"
             :key="planGrp.grpId"
+            class="grp-item form-box anim-fade-in"
           >
-            <div class="grp-head">第 {{ planGrp.grpId }} 组</div>
+            <div class="grp-head">
+              第 {{ planGrp.grpId }} 组
+            </div>
 
             <div
-              class="grp-person-item"
               v-for="(item, index) in planGrp.personTaskList"
               :key="index"
+              class="grp-person-item"
             >
               <div class="item-form">
                 <div class="left-part">
                   <div class="grp-input person-input">
-                    <input v-model="item.person" type="text" autocomplete="off" placeholder="名字" />
+                    <input v-model="item.person" type="text" autocomplete="off" placeholder="名字">
                   </div>
                 </div>
                 <div class="right-part">
@@ -73,7 +77,7 @@
                       readonly="readonly"
                       autocomplete="off"
                       placeholder="任务"
-                    />
+                    >
                     <div class="badge-box">
                       <span v-if="$dataQuery.getIsPersonLastDidTheTask(item.person, item.task)" class="warn">上次做过</span>
                       <span>{{ $dataQuery.getPersonTaskRec(item.person, item.task) }}</span>
@@ -88,35 +92,36 @@
     </div>
 
     <div class="plan-action-bar">
-      <div class="plan-save-btn" @click="savePlan()">
+      <div @click="savePlan()" class="plan-save-btn">
         保存
-        <i class="zmdi zmdi-save"></i>
+        <i class="zmdi zmdi-save" />
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import GrpList from './GrpList.vue'
-import Dialog from '../components/Dialog.vue'
-import $ from 'jQuery'
+import $ from 'jquery'
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component, Watch } from 'vue-property-decorator'
+import GrpList from './GrpList.vue'
 import { Plan, Grp, PlanGrp, PersonTaskItem, Area } from '../core/data-interfaces'
+import Dialog from '../components/Dialog.vue'
 
 @Component({
   components: { GrpList, Dialog }
 })
 export default class Builder extends Vue {
   plan: Plan = this.$dataAction.newEmptyPlan()
+
   selGrpList: Grp[] = []
 
   created() {}
 
-  ///
-  /// 小组选择
-  ///
+  // /
+  // / 小组选择
+  // /
 
   selectGrp(grp: Grp) {
     if (!this.isGrpSelected(grp)) {
@@ -133,11 +138,12 @@ export default class Builder extends Vue {
 
   /** 自动选组 */
   autoSelectGrp () {
-    let areaGrpList: { [areaName: string]: Grp[] } = {}
+    const areaGrpList: { [areaName: string]: Grp[] } = {}
 
     _.forEach(this.$dataStore.AreaList, area => {
-      let grpList: Grp[] = areaGrpList[area.name] = []
-      let grpListSorted = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id, area.name))
+      const grpList: Grp[] = []
+      areaGrpList[area.name] = grpList
+      const grpListSorted = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id, area.name))
       _.forEach(grpListSorted, grp => {
         if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
         if (Object.values(grpList).length >= 2) { return } // 若已排满
@@ -148,7 +154,7 @@ export default class Builder extends Vue {
     })
 
     // 补充缺的组（上次做同样的 Area 也满足条件）
-    let grpListSortedByRecSum = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id))
+    const grpListSortedByRecSum = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id))
     _.forEach(areaGrpList, (grpList, areaName) => {
       if (grpList.length >= 2) { return }
       _.forEach(grpListSortedByRecSum, grp => {
@@ -178,34 +184,34 @@ export default class Builder extends Vue {
   }
 
 
-  ///
-  /// 小组成员任务安排
-  ///
+  // /
+  // / 小组成员任务安排
+  // /
 
   @Watch('selGrpList')
   onSelGrpListChanged(selGrpList: Grp[]) {
-    console.log(selGrpList)
+    window.console.log(selGrpList)
 
-    let areaOrder = ['教室', '教室', '公区', '公区']
-    let grpToAreaDict: { [grpId: number]: string } = {}
+    const areaOrder = ['教室', '教室', '公区', '公区']
+    const grpToAreaDict: { [grpId: number]: string } = {}
     _.forEach(selGrpList, (grp, index) => {
       grpToAreaDict[grp.id] = areaOrder[index]
     })
-    console.log(grpToAreaDict)
+    window.console.log(grpToAreaDict)
 
-    let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
-    console.log(personToTask)
+    const personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
+    window.console.log(personToTask)
 
     // 创建新 grpList
-    let PlanGrpList: PlanGrp[] = []
+    const PlanGrpList: PlanGrp[] = []
 
     _.forEach(selGrpList, (grp, key) => {
-      let nPl: { person: string; task: string }[] = []
+      const nPl: { person: string; task: string }[] = []
       _.forEach(grp.personList, (person, index) => {
-        nPl.push({ person: person, task: personToTask[person] || '' })
+        nPl.push({ person, task: personToTask[person] || '' })
       })
 
-      let planGrp: PlanGrp = {
+      const planGrp: PlanGrp = {
         grpId: grp.id,
         personTaskList: nPl,
         area: grpToAreaDict[grp.id]
@@ -215,7 +221,7 @@ export default class Builder extends Vue {
     })
 
     this.plan.grpList = PlanGrpList
-    console.log("\n\n")
+    window.console.log("\n\n")
   }
 
   savePlan() {

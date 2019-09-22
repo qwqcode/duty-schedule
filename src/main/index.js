@@ -1,5 +1,4 @@
-'use strict'
-
+/* eslint-disable global-require */
 import { app, BrowserWindow, ipcMain } from 'electron'
 
 /**
@@ -7,10 +6,11 @@ import { app, BrowserWindow, ipcMain } from 'electron'
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
  */
 if (process.env.NODE_ENV !== 'development') {
+  // eslint-disable-next-line no-underscore-dangle
   global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
 }
 
-process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = true
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
 
 let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
@@ -59,11 +59,11 @@ app.on('activate', () => {
   }
 })
 
-ipcMain.on('close-me', (evt, arg) => {
+ipcMain.on('close-me', () => {
   app.quit()
 })
 
-ipcMain.on('open-dev-tools', (evt, arg) => {
+ipcMain.on('open-dev-tools', () => {
   mainWindow.webContents.openDevTools()
 })
 

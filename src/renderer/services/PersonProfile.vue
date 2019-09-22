@@ -1,54 +1,61 @@
 <template>
   <Dialog ref="dialog">
-  <div v-if="!!profile" class="person-profile" :class="{ 'as-selector': !!selMode, 'hide-task-sel': !showTaskSel }">
-    <div class="base-info">
-      <span class="name">{{ personName }}</span>
-      <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
+    <div v-if="!!profile" :class="{ 'as-selector': !!selMode, 'hide-task-sel': !showTaskSel }" class="person-profile">
+      <div class="base-info">
+        <span class="name">{{ personName }}</span>
+        <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
 
-      <slide-y-up-transition>
-        <div v-if="taskRecView.show" class="task-rec-view">
-          <div class="view-desc">"{{ personName }}" 的 “{{ taskRecView.taskName }}” 记录</div>
-          <calendar-heatmap v-if="!showTaskSel" :values="taskRecViewData" :end-date="$dataQuery.dateFormat(new Date())" />
-        </div>
-      </slide-y-up-transition>
-    </div>
+        <slide-y-up-transition>
+          <div v-if="taskRecView.show" class="task-rec-view">
+            <div class="view-desc">
+              "{{ personName }}" 的 “{{ taskRecView.taskName }}” 记录
+            </div>
+            <calendar-heatmap v-if="!showTaskSel" :values="taskRecViewData" :end-date="$dataQuery.dateFormat(new Date())" />
+          </div>
+        </slide-y-up-transition>
+      </div>
 
-    <div class="task-sel">
-      <div v-if="showTaskSel" class="area-list">
-        <div v-for="(area, areaI) in areaList" :key="areaI" class="area-item">
-          <div class="area-name">{{ area.name }}</div>
-          <div class="task-list">
-            <div
-              v-for="(task, taskI) in area.taskList"
-              :key="taskI"
-              class="task-item" @click="selectTask(task)"
-              :class="{ 'selected': !!selMode && task === selMode.data.task }"
-            >
-              <div class="name">{{ task }}</div>
-              <div class="badge-box">
-                <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`">
-                  <i class="zmdi zmdi-calendar-check" />
-                  {{ $dataQuery.getPersonTaskRec(personName, task) }}
-                </span>
+      <div class="task-sel">
+        <div v-if="showTaskSel" class="area-list">
+          <div v-for="(area, areaI) in areaList" :key="areaI" class="area-item">
+            <div class="area-name">
+              {{ area.name }}
+            </div>
+            <div class="task-list">
+              <div
+                v-for="(task, taskI) in area.taskList"
+                :key="taskI"
+                @click="selectTask(task)"
+                :class="{ 'selected': !!selMode && task === selMode.data.task }"
+                class="task-item"
+              >
+                <div class="name">
+                  {{ task }}
+                </div>
+                <div class="badge-box">
+                  <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`">
+                    <i class="zmdi zmdi-calendar-check" />
+                    {{ $dataQuery.getPersonTaskRec(personName, task) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div v-else class="action-bar">
-        <span @click="closeTaskRecView()"><i class="zmdi zmdi-arrow-left" /> 返回</span>
+        <div v-else class="action-bar">
+          <span @click="closeTaskRecView()"><i class="zmdi zmdi-arrow-left" /> 返回</span>
+        </div>
       </div>
     </div>
-  </div>
   </Dialog>
 </template>
 
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
-import { Component, Prop } from 'vue-property-decorator'
-import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
+import { Component } from 'vue-property-decorator'
 import { CalendarHeatmap } from 'vue-calendar-heatmap'
+import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
 import Dialog from '@/components/Dialog.vue'
 
 type SelMode = {
@@ -61,11 +68,14 @@ type SelMode = {
 })
 export default class PersonProfile extends Vue {
   personName: string = ''
+
   selMode: SelMode|null = null
+
   showTaskSel = true
+
   taskRecView = {
     show: false,
-    taskName: <string|null>null
+    taskName: null as string|null
   }
 
   created () {
@@ -83,7 +93,7 @@ export default class PersonProfile extends Vue {
   }
 
   selectTask (taskName: string) {
-    if (!!this.selMode) {
+    if (this.selMode) {
       if (this.selMode.beforeSel !== undefined && (this.selMode.beforeSel(taskName) === false)) {
         return
       }
@@ -96,7 +106,7 @@ export default class PersonProfile extends Vue {
   }
 
   get profile () {
-    return !!this.personName ? this.$dataQuery.getPersonProfile(this.personName) : null
+    return this.personName ? this.$dataQuery.getPersonProfile(this.personName) : null
   }
 
   get profileDetails (): {[label: string]: string} {
@@ -108,16 +118,16 @@ export default class PersonProfile extends Vue {
   }
 
   get taskRecViewData () {
-    let dateToCount: {[date: string]: number} = {}
+    const dateToCount: {[date: string]: number} = {}
 
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
-      let date = this.$dataQuery.dateFormat(new Date(plan.time))
+      const date = this.$dataQuery.dateFormat(new Date(plan.time))
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
         if (planGrp.personTaskList.find(o => (o.person === this.personName && o.task === this.taskRecView.taskName))) {
-          if (!dateToCount.hasOwnProperty(date)) {
+          if (!_.has(dateToCount, date)) {
             dateToCount[date] = 1
           } else {
-            dateToCount[date] += 1;
+            dateToCount[date]++
           }
         }
       })

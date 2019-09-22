@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { Prop, Watch, Component } from 'vue-property-decorator'
+import { Component } from 'vue-property-decorator'
 import $ from 'jquery'
 
 @Component({})
@@ -12,7 +12,7 @@ export default class Notify extends Vue {
   created() {
     /* notify */
     window.notify = (message: string, level?: string, timeout?: number): void => {
-      console.log('[notify][' + level + '][' + new Date().toLocaleString() + '] ' + message)
+      window.console.log(`[notify][${level}][${new Date().toLocaleString()}] ${message}`)
 
       timeout = timeout || 1000
 
@@ -21,20 +21,20 @@ export default class Notify extends Vue {
         layerElem = $('<div class="notify-layer" />').appendTo('body')
       }
 
-      let notifyElem = $(
-        '<div class="notify-item anim-fade-in ' + (level ? 'type-' + level : '') + '"><p class="notify-content"></p></div>'
+      const notifyElem = $(
+        `<div class="notify-item anim-fade-in ${(level ? `type-${level}` : '')}"><p class="notify-content"></p></div>`
       )
       notifyElem.find('.notify-content').html(message.replace('\n', '<br/>'))
       notifyElem.prependTo(layerElem)
 
-      let notifyRemove = function() {
+      const notifyRemove = () => {
         notifyElem.addClass('anim-fade-out')
-        setTimeout(function() {
+        setTimeout(() => {
           notifyElem.remove()
         }, 200)
       }
 
-      let timeOutFn = setTimeout(() => {
+      const timeOutFn = setTimeout(() => {
         notifyRemove()
       }, timeout)
 

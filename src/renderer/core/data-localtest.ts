@@ -1,6 +1,6 @@
 import { Grp, Area } from './data-interfaces';
 
-export var GrpList: Grp[] = [
+export const GrpList: Grp[] = [
   {
     id: 1,
     personList: ["刘泉蕾", "毛铁林", "贾思雨", "杨俊贤", "何其", "石超林"]
@@ -39,7 +39,7 @@ export var GrpList: Grp[] = [
   }
 ]
 
-export var AreaList: Area[] = [{
+export const AreaList: Area[] = [{
   name: "教室",
   taskList: [
     "教室 地面扫+拖", "教室 地面扫+拖", "教室 地面扫+拖",

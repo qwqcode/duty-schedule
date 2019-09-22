@@ -1,19 +1,25 @@
 <template>
-  <div class="page area-list-page" :class="{ 'as-selector': !!asSelector }">
+  <div :class="{ 'as-selector': !!asSelector }" class="page area-list-page">
     <div class="area-list">
-      <div class="page-title" v-if="!asSelector">任务类型</div>
+      <div v-if="!asSelector" class="page-title">
+        任务类型
+      </div>
       <div class="inner">
-        <div class="group" v-for="(area, areaIndex) in areaList" :key="areaIndex">
-          <div class="group-title">{{ !isUniqueMode ? area.name : `为 ${dataValue.person} 分配任务` }}</div>
+        <div v-for="(area, areaIndex) in areaList" :key="areaIndex" class="group">
+          <div class="group-title">
+            {{ !isUniqueMode ? area.name : `为 ${dataValue.person} 分配任务` }}
+          </div>
 
-          <div class="item"
+          <div
             v-for="(task, taskIndex) in area.taskList"
             :key="taskIndex"
             @click="!!asSelector ? selectType(task) : null"
-            :class="{ 'selected': !!asSelector && dataValue.task === task }">
+            :class="{ 'selected': !!asSelector && dataValue.task === task }"
+            class="item"
+          >
             <span class="item-text">{{ taskIndex + 1 }}. {{ task }}</span>
 
-            <span class="item-info" v-if="asSelector">
+            <span v-if="asSelector" class="item-info">
               <span :title="`${dataValue.person} 已做过 ${$dataQuery.getPersonTaskRec(dataValue.person, task)} 次该任务`">
                 <i class="zmdi zmdi-account" /> {{ $dataQuery.getPersonTaskRec(dataValue.person, task) }}
               </span>
@@ -37,8 +43,11 @@ import { Plan } from '../core/data-interfaces';
 @Component({})
 export default class AreaList extends Vue {
     isUniqueMode: boolean = false
+
     @Prop() readonly asSelector!: boolean
+
     @Prop() readonly value!: Object
+
     @Prop() readonly plan!: Plan
 
     created () {
@@ -54,8 +63,7 @@ export default class AreaList extends Vue {
     get areaList () {
         if (!this.isUniqueMode)
           return this.$dataStore.AreaList
-        else
-          return this.$dataQuery.getAreaListWithUniqueTask()
+        return this.$dataQuery.getAreaListWithUniqueTask()
       }
 
     selectType (taskName: string) {

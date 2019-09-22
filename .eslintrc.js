@@ -4,17 +4,23 @@ module.exports = {
   parserOptions: {
     parser: '@typescript-eslint/parser',
     sourceType: 'module',
-    project: "./tsconfig.json"
+    ecmaVersion: 2018
   },
   env: {
     browser: true,
     node: true
   },
-  extends: ['standard', 'prettier', 'prettier/standard'],
+  extends: [
+    'airbnb-typescript/base',
+    'prettier',
+    'prettier/@typescript-eslint',
+    'prettier/vue',
+    'plugin:vue/recommended'
+  ],
+  plugins: ['@typescript-eslint', 'vue', 'import'],
   globals: {
     __static: true
   },
-  plugins: ['@typescript-eslint', 'prettier', 'standard', 'html'],
   rules: {
     // allow paren-less arrow functions
     'arrow-parens': 0,
@@ -22,6 +28,25 @@ module.exports = {
     'generator-star-spacing': 0,
     // allow debugger during development
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
-    "no-unused-vars": "warn"
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
+    'class-methods-use-this': 0,
+    'no-param-reassign': 0,
+    'vue/require-component-is': 0,
+    'no-plusplus': 0,
+    'vue/max-attributes-per-line': ['warn', {
+      "singleline": 4,
+      "multiline": {
+        "max": 1,
+        "allowFirstLine": false
+      }
+    }]
+  },
+  settings: {
+    'import/core-modules': ['electron', 'vue-property-decorator'],
+    'import/resolver': {
+      // use <root>/tsconfig.json
+      'typescript': {},
+    }
   }
 }

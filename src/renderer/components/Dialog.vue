@@ -6,7 +6,7 @@
       style="animation-duration: 0.3s"
     >
       <div class="inner">
-        <div v-if="showCloseBtn" class="close-btn" @click="onCloseBtnClick">
+        <div v-if="showCloseBtn" @click="onCloseBtnClick" class="close-btn">
           <i class="zmdi zmdi-close" />
         </div>
         <div class="body">
@@ -19,11 +19,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { Prop, Watch, Component } from 'vue-property-decorator'
+import { Prop, Component } from 'vue-property-decorator'
 
 @Component({})
 export default class Dialog extends Vue {
   isShow: boolean = false
+
   @Prop({
     default: true
   }) readonly showCloseBtn!: boolean

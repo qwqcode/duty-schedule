@@ -1,11 +1,10 @@
 <template>
-  <div class="page">
-
-  </div>
+  <div class="page" />
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
+
 export default class Example extends Vue {
 
 }

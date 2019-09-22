@@ -1,13 +1,13 @@
 <template>
   <div id="app">
     <component v-for="name in serviceNames" :is="name" :key="name" />
-    <top-bar :sub-title="subTitle"></top-bar>
+    <top-bar :sub-title="subTitle" />
     <div class="page-wrap">
       <transition :name="transitionName">
-        <router-view></router-view>
+        <router-view />
       </transition>
     </div>
-    <bottom-bar></bottom-bar>
+    <bottom-bar />
   </div>
 </template>
 
@@ -23,6 +23,7 @@
   })
   export default class App extends Vue {
     transitionName: string = ''
+
     subTitle: string = ''
 
     setSubTitle (str: string) {

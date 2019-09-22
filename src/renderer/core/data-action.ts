@@ -13,7 +13,7 @@ export default class DataAction extends Vue {
     Vue.prototype.$dataAction = this
   }
 
-  render () { return '' }
+  public render () { return '' }
 
   /** 获取一个空 Plan */
   public newEmptyPlan () : Plan {
@@ -41,7 +41,7 @@ export default class DataAction extends Vue {
 
   /** 同步 Rec */
   public syncRec (): void {
-    let recList: Rec[] = []
+    const recList: Rec[] = []
     // 遍历计划列表
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
@@ -51,25 +51,24 @@ export default class DataAction extends Vue {
           areaRec = { name: planGrp.area, type: 'Area', data: {} }
           recList.push(areaRec)
         }
-        if (!areaRec.data.hasOwnProperty(planGrp.grpId)) {
+        if (!_.has(areaRec.data, planGrp.grpId)) {
           areaRec.data[planGrp.grpId] = 1
         } else {
-          areaRec.data[planGrp.grpId] += 1
+          areaRec.data[planGrp.grpId]++
         }
 
         // 更新该组的个人任务列表
         _.forEach(planGrp.personTaskList, (item) => {
-          let task = item.task
-          let person = item.person
+          const { task, person } = item
           let taskRec = _.find(recList, (o) => o.type === 'Task' && o.name === task)
           if (!taskRec) {
             taskRec = { name: task, type: 'Task', data: {} }
             recList.push(taskRec)
           }
-          if (!taskRec.data.hasOwnProperty(person)) {
+          if (!_.has(taskRec.data, person)) {
             taskRec.data[person] = 1
           } else {
-            taskRec.data[person] += 1
+            taskRec.data[person]++
           }
         })
       })
@@ -96,12 +95,12 @@ export default class DataAction extends Vue {
 
   /** 获取日期文字 */
   public getDateText () {
-    let myDate = new Date()
-    let year = myDate.getFullYear()
-    let month = myDate.getMonth() + 1
-    let date = myDate.getDate()
-    let str = '星期' + '日一二三四五六'.charAt(new Date().getDay())
-    return year + '-' + month + '-' + date + ' ' + str
+    const myDate = new Date()
+    const year = myDate.getFullYear()
+    const month = myDate.getMonth() + 1
+    const date = myDate.getDate()
+    const str = `星期${'日一二三四五六'.charAt(new Date().getDay())}`
+    return `${year}-${month}-${date} ${str}`
   }
 
   /** 从远程同步数据 */
@@ -144,12 +143,12 @@ export default class DataAction extends Vue {
       return
     }
 
-    let data = new FormData()
+    const data = new FormData()
     data.append('data', this.$dataStore.getAllDataAsJsonStr(this.$dataStore.DATA_ALLOW_UPLOAD_FIELDS))
     axios.post(this.$dataStore.Settings.remoteSync.server, data, {
       params: { 'op': 'upload' }
-    }).then(({ data }) => {
-      if (data.success) {
+    }).then(({ data: respData }) => {
+      if (respData.success) {
         window.notify('数据已成功上传到云端', 's')
       } else {
         window.notify('数据上传到云端失败', 'e')

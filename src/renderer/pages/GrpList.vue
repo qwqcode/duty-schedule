@@ -1,8 +1,8 @@
 <template>
-  <div class="page group-list-page" :class="{ 'as-selector': !!asSelector }">
+  <div :class="{ 'as-selector': !!asSelector }" class="page group-list-page">
     <div class="search">
       <el-input v-model="searchKeyWords" placeholder="搜索" autocomplete="off" clearable>
-        <i slot="prefix" class="el-input__icon el-icon-search"></i>
+        <i slot="prefix" class="el-input__icon el-icon-search" />
       </el-input>
     </div>
 
@@ -10,19 +10,19 @@
       <el-col
         v-for="grp in grpList"
         :key="grp.id"
-        class="group-item"
-        :class="{ 'is-selected': isGrpSelected(grp) }"
         :span="6"
+        :class="{ 'is-selected': isGrpSelected(grp) }"
+        class="group-item"
       >
-        <div class="inner" @click="!!asSelector ? selectGrp(grp) : null">
+        <div @click="!!asSelector ? selectGrp(grp) : null" class="inner">
           <div class="group-title">
             <span class="group-title-text">第 {{ grp.id }} 组</span>
             <span v-if="!!asSelector" class="select-btn">
-              <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+              <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
             </span>
           </div>
-          <div class="item" v-for="person in grp.personList" :key="person">
-            <div class="name" @click="$personProfile.open(person)" v-html="searchHighlight(person)"></div>
+          <div v-for="person in grp.personList" :key="person" class="item">
+            <div v-html="searchHighlight(person)" @click="$personProfile.open(person)" class="name" />
           </div>
         </div>
       </el-col>
@@ -42,6 +42,7 @@ import { Grp } from '../core/data-interfaces'
 })
 export default class GrpList extends Vue {
   grpSelList: Grp[] = []
+
   searchKeyWords: string = ''
 
   profileDialog = {
@@ -89,14 +90,14 @@ export default class GrpList extends Vue {
     if (!this.searchKeyWords) {
       return text
     }
-    let index = text.indexOf(this.searchKeyWords)
+    const index = text.indexOf(this.searchKeyWords)
     if (index >= 0) {
       text =
-        text.substring(0, index) +
-        '<span style="color: red;font-weight: bold;">' +
-        text.substring(index, index + text.length) +
-        '</span>' +
-        text.substring(index + text.length)
+        `${text.substring(0, index)
+        }<span style="color: red;font-weight: bold;">${
+        text.substring(index, index + text.length)
+        }</span>${
+        text.substring(index + text.length)}`
     }
     return text
   }

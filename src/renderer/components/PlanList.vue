@@ -1,11 +1,15 @@
 <template>
   <div class="plan-list">
-    <div class="plan-list-item"
-         v-for="plan in planList"
-         :key="plan.id"
-         :class="{ 'selected': (plan === selectedPlan) }">
-      <div class="inner" @click="openPlan(plan)">
-        <div class="title">{{ plan.name }}</div>
+    <div
+      v-for="plan in planList"
+      :key="plan.id"
+      :class="{ 'selected': (plan === selectedPlan) }"
+      class="plan-list-item"
+    >
+      <div @click="openPlan(plan)" class="inner">
+        <div class="title">
+          {{ plan.name }}
+        </div>
         <div class="meta">
           <span class="time">{{ $dataQuery.timeAgo(new Date(plan.time)) }}</span>
           <span class="groups">组: {{ getPlanGrpDesc(plan) }}</span>
@@ -13,13 +17,13 @@
       </div>
       <div class="flags">
         <span
-          class="flag flag-green"
           v-if="$dataQuery.dateFormat(new Date(plan.time)) === $dataQuery.dateFormat(new Date())"
+          class="flag flag-green"
         >今日</span>
         <!--<span class="flag flag-red" v-if="plan.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
       <span class="act-btns">
-        <span class="btn-item" @click="deletePlan(plan)"><i class="zmdi zmdi-delete"></i></span>
+        <span @click="deletePlan(plan)" class="btn-item"><i class="zmdi zmdi-delete" /></span>
       </span>
     </div>
   </div>
@@ -28,13 +32,15 @@
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
-import { Prop, Watch, Component } from 'vue-property-decorator';
-import { Plan } from '@/core/data-interfaces';
+import { Prop, Component } from 'vue-property-decorator'
+import { Plan } from '@/core/data-interfaces'
 
 @Component({})
 export default class PlanList extends Vue {
   @Prop() readonly selectedPlan!: Plan
+
   deleteBtnClickTime: number = 0
+
   removingPlanId: number | null = null
 
   get planList () {
@@ -45,51 +51,50 @@ export default class PlanList extends Vue {
       this.$emit('openPlan', plan)
     }
 
-    getPlanGrpDesc (plan: Plan) {
-      let str = ''
-      let areaList: { [areaName: string]: number[] } = {}
-      _.forEach(plan.grpList, (group, i) => {
-        if (!areaList.hasOwnProperty(group.area)) {
-          areaList[group.area] = []
-        }
-        areaList[group.area].push(group.grpId)
-      })
-
-      _.forEach(areaList, (grsIdList, areaName) => {
-        str += _.sortBy(grsIdList).join(', ')
-        str += ' - '
-      })
-
-      return _.trimEnd(str, ' - ')
-    }
-
-    isDataAllowEdit () {
-      if (typeof (window as any).SETTING_DATA_ALLOW_EDIT !== 'boolean' || (window as any).SETTING_DATA_ALLOW_EDIT !== true) {
-        window.notify('没有权限修改数据', 'w')
-        console.log('[window.SETTING_DATA_ALLOW_EDIT]')
-        return false
-      } else {
-        return true
+  getPlanGrpDesc (plan: Plan) {
+    let str = ''
+    const areaList: { [areaName: string]: number[] } = {}
+    _.forEach(plan.grpList, (group) => {
+      if (!_.has(areaList, group.area)) {
+        areaList[group.area] = []
       }
-    }
+      areaList[group.area].push(group.grpId)
+    })
 
-    deletePlan (plan: Plan) {
-      if (this.isDataAllowEdit()) {
-        if (this.removingPlanId !== plan.id) {
-          this.removingPlanId = plan.id
-          this.deleteBtnClickTime = 0
-        }
-        if (this.deleteBtnClickTime < 3 - 1) {
-          this.deleteBtnClickTime++
-          window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
-          return
-        }
-        this.$dataAction.delPlan(plan)
-        window.notify(`"${plan.name}" 已删除`, 'i')
+    _.forEach(areaList, (grpIdList) => {
+      str += _.sortBy(grpIdList).join(', ')
+      str += ' - '
+    })
+
+    return _.trimEnd(str, ' - ')
+  }
+
+  isDataAllowEdit () {
+    if (typeof (window as any).SETTING_DATA_ALLOW_EDIT !== 'boolean' || (window as any).SETTING_DATA_ALLOW_EDIT !== true) {
+      window.notify('没有权限修改数据', 'w')
+      window.console.log('[window.SETTING_DATA_ALLOW_EDIT]')
+      return false
+    }
+    return true
+  }
+
+  deletePlan (plan: Plan) {
+    if (this.isDataAllowEdit()) {
+      if (this.removingPlanId !== plan.id) {
+        this.removingPlanId = plan.id
         this.deleteBtnClickTime = 0
-        this.removingPlanId = null
       }
+      if (this.deleteBtnClickTime < 3 - 1) {
+        this.deleteBtnClickTime++
+        window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
+        return
+      }
+      this.$dataAction.delPlan(plan)
+      window.notify(`"${plan.name}" 已删除`, 'i')
+      this.deleteBtnClickTime = 0
+      this.removingPlanId = null
     }
+  }
 }
 </script>
 

@@ -1,16 +1,18 @@
 <template>
   <div class="top-bar-wrap">
     <div class="top-bar">
-      <div class="left">值日任务表 <span class="sub-title">{{ subTitle }}</span></div>
+      <div class="left">
+        值日任务表 <span class="sub-title">{{ subTitle }}</span>
+      </div>
       <div class="right">
         <button class="btn" data-action="minimize">
-          <span class="icon window-minimize"></span>
+          <span class="icon window-minimize" />
         </button>
         <button class="btn" data-action="maximize">
-          <span class="icon" :class="!isMaximize ? 'window-maximize' : 'window-unmaximize'"></span>
+          <span :class="!isMaximize ? 'window-maximize' : 'window-unmaximize'" class="icon" />
         </button>
         <button class="btn" data-action="close">
-          <span class="icon window-close"></span>
+          <span class="icon window-close" />
         </button>
       </div>
     </div>
@@ -20,20 +22,22 @@
 <script lang="ts">
   import Vue from 'vue'
   import { Prop, Component } from 'vue-property-decorator'
+
   const { remote } = require('electron')
 
-  @Component
+  @Component({})
   export default class TopBar extends Vue {
     @Prop({ default: '' })
     subTitle: string = ''
+
     isMaximize = false
 
     mounted () {
-      let btns = document.querySelectorAll('[data-action]')
+      const btns = document.querySelectorAll('[data-action]')
       btns.forEach(btn => {
-        let type = btn.getAttribute('data-action')
+        const type = btn.getAttribute('data-action')
         btn.addEventListener('click', () => {
-          let window = remote.getCurrentWindow()
+          const window = remote.getCurrentWindow()
           switch (type) {
             case 'close':
               window.close()
@@ -49,6 +53,8 @@
               break
             case 'minimize':
               window.minimize()
+              break
+            default:
               break
           }
         })

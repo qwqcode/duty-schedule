@@ -1,15 +1,17 @@
 <template>
   <div>
-    <component v-for="key in dataHelpersKeys" :is="key" :key="key"></component>
-    <Dialog ref="remoteSyncDialog" class="remote-sync-dialog" :showCloseBtn="false">
-      <div class="msg"><i class="zmdi zmdi-download" /> 数据正在从云端同步中{{ remoteSyncDialog.dots }}</div>
+    <component v-for="key in dataHelpersKeys" :key="key" :is="key" />
+    <Dialog ref="remoteSyncDialog" :showCloseBtn="false" class="remote-sync-dialog">
+      <div class="msg">
+        <i class="zmdi zmdi-download" /> 数据正在从云端同步中{{ remoteSyncDialog.dots }}
+      </div>
     </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
-import { Prop, Watch, Component } from 'vue-property-decorator'
+import { Component } from 'vue-property-decorator'
 import Dialog from '@/components/Dialog.vue'
 import DataStore from '@/core/data-store'
 import DataAction from '@/core/data-action'
@@ -27,7 +29,7 @@ const dataHelpers = {
 export default class DataHelper extends Vue {
   remoteSyncDialog = {
     dots: '',
-    dotsInterval: <number|undefined>undefined
+    dotsInterval: undefined as number|undefined
   }
 
   get dataHelpersKeys () {
@@ -64,12 +66,11 @@ export default class DataHelper extends Vue {
           n = 0
         }
       }, 500)
-    } else {
-      if (this.remoteSyncDialog.dotsInterval !== undefined) {
-        (this.$refs.remoteSyncDialog as Dialog).hide()
-        this.remoteSyncDialog.dots = ''
-        window.clearInterval(this.remoteSyncDialog.dotsInterval)
-      }
+    } else if (!isLoading && this.remoteSyncDialog.dotsInterval !== undefined) {
+      (this.$refs.remoteSyncDialog as Dialog).hide()
+      this.remoteSyncDialog.dots = ''
+      window.clearInterval(this.remoteSyncDialog.dotsInterval)
+      this.remoteSyncDialog.dotsInterval = undefined
     }
   }
 }
