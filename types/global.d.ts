@@ -4,6 +4,7 @@ import DataQuery from '@/core/data-query'
 import DataFate from '@/core/data-fate'
 import DataHelper from '@/services/DataHelper.vue'
 import PersonProfile from '@/services/PersonProfile.vue'
+import Permission from '@/services/Permission.vue'
 
 declare module 'vue/types/vue' {
   interface Vue {
@@ -13,6 +14,7 @@ declare module 'vue/types/vue' {
     $dataFate: DataFate
     $dataHelper: DataHelper
     $personProfile: PersonProfile
+    $permission: Permission
   }
 }
 

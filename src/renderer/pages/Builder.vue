@@ -92,7 +92,7 @@
     </div>
 
     <div class="plan-action-bar">
-      <div @click="savePlan()" class="plan-save-btn">
+      <div @click="$permission.adminBtn(() => { savePlan() })" class="plan-save-btn">
         保存
         <i class="zmdi zmdi-save" />
       </div>

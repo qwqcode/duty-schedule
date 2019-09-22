@@ -15,16 +15,16 @@
               <template v-for="(fieldName, index) in $dataStore.DATA_FIELDS">
                 <el-button
                   :key="index"
-                  @click="adminBtn(() => { toggleDataEditor(fieldName) })"
+                  @click="$permission.adminBtn(() => { toggleDataEditor(fieldName) })"
                   size="small"
                 >
                   {{ fieldName }}
                 </el-button>
               </template>
-              <el-button @click="adminBtn(() => { toggleDataEditor('__ALL__') })" size="small">
+              <el-button @click="$permission.adminBtn(() => { toggleDataEditor('__ALL__') })" size="small">
                 __ALL__
               </el-button>
-              <el-button @click="adminBtn(() => { toggleDataEditor('__ALL_OLD_VERSION__') })" size="small">
+              <el-button @click="$permission.adminBtn(() => { toggleDataEditor('__ALL_OLD_VERSION__') })" size="small">
                 __ALL__ (旧版)
               </el-button>
             </div>
@@ -41,7 +41,7 @@
                 type="textarea"
               />
             </div>
-            <el-button @click="adminBtn(dataEditorSave)" type="success" size="mini">
+            <el-button @click="$permission.adminBtn(dataEditorSave)" type="success" size="mini">
               <i class="zmdi zmdi-save" /> 保存
             </el-button>
           </div>
@@ -55,18 +55,18 @@
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
-              <el-button @click="adminBtn(() => { openPasswordDialog('modify') })" size="small">
+              <el-button @click="$permission.openModifyPasswordDialog()" size="small">
                 修改密码
               </el-button>
-              <el-button @click="adminBtn(syncRecList)" size="small">
+              <el-button @click="$permission.adminBtn(syncRecList)" size="small">
                 同步 RecList
               </el-button>
-              <el-button @click="adminBtn(openDevTools)" size="small">
+              <el-button @click="$permission.adminBtn(openDevTools)" size="small">
                 打开调试工具
               </el-button>
               <el-button
                 ref="deleteVuexStoreDataBtn"
-                @click="adminBtn(deleteVuexStoreData)"
+                @click="$permission.adminBtn(deleteVuexStoreData)"
                 size="small"
               >
                 清除所有内容和设定
@@ -94,10 +94,10 @@
               </el-form-item>
             </el-form>
             <div class="buttons">
-              <el-button @click="adminBtn($dataAction.remoteSyncUpload)" size="small">
+              <el-button @click="$permission.adminBtn($dataAction.remoteSyncUpload)" size="small">
                 上传数据到云端
               </el-button>
-              <el-button @click="adminBtn($dataAction.remoteSyncDownload)" size="small">
+              <el-button @click="$permission.adminBtn($dataAction.remoteSyncDownload)" size="small">
                 从云端同步数据
               </el-button>
             </div>
@@ -114,38 +114,6 @@
         <br>© 2019
         <span @click="openBlog()" style="cursor: pointer;color: #1a73e8">qwqaq.com</span>
       </div>
-
-      <Dialog ref="passwordDialog">
-        <div class="password-dialog">
-          <div class="desc">
-            {{ { 'input': '请求管理员权限', 'modify': '修改管理员密码' }[passwordDialog.type] }}
-          </div>
-          <el-form :inline="true" @submit.native.prevent>
-            <el-form-item>
-              <el-input
-                ref="passwordInput"
-                v-model="passwordDialog.value"
-                :type="{ 'input': 'password', 'modify': 'text' }[passwordDialog.type]"
-                placeholder="输入密码"
-                autocomplete="off"
-              >
-                <i slot="prefix" class="el-input__icon el-icon-lock" />
-              </el-input>
-            </el-form-item>
-            <el-form-item>
-              <el-button
-                @click="passwordAction()"
-                type="primary"
-                native-type="submit"
-                plain
-                size="small"
-              >
-                确认
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-      </Dialog>
     </div>
   </div>
 </template>
@@ -166,12 +134,6 @@ export default class Setting extends Vue {
 
   dataEditorVal: string = ""
 
-  passwordDialog = {
-    type: null as 'input'|'modify'|null,
-    value: '',
-    onSuccess: () => {}
-  }
-
   mounted() {
     if (typeof (window as any).SETTING_DATA_ALLOW_EDIT === "undefined") {
       (window as any).SETTING_DATA_ALLOW_EDIT = false
@@ -181,52 +143,6 @@ export default class Setting extends Vue {
   get version() {
     // eslint-disable-next-line global-require
     return require("../../../package.json").version
-  }
-
-  openPasswordDialog (type: 'input'|'modify'|null) {
-    this.passwordDialog.value = '';
-    (this.$refs.passwordDialog as Dialog).show()
-    this.passwordDialog.type = type
-    window.setTimeout(() => {
-      (this.$refs.passwordInput as HTMLElement).focus()
-    }, 80)
-  }
-
-  passwordAction () {
-    switch (this.passwordDialog.type) {
-      case 'input':
-        if (this.passwordDialog.value === this.$dataStore.Settings.password) {
-          (this.$refs.passwordDialog as Dialog).hide()
-          this.passwordDialog.onSuccess()
-        } else {
-          this.passwordDialog.value = ''
-          window.notify('密码错误', 'e')
-        }
-        break
-      case 'modify':
-        this.$dataStore.Settings.password = this.passwordDialog.value
-        this.$dataStore.save()
-        window.notify('密码修改成功', 's');
-        (this.$refs.passwordDialog as Dialog).hide()
-        this.passwordDialog.value = ''
-        break
-      default:
-        break
-    }
-  }
-
-  adminBtn (evt: () => void) {
-    if (
-      typeof this.$dataStore.Settings.password === 'undefined' ||
-      this.$dataStore.Settings.password === '' ||
-      this.passwordDialog.value === this.$dataStore.Settings.password
-    ) {
-      evt()
-      return
-    }
-
-    this.openPasswordDialog('input')
-    this.passwordDialog.onSuccess = evt
   }
 
   toggleDataEditor(fieldName: string) {
@@ -313,7 +229,7 @@ export default class Setting extends Vue {
       window.notify(err, 'e')
       throw new Error(err)
     }
-    this.adminBtn(() => {
+    this.$permission.adminBtn(() => {
       (this.$dataStore.Settings.remoteSync as any)[fieldName] = isEnabled
       this.$dataStore.save()
     })
@@ -416,16 +332,6 @@ export default class Setting extends Vue {
         }
       }
     }
-  }
-}
-
-.password-dialog {
-  background: #fff;
-  padding: 20px 30px;
-
-  .desc {
-    margin-top: 15px;
-    margin-bottom: 15px;
   }
 }
 </style>

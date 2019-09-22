@@ -23,7 +23,7 @@
         <!--<span class="flag flag-red" v-if="plan.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
       <span class="act-btns">
-        <span @click="deletePlan(plan)" class="btn-item"><i class="zmdi zmdi-delete" /></span>
+        <span @click="$permission.adminBtn(() => { deletePlan(plan) })" class="btn-item"><i class="zmdi zmdi-delete" /></span>
       </span>
     </div>
   </div>
@@ -79,21 +79,19 @@ export default class PlanList extends Vue {
   }
 
   deletePlan (plan: Plan) {
-    if (this.isDataAllowEdit()) {
-      if (this.removingPlanId !== plan.id) {
-        this.removingPlanId = plan.id
-        this.deleteBtnClickTime = 0
-      }
-      if (this.deleteBtnClickTime < 3 - 1) {
-        this.deleteBtnClickTime++
-        window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
-        return
-      }
-      this.$dataAction.delPlan(plan)
-      window.notify(`"${plan.name}" 已删除`, 'i')
+    if (this.removingPlanId !== plan.id) {
+      this.removingPlanId = plan.id
       this.deleteBtnClickTime = 0
-      this.removingPlanId = null
     }
+    if (this.deleteBtnClickTime < 3 - 1) {
+      this.deleteBtnClickTime++
+      window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
+      return
+    }
+    this.$dataAction.delPlan(plan)
+    window.notify(`"${plan.name}" 已删除`, 'i')
+    this.deleteBtnClickTime = 0
+    this.removingPlanId = null
   }
 }
 </script>
