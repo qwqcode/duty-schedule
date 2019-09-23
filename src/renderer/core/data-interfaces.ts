@@ -39,6 +39,8 @@ export interface Area {
   name: string
   /** 工作类型列表 */
   taskList: string[]
+  /** 别名 */
+  taskAliasList?: { [targetTask: string]: string[] }
 }
 
 /**

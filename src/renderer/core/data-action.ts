@@ -2,7 +2,7 @@ import _ from 'lodash'
 import axios from 'axios'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
-import { Plan, Rec, PlanGrp } from './data-interfaces'
+import { Plan, Rec, PlanGrp, Area } from './data-interfaces'
 
 /**
  * 数据操作类
@@ -42,33 +42,40 @@ export default class DataAction extends Vue {
   /** 同步 Rec */
   public syncRec (): void {
     const recList: Rec[] = []
+
     // 遍历计划列表
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
-        let areaRec = _.find(recList, (o) => o.type === 'Area' && o.name === planGrp.area)
-        if (!areaRec) {
-          areaRec = { name: planGrp.area, type: 'Area', data: {} }
-          recList.push(areaRec)
-        }
-        if (!_.has(areaRec.data, planGrp.grpId)) {
-          areaRec.data[planGrp.grpId] = 1
-        } else {
-          areaRec.data[planGrp.grpId]++
+        if (this.$dataStore.AreaList.find(o => o.name === planGrp.area)) { // 仅记录 AreaList 存在项
+          let areaRec = _.find(recList, (o) => o.type === 'Area' && o.name === planGrp.area)
+          if (!areaRec) {
+            areaRec = { name: planGrp.area, type: 'Area', data: {} }
+            recList.push(areaRec)
+          }
+          if (!_.has(areaRec.data, planGrp.grpId)) {
+            areaRec.data[planGrp.grpId] = 1
+          } else {
+            areaRec.data[planGrp.grpId]++
+          }
         }
 
         // 更新该组的个人任务列表
         _.forEach(planGrp.personTaskList, (item) => {
           const { task, person } = item
-          let taskRec = _.find(recList, (o) => o.type === 'Task' && o.name === task)
-          if (!taskRec) {
-            taskRec = { name: task, type: 'Task', data: {} }
-            recList.push(taskRec)
-          }
-          if (!_.has(taskRec.data, person)) {
-            taskRec.data[person] = 1
-          } else {
-            taskRec.data[person]++
+          if (
+            this.$dataStore.AreaList.find(o => o.name === planGrp.area && o.taskList.includes(task)) // 仅记录 AreaList 存在项
+          ) {
+            let taskRec = _.find(recList, (o) => o.type === 'Task' && o.name === task)
+            if (!taskRec) {
+              taskRec = { name: task, type: 'Task', data: {} }
+              recList.push(taskRec)
+            }
+            if (!_.has(taskRec.data, person)) {
+              taskRec.data[person] = 1
+            } else {
+              taskRec.data[person]++
+            }
           }
         })
       })
