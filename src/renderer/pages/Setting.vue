@@ -61,7 +61,7 @@
               <el-button @click="$permission.adminBtn(syncRecList)" size="small">
                 同步 RecList
               </el-button>
-              <el-button @click="$permission.adminBtn(openDevTools)" size="small">
+              <el-button v-if="!isWeb" @click="$permission.adminBtn(openDevTools)" size="small">
                 打开调试工具
               </el-button>
               <el-button
@@ -120,7 +120,6 @@
 
 <script lang="ts">
 import _ from 'lodash'
-import { ipcRenderer, shell } from 'electron'
 import { Component } from 'vue-property-decorator'
 import Vue from 'vue'
 import Dialog from '../components/Dialog.vue'
@@ -216,11 +215,18 @@ export default class Setting extends Vue {
   }
 
   openDevTools() {
-    ipcRenderer.send("open-dev-tools")
+    if (this.isWeb) { return }
+    // eslint-disable-next-line global-require
+    require('electron').ipcRenderer.send("open-dev-tools")
   }
 
   openBlog() {
-    shell.openExternal("https://qwqaq.com")
+    if (this.isWeb) {
+      window.location.href = 'https://qwqaq.com'
+      return
+    }
+    // eslint-disable-next-line global-require
+    require('electron').shell.openExternal("https://qwqaq.com")
   }
 
   remoteSyncSwitch (fieldName: string, isEnabled: boolean) {
@@ -298,6 +304,10 @@ export default class Setting extends Vue {
 
     // 同步 Res
     this.$dataAction.syncRec()
+  }
+
+  get isWeb () {
+    return process.env.IS_WEB
   }
 }
 </script>

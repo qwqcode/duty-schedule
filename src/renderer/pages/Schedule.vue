@@ -163,13 +163,23 @@ export default class Schedule extends Vue {
 
     window.console.log(this.$dataStore)
 
-    // eslint-disable-next-line prefer-destructuring
-    this.plan = this.planList[0]
+    if (this.planList.length >= 1) {
+      // eslint-disable-next-line prefer-destructuring
+      this.plan = this.planList[0]
+    }
+  }
+
+  @Watch('planList')
+  onPlanListChanged () {
+    if (this.planList.length >= 1) {
+      // eslint-disable-next-line prefer-destructuring
+      this.plan = this.planList[0]
+    }
   }
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    (this.$parent as any).setSubTitle(` ${  newPlan.name}`)
+    (this.$parent as any).setSubTitle(` ${newPlan.name}`)
   }
 
   @Watch('curtGrpKey')

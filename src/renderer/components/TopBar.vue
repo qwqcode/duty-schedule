@@ -2,9 +2,9 @@
   <div class="top-bar-wrap">
     <div class="top-bar">
       <div class="left">
-        值日任务表 <span class="sub-title">{{ subTitle }}</span>
+        值日任务表 <span v-if="isWeb" class="version-badge">ONLINE</span><span class="sub-title">{{ subTitle }}</span>
       </div>
-      <div class="right">
+      <div v-if="!isWeb" class="right">
         <button class="btn" data-action="minimize">
           <span class="icon window-minimize" />
         </button>
@@ -23,8 +23,6 @@
   import Vue from 'vue'
   import { Prop, Component } from 'vue-property-decorator'
 
-  const { remote } = require('electron')
-
   @Component({})
   export default class TopBar extends Vue {
     @Prop({ default: '' })
@@ -33,11 +31,18 @@
     isMaximize = false
 
     mounted () {
+      this.bindActionBtnEvt()
+    }
+
+    bindActionBtnEvt () {
+      if (this.isWeb) { return }
+
       const btns = document.querySelectorAll('[data-action]')
       btns.forEach(btn => {
         const type = btn.getAttribute('data-action')
         btn.addEventListener('click', () => {
-          const window = remote.getCurrentWindow()
+          // eslint-disable-next-line global-require
+          const window = require('electron').remote.getCurrentWindow()
           switch (type) {
             case 'close':
               window.close()
@@ -59,6 +64,10 @@
           }
         })
       })
+    }
+
+    get isWeb () {
+      return process.env.IS_WEB
     }
   }
 </script>
@@ -85,6 +94,16 @@
     display: flex;
     font-size: 15px;
     -webkit-app-region: drag;
+
+    .version-badge {
+      font-size: 8px;
+      padding: 0px 7px;
+      margin-left: 9px;
+      margin-right: 5px;
+      background: #1a73e8;
+      line-height: 14px;
+      color: #fff;
+    }
 
     .left, .right {
     }
