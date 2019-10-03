@@ -1,12 +1,13 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
-import { Grp } from './data-interfaces'
+import { Grp, Area } from './data-interfaces'
 
 @Component({})
 export default class DataFate extends Vue {
   public created () {
-    Vue.prototype.$dataFate = this
+    Vue.prototype.$dataFate = this;
+    (window as any).$dataFate = this
   }
 
   render () { return '' }
@@ -18,49 +19,120 @@ export default class DataFate extends Vue {
    * @param grpToAreaDict 小组区域指定表（grpId: areaName）
    * @returns 字典 {成员名: 任务名}
    */
-  public assignTaskToGrpListPersons (grpList: Grp[], grpToAreaDict: {[grpId: number]: string}) {
-    // >> Step 1: 构建一个 AreaName->PersonNames 的表（区域名->全部负责该区域的人名）
-    const personNamesOfAreas = this.$dataQuery.getPersonsOfAreaNameDict(grpToAreaDict)
-    window.console.log(personNamesOfAreas)
+  getPersonFateList (grpList: Grp[], grpToAreaDict: {[grpId: number]: string}) {
+    /** Person -> Task */
+    const fateList: { [personName: string]: string } = {}
 
-    // >> Step 2: 遍历 S1 创建的 personNamesInAreas，进行任务安排，并构建 ResultObj
-    const personToTaskDict: {[personName: string]: string} = {}
-    _.forEach(personNamesOfAreas, (personNames, areaName) => {
-      // 获取该区域的全部 Task
-      const findArea = this.$dataStore.AreaList.find((o) => o.name === areaName)
-      if (findArea === undefined) { window.console.error('未找到 Area:', areaName);return }
-      const thisAreaTaskNameArr = this.$dataQuery.getTaskNameArrSorted(findArea.taskList, grpList)
-      // 遍历该区域的全部 Task
-      _.forEach(thisAreaTaskNameArr, (taskName, taskIndex) => {
-        if (taskIndex +1 > personNames.length) return // 如果 该Task index 超过总人数
-        // > 给该区域中的全部人安排任务
-        // 构建候选名单：[{name: 姓名, rec: 执行过该 task 的次数}]
-        const personShortlist: {name: string, rec: number}[] = []
-        _.forEach(personNames, (personName, index) => {
-          // 若这个人已经被安排上了任务，则不安排了
-          if (_.has(personToTaskDict, personName)) return
-          // !! 如果这个人上一次扫地就是做这个 Task, 并且候选名单中还有其他人（至少一个人），那么就不加入候选名单中
-          if (
-            ((personNames.length >= 2 && index === 0) // 如果 小组成员数 >= 两人，并且这个人是第一个人
-              || personShortlist.length >= 1) // 或者，候选名单中已经有了一个人
-          ) {
-            // 才查询是否上次做过
-            if (this.$dataQuery.getIsPersonLastDidTheTask(personName, taskName)) {
-              return // 如果他上次就做过该任务，那么就不安排给他
+    const sortedTaskNameList: { [areaName: string]: string[] } = {}
+    _.forEach(this.$dataStore.AreaList, (area) => {
+      sortedTaskNameList[area.name] = this.$dataQuery.getTaskNameArrSorted(_.uniq(area.taskList), grpList)
+    })
+
+    const taskSelectedCount: { [taskName: string]: number } = {}
+    const taskSelMax: { [taskName: string]: number } = _.countBy(_.flatMap(this.$dataStore.AreaList, o => o.taskList))
+    const isTaskFull = (taskName: string) => ((taskSelectedCount[taskName] || 0) >= taskSelMax[taskName])
+    const isPersonAssigned = (person: string) => _.has(fateList, person)
+    const getNeedTaskPersonNum = (task: string) => (taskSelMax[task] - (taskSelectedCount[task] || 0))
+    const pushToFateList = (personName: string, taskName: string) => {
+      fateList[personName] = taskName
+      taskSelectedCount[taskName] = (taskSelectedCount[taskName] || 0) + 1
+    }
+
+    const areaPersonList = this.$dataQuery.getPersonsOfAreaNameDict(grpToAreaDict)
+    const assignTaskOnce = ({ isPersonCanAssign }: {
+      isPersonCanAssign: (person: string, task: string) => boolean
+    }) => {
+      _.forEach(areaPersonList, (personList, areaName) => {
+        _.forEach(sortedTaskNameList[areaName], (assignTask) => {
+          if (isTaskFull(assignTask)) { return }
+          let personTaskSortList: {name: string, rec: number}[] = []
+          _.forEach(personList, (person) => {
+            if (isPersonAssigned(person)) { return }
+            personTaskSortList.push({
+              name: person,
+              rec: this.$dataQuery.getPersonTaskRec(person, assignTask)
+            })
+          })
+          personTaskSortList = _.sortBy(personTaskSortList, (o) => o.rec)
+          const needNum = getNeedTaskPersonNum(assignTask) // 不能写到 for (...) 的括号内。艹，不然 needNum 会一直改变
+          for (let i = 0; i < needNum; i++) {
+            if (!_.has(personTaskSortList, i)) break
+            const assignPerson = personTaskSortList[i].name
+            if (isPersonCanAssign(assignPerson, assignTask)) {
+              pushToFateList(assignPerson, assignTask)
             }
           }
-          // 查询并 push 他做过该 Task 的 Rec
-          personShortlist.push({ name: personName, rec: this.$dataQuery.getPersonTaskRec(personName, taskName) })
         })
-        // 根据 Rec 值从小到大排序
-        const personShortlistSorted = _.sortBy(personShortlist, (o) => o.rec) // 注意，object 不能排序，array 才能
-        // 安排这个任务给做这个任务最少的人
-        const minRecPersonName = personShortlistSorted[0].name
-        personToTaskDict[minRecPersonName] = taskName
-      })
-    })
-    window.console.log(personToTaskDict)
+      });
+    }
 
-    return personToTaskDict
+    assignTaskOnce({
+      isPersonCanAssign: (person, task) => {
+        if (this.$dataQuery.getIsPersonLastDidTheTask(person, task)) {
+          return false
+        }
+        return true
+      }
+    })
+
+    // 无条件安排
+    assignTaskOnce({
+      isPersonCanAssign: (person, task) => true
+    })
+
+    return fateList
+  }
+
+  getGrpFateList () {
+    const fateList: { [areaName: string]: Grp[] } = {}
+    _.forEach(this.$dataStore.AreaList, (area) => { fateList[area.name] = [] }) // 初始化
+
+    const assignAreaOnce = ({ sortedGrpList, isGrpCanSel }: {
+      /** 已排序的 GrpList（会按照排列顺序根据条件安排）  */
+      sortedGrpList: Grp[]|((area: Area) => Grp[])
+      /** 某个 Grp 是否能被选择 */
+      isGrpCanSel: (grp: Grp, area: Area) => boolean
+    }) => {
+      _.forEach(this.$dataStore.AreaList, (area) => {
+        const resultGrpList = fateList[area.name]
+        if (resultGrpList.length >= 2) { return }
+        sortedGrpList = (typeof sortedGrpList === 'function') ? sortedGrpList(area) : sortedGrpList
+        _.forEach(sortedGrpList, (grp) => {
+          if (Object.values(resultGrpList).length >= 2) { return } // 若已排满
+          if (_.flatMap(fateList).find(o => o.id === grp.id)) { return } // 若已安排
+          if (isGrpCanSel(grp, area)) {
+            resultGrpList.push(grp)
+          }
+        })
+      })
+    }
+
+    assignAreaOnce({
+      sortedGrpList: (area) => _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id, area.name)),
+      isGrpCanSel: (grp, area) => {
+        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return false } // 条件 1
+        if (this.$dataQuery.getIsGrpLastDidTheArea(grp.id, area.name)) { return false } // 条件 2
+        return true
+      }
+    })
+
+    const grpListSortedByRecSum = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id))
+
+    // 补充缺的组（上次做同样的 Area 也满足条件）<-- 条件慢慢放开
+    assignAreaOnce({
+      sortedGrpList: grpListSortedByRecSum,
+      isGrpCanSel: (grp, area) => {
+        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return false } // 条件 1
+        return true
+      }
+    })
+
+    // 补充缺的组（上周刚做了的也满足条件）
+    assignAreaOnce({
+      sortedGrpList: grpListSortedByRecSum,
+      isGrpCanSel: (grp, area) => true
+    })
+
+    return fateList
   }
 }

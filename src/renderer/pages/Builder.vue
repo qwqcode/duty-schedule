@@ -138,48 +138,13 @@ export default class Builder extends Vue {
 
   /** 自动选组 */
   autoSelectGrp () {
-    const areaGrpList: { [areaName: string]: Grp[] } = {}
-
-    _.forEach(this.$dataStore.AreaList, area => {
-      const grpList: Grp[] = []
-      areaGrpList[area.name] = grpList
-      const grpListSorted = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id, area.name))
-      _.forEach(grpListSorted, grp => {
-        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
-        if (Object.values(grpList).length >= 2) { return } // 若已排满
-        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return } // 条件 1
-        if (this.$dataQuery.getIsGrpLastDidTheArea(grp.id, area.name)) { return } // 条件 2
-        grpList.push(grp)
-      })
-    })
-
-    // 补充缺的组（上次做同样的 Area 也满足条件）
-    const grpListSortedByRecSum = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id))
-    _.forEach(areaGrpList, (grpList, areaName) => {
-      if (grpList.length >= 2) { return }
-      _.forEach(grpListSortedByRecSum, grp => {
-        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
-        if (Object.values(grpList).length >= 2) { return } // 若已排满
-        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return } // 条件 1
-        grpList.push(grp)
-      })
-    })
-
-    // 补充缺的组（上周刚做了的也满足条件）
-    _.forEach(areaGrpList, (grpList, areaName) => {
-      if (grpList.length >= 2) { return }
-      _.forEach(grpListSortedByRecSum, grp => {
-        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
-        if (Object.values(grpList).length >= 2) { return } // 若已排满
-        grpList.push(grp)
-      })
-    })
+    const fateList = this.$dataFate.getGrpFateList()
 
     this.selGrpList = [
-      areaGrpList['教室'][0],
-      areaGrpList['教室'][1],
-      areaGrpList['公区'][0],
-      areaGrpList['公区'][1]
+      fateList['教室'][0],
+      fateList['教室'][1],
+      fateList['公区'][0],
+      fateList['公区'][1]
     ]
   }
 
@@ -190,17 +155,17 @@ export default class Builder extends Vue {
 
   @Watch('selGrpList')
   onSelGrpListChanged(selGrpList: Grp[]) {
-    window.console.log(selGrpList)
+    window.console.log('selGrpList', selGrpList)
 
     const areaOrder = ['教室', '教室', '公区', '公区']
     const grpToAreaDict: { [grpId: number]: string } = {}
     _.forEach(selGrpList, (grp, index) => {
       grpToAreaDict[grp.id] = areaOrder[index]
     })
-    window.console.log(grpToAreaDict)
+    window.console.log('grpToAreaDict', grpToAreaDict)
 
-    const personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
-    window.console.log(personToTask)
+    const personToTask = this.$dataFate.getPersonFateList(selGrpList, grpToAreaDict)
+    window.console.log('personToTask', personToTask)
 
     // 创建新 grpList
     const PlanGrpList: PlanGrp[] = []
@@ -250,12 +215,12 @@ export default class Builder extends Vue {
     place-items: center;
 
     & > span {
-      height: 23px;
-      line-height: 23px;
+      height: 20px;
+      line-height: 20px;
       background: rgba(66, 133, 244, 0.12);
-      padding: 0 10px;
+      padding: 0 7px;
       border-radius: 1px;
-      font-size: 12px;
+      font-size: 11px;
 
       &:not(:last-child) {
         margin-right: 5px;

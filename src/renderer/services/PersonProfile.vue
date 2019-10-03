@@ -4,6 +4,10 @@
       <div class="base-info">
         <span class="name">{{ personName }}</span>
         <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
+        <span
+          @click="openPersonTaskChart()"
+          class="click-able"
+        >历史图表</span>
 
         <slide-y-up-transition>
           <div v-if="taskRecView.show" class="task-rec-view">
@@ -92,6 +96,10 @@ export default class PersonProfile extends Vue {
     (this.$refs.dialog as Dialog).show()
   }
 
+  hide () {
+    (this.$refs.dialog as Dialog).hide()
+  }
+
   selectTask (taskName: string) {
     if (this.selMode) {
       if (this.selMode.beforeSel !== undefined && (this.selMode.beforeSel(taskName) === false)) {
@@ -146,6 +154,10 @@ export default class PersonProfile extends Vue {
     this.showTaskSel = true
     this.taskRecView.show = false
   }
+
+  openPersonTaskChart () {
+    this.$personTaskChart.open(this.personName)
+  }
 }
 </script>
 
@@ -179,6 +191,8 @@ export default class PersonProfile extends Vue {
   }
 
   .base-info {
+    display: flex;
+    flex-direction: column;
     flex-basis: 35%;
     background: #FFF;
     padding: 40px 50px;
@@ -186,7 +200,8 @@ export default class PersonProfile extends Vue {
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
 
     & > span {
-      display: block;
+      display: inline-block;
+      width: fit-content;
 
       &:not(:last-child) {
         margin-bottom: 10px;
@@ -196,13 +211,22 @@ export default class PersonProfile extends Vue {
         font-size: 26px;
         margin-bottom: 20px;
       }
+
+      &.click-able {
+        cursor: pointer;
+        color: #1a73e8;
+
+        &:hover {
+          opacity: .9;
+        }
+      }
     }
 
     .task-rec-view {
       margin-top: 30px;
 
       .view-desc {
-        color: #0083ff;
+        color: #1a73e8;
         margin-bottom: 30px;
       }
     }
@@ -224,7 +248,7 @@ export default class PersonProfile extends Vue {
         .area-name {
           font-size: 18px;
           padding-left: 17px;
-          border-left: 2px solid #0083ff;
+          border-left: 2px solid #1a73e8;
         }
 
         .task-list {
@@ -279,7 +303,7 @@ export default class PersonProfile extends Vue {
 
                 &:hover {
                   color: #FFF;
-                  background: #0083ff;
+                  background: #1a73e8;
                 }
               }
             }

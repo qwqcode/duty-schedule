@@ -1,6 +1,6 @@
 {
   "name": "duty-schedule",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": "qwqcode <1149527164@qq.com>",
   "description": "A duty schedule.",
   "license": null,
@@ -55,8 +55,8 @@
     "@types/jquery": "^3.3.29",
     "@types/lodash": "^4.14.123",
     "axios": "^0.18.0",
-    "element-theme-chalk": "^2.6.1",
-    "element-ui": "^2.6.1",
+    "element-theme-chalk": "^2.12.0",
+    "element-ui": "^2.12.0",
     "jquery": "^3.3.1",
     "lodash": "^4.17.11",
     "material-design-iconic-font": "^2.2.0",

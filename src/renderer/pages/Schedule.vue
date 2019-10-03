@@ -1,5 +1,8 @@
 <template>
   <div class="page schedule-page fullscreen">
+    <div v-if="!!taskBookmark" :class="`bookmark ${taskBookmark.type}`">
+      {{ taskBookmark.text }}
+    </div>
     <div class="task-list-sidebar" style="display: none">
       <div ref="taskListSidebarInner" class="inner">
         <plan-list @openPlan="openPlan" :selected-plan="plan" class="plan-list" />
@@ -104,7 +107,7 @@ export default class Schedule extends Vue {
 
   autoSwitch: boolean = false
 
-  autoSwitchInterval: number|null = null
+  autoSwitchInterval: number | null = null
 
   isTaskListSidebarShow: boolean = false
 
@@ -116,23 +119,23 @@ export default class Schedule extends Vue {
     this.$dataStore.save() */
 
     const createTestPlan = (grpIdList: number[] = [1, 2, 3, 4], areaArr: string[] = ['教室', '教室', '公区', '公区']) => {
-      const selGrp = this.$dataStore.GrpList.filter(o => grpIdList.includes(o.id))
+      const selGrp = this.$dataStore.GrpList.filter((o) => grpIdList.includes(o.id))
 
       const areaDict: { [grpId: number]: string } = {}
       grpIdList.forEach((id, index) => {
         areaDict[id] = areaArr[index]
       })
 
-      const personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrp, areaDict)
+      const personToTask = this.$dataFate.getPersonFateList(selGrp, areaDict)
 
       const grpList2 = JSON.parse(JSON.stringify(selGrp))
       const newPlanGrpList: PlanGrp[] = []
 
       _.forEach(grpList2, (grp, key) => {
-        const nPl: { person: string, task: string }[] = []
+        const nPl: { person: string; task: string }[] = []
         _.forEach(grp.personList, (person, index) => {
           if (!personToTask[person]) return
-          nPl.push({ person, task: personToTask[person]})
+          nPl.push({ person, task: personToTask[person] })
         })
 
         const planGrp: PlanGrp = {
@@ -170,7 +173,7 @@ export default class Schedule extends Vue {
   }
 
   @Watch('planList')
-  onPlanListChanged () {
+  onPlanListChanged() {
     if (this.planList.length >= 1) {
       // eslint-disable-next-line prefer-destructuring
       this.plan = this.planList[0]
@@ -179,7 +182,7 @@ export default class Schedule extends Vue {
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    (this.$parent as any).setSubTitle(` ${newPlan.name}`)
+    ;(this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$dataQuery.timeAgo(new Date(newPlan.time))}`)
   }
 
   @Watch('curtGrpKey')
@@ -192,13 +195,13 @@ export default class Schedule extends Vue {
     if (newVal === true) {
       this.startAutoSwitch()
     } else if (this.autoSwitchInterval !== null) {
-        window.clearInterval(this.autoSwitchInterval)
-      }
+      window.clearInterval(this.autoSwitchInterval)
+    }
   }
 
   /** 计划列表 */
   get planList() {
-    return _.sortBy(this.$dataStore.PlanList, o => -o.time)
+    return _.sortBy(this.$dataStore.PlanList, (o) => -o.time)
   }
 
   /** 当前显示的组 */
@@ -210,9 +213,9 @@ export default class Schedule extends Vue {
   get tasksPersonNameList() {
     const list: Array<{ task: string; persons: string[] }> = []
     _.forEach((this.currGrp as PlanGrp).personTaskList, (personTaskItem) => {
-      const {person} = personTaskItem;
-          const {task} = personTaskItem
-      let item = list.find(o => o.task === task)
+      const { person } = personTaskItem
+      const { task } = personTaskItem
+      let item = list.find((o) => o.task === task)
       if (item === undefined) {
         item = { task, persons: [] }
         list.push(item)
@@ -240,7 +243,7 @@ export default class Schedule extends Vue {
     }
   }
 
-  getSwitchBar () {
+  getSwitchBar() {
     return ((this.$refs[`groupInfoCard_${this.curtGrpKey}`] as Element[])[0] as Element).querySelector('.auto-switch-bar') as HTMLElement
   }
 
@@ -254,11 +257,11 @@ export default class Schedule extends Vue {
 
     let timeLeft = 0
 
-    this.getSwitchBar().style.height = '100%';
+    this.getSwitchBar().style.height = '100%'
 
     this.autoSwitchInterval = window.setInterval(() => {
       const switchBar = this.getSwitchBar()
-      switchBar.style.height = `${(((timeout - timeLeft) / timeout) * 100).toFixed(2)  }%`
+      switchBar.style.height = `${(((timeout - timeLeft) / timeout) * 100).toFixed(2)}%`
       timeLeft += perTime
       if (timeLeft > timeout) {
         // 切换组
@@ -268,7 +271,7 @@ export default class Schedule extends Vue {
           this.curtGrpKey = 0
         }
         timeLeft = 0
-        switchBar.style.height = '100%';
+        switchBar.style.height = '100%'
       }
     }, perTime)
   }
@@ -281,7 +284,7 @@ export default class Schedule extends Vue {
     this.isTaskListSidebarShow = true
     window.setTimeout(() => {
       $(this.$refs.taskListSidebarInner).addClass('show')
-      $(document).bind('click.hideSidebar', e => {
+      $(document).bind('click.hideSidebar', (e) => {
         if ($(e.target).is($('.task-list-sidebar')) || !$(e.target).closest(this.$refs.taskListSidebarInner as Element)) {
           this.hideTaskListSidebar()
           $(document).unbind('click.hideSidebar')
@@ -299,6 +302,17 @@ export default class Schedule extends Vue {
     }, 400)
   }
 
+  get taskBookmark () {
+    if (this.plan === null) return null
+
+    let bookmark: { type: 'warn'|'info', text: string }|null = null
+    if (this.plan.time < new Date().getTime() && this.$dataQuery.dateFormat(new Date(this.plan.time)) !== this.$dataQuery.dateFormat(new Date())) {
+      bookmark = { type: 'info', text: '历史计划' }
+    }
+
+    return bookmark
+  }
+
   profileDialog = {
     isOpened: false,
     personName: ''
@@ -307,6 +321,30 @@ export default class Schedule extends Vue {
 </script>
 
 <style scoped lang="scss">
+.bookmark {
+  text-align: center;
+  pointer-events: none;
+  z-index: 999;
+  position: fixed;
+  padding: 0 45px;
+  height: 45px;
+  line-height: 45px;
+  font-size: 1.7em;
+  top: 50px;
+  right: 0;
+  color: #fff;
+  background: rgba(59, 59, 59, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+  &.warn {
+    background: rgba(239, 83, 80, 0.77);
+  }
+
+  &.info {
+    background: rgba(33, 150, 243, 0.68);
+  }
+}
+
 .schedule-page {
   background: #f4f4f4;
 

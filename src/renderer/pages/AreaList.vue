@@ -186,7 +186,7 @@ export default class AreaList extends Vue {
 
                 &:hover {
                   color: #FFF;
-                  background: #0083ff;
+                  background: #1a73e8;
                 }
               }
             }

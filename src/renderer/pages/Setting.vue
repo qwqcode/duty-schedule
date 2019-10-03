@@ -36,7 +36,7 @@
             <div class="field">
               <el-input
                 v-model="dataEditorVal"
-                :rows="5"
+                :rows="15"
                 :placeholder="`编辑数据 ${dataEditorTargetFieldName}`"
                 type="textarea"
               />

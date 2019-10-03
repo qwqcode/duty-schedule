@@ -4,6 +4,7 @@ import DataQuery from '@/core/data-query'
 import DataFate from '@/core/data-fate'
 import DataHelper from '@/services/DataHelper.vue'
 import PersonProfile from '@/services/PersonProfile.vue'
+import PersonTaskChart from '@/services/PersonTaskChart.vue'
 import Permission from '@/services/Permission.vue'
 
 declare module 'vue/types/vue' {
@@ -14,6 +15,7 @@ declare module 'vue/types/vue' {
     $dataFate: DataFate
     $dataHelper: DataHelper
     $personProfile: PersonProfile
+    $personTaskChart: PersonTaskChart
     $permission: Permission
   }
 }

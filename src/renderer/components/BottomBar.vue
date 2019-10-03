@@ -40,7 +40,7 @@ type Btn = {
 export default class BottomBar extends Vue {
   leftBtnList: Btn[] = [
     { path: '/Schedule', icon: 'calendar-note' },
-    { path: '/Builder', icon: 'file-plus' },
+    { path: '/Builder', icon: 'file-plus' }
   ]
 
   rightBtnList: Btn[] = [

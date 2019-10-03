@@ -12,7 +12,7 @@
         </div>
         <div class="meta">
           <span class="time">{{ $dataQuery.timeAgo(new Date(plan.time)) }}</span>
-          <span class="groups">组: {{ getPlanGrpDesc(plan) }}</span>
+          <span class="groups" v-html="`组: ${$dataQuery.getPlanGrpIdSummary(plan)}`" />
         </div>
       </div>
       <div class="flags">
@@ -48,25 +48,7 @@ export default class PlanList extends Vue {
   }
 
   openPlan (plan: Plan) {
-      this.$emit('openPlan', plan)
-    }
-
-  getPlanGrpDesc (plan: Plan) {
-    let str = ''
-    const areaList: { [areaName: string]: number[] } = {}
-    _.forEach(plan.grpList, (group) => {
-      if (!_.has(areaList, group.area)) {
-        areaList[group.area] = []
-      }
-      areaList[group.area].push(group.grpId)
-    })
-
-    _.forEach(areaList, (grpIdList) => {
-      str += _.sortBy(grpIdList).join(', ')
-      str += ' - '
-    })
-
-    return _.trimEnd(str, ' - ')
+    this.$emit('openPlan', plan)
   }
 
   isDataAllowEdit () {
@@ -108,7 +90,7 @@ export default class PlanList extends Vue {
 
       &.selected {
         & > .inner:before {
-          background: #0083ff;
+          background: #1a73e8;
         }
       }
 
@@ -140,7 +122,7 @@ export default class PlanList extends Vue {
 
       .title {
         font-size: 1.4em;
-        color: #0083ff;
+        color: #1a73e8;
         margin-bottom: 15px;
       }
 

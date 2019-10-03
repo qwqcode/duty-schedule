@@ -39,7 +39,7 @@ export interface Area {
   name: string
   /** 工作类型列表 */
   taskList: string[]
-  /** 别名 */
+  /** 别名（"改动划归"/"记录转移" 功能） */
   taskAliasList?: { [targetTask: string]: string[] }
 }
 

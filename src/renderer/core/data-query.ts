@@ -242,6 +242,69 @@ export default class DataQuery extends Vue {
     return _.flatMap(arrSorted, o => o.task)
   }
 
+  /**
+   * 获取 Plan 中所有 小组ID 的简介
+   * @return 例：'<span title="教室">2, 3</span> - <span title="公区">4, 5</span>'
+   */
+  public getPlanGrpIdSummary (plan: Plan) {
+    let str = ''
+    const areaList: { [areaName: string]: number[] } = {}
+    _.forEach(plan.grpList, (group) => {
+      if (!_.has(areaList, group.area)) {
+        areaList[group.area] = []
+      }
+      areaList[group.area].push(group.grpId)
+    })
+
+
+    _.forEach(this.$dataStore.AreaList, ({ name: areaName }) => {
+      str += `<span title="${areaName}">${_.sortBy(areaList[areaName]).join(', ')}</span>`
+      str += ' - '
+    })
+
+    return _.trimEnd(str, ' - ')
+  }
+
+  /**
+   * 获取 Task 的别名列表
+   * @param taskName（目前 $dataStore.AreaList 中的 Task）
+   */
+  public getTaskAliasList (taskName: string) {
+    const area = this.$dataStore.AreaList.find(o => o.taskList.includes(taskName))
+    if (!area) return null
+    return (area.taskAliasList && _.has(area.taskAliasList, taskName)) ? area.taskAliasList[taskName] : null
+  }
+
+  /**
+   * 反向获取 目前全部存在该别名的 Task
+   */
+  public getTaskListByAlias (aliasTask: string) {
+    const resultList: string[] = []
+    _.forEach(this.$dataStore.AreaList, (area) => {
+      _.forEach(area.taskAliasList, (aliasTaskList, curtTaskName) => {
+        if (aliasTaskList.includes(aliasTask)) {
+          resultList.push(curtTaskName)
+        }
+      })
+    })
+    return resultList
+  }
+
+  /**
+   * 判断是否为别名 Task
+   *
+   * @param testTask 待测试的 Task
+   * @param curtTask 指定待测 Task 范围（目前 $dataStore.AreaList 中的 Task）
+   */
+  public testIsAliasTask (testTask: string, curtTask?: string) {
+    if (!curtTask) {
+      return this.getTaskListByAlias(testTask).length > 0
+    }
+    const aliasList = this.getTaskAliasList(curtTask)
+    if (!aliasList) return false
+    return (aliasList.includes(testTask))
+  }
+
   public padWithZeros (vNumber: number, width: number): string {
     let numAsString = vNumber.toString()
     while (numAsString.length < width) {
