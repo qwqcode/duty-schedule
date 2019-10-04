@@ -20,7 +20,8 @@ export default class DataAction extends Vue {
     return {
       id: new Date().getTime(),
       name: `${this.getDateText()}`,
-      time: new Date().getTime(),
+      actionTime: new Date().getTime(),
+      createdTime: new Date().getTime(),
       grpList: []
     }
   }

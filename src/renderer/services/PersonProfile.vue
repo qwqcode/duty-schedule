@@ -121,7 +121,7 @@ export default class PersonProfile extends Vue {
     if (!this.profile) { return {} }
 
     return {
-      '最后执行': this.profile.lastWorkPlan ? `${this.profile.lastWorkPlan.name} (${this.$dataQuery.timeAgo(new Date(this.profile.lastWorkPlan.time))})` : '无'
+      '最后执行': this.profile.lastWorkPlan ? `${this.profile.lastWorkPlan.name} (${this.$dataQuery.timeAgo(new Date(this.profile.lastWorkPlan.actionTime))})` : '无'
     }
   }
 
@@ -129,7 +129,7 @@ export default class PersonProfile extends Vue {
     const dateToCount: {[date: string]: number} = {}
 
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
-      const date = this.$dataQuery.dateFormat(new Date(plan.time))
+      const date = this.$dataQuery.dateFormat(new Date(plan.actionTime))
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
         if (planGrp.personTaskList.find(o => (o.person === this.personName && o.task === this.taskRecView.taskName))) {
           if (!_.has(dateToCount, date)) {

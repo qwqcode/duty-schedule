@@ -11,16 +11,16 @@
           {{ plan.name }}
         </div>
         <div class="meta">
-          <span class="time">{{ $dataQuery.timeAgo(new Date(plan.time)) }}</span>
+          <span class="time">{{ $dataQuery.timeAgo(new Date(plan.actionTime)) }}</span>
           <span class="groups" v-html="`组: ${$dataQuery.getPlanGrpIdSummary(plan)}`" />
         </div>
       </div>
       <div class="flags">
         <span
-          v-if="$dataQuery.dateFormat(new Date(plan.time)) === $dataQuery.dateFormat(new Date())"
+          v-if="$dataQuery.dateFormat(new Date(plan.actionTime)) === $dataQuery.dateFormat(new Date())"
           class="flag flag-green"
         >今日</span>
-        <!--<span class="flag flag-red" v-if="plan.time < new Date().getTime() - 24*60*60*1000">已过期</span>-->
+        <!--<span class="flag flag-red" v-if="plan.actionTime < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
       <span class="act-btns">
         <span @click="$permission.adminBtn(() => { deletePlan(plan) })" class="btn-item"><i class="zmdi zmdi-delete" /></span>
@@ -44,7 +44,7 @@ export default class PlanList extends Vue {
   removingPlanId: number | null = null
 
   get planList () {
-    return _.sortBy(this.$dataStore.PlanList, (o) => -o.time)
+    return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
   }
 
   openPlan (plan: Plan) {

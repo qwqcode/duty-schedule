@@ -44,6 +44,18 @@
                 <input v-model="plan.name" type="text" autocomplete="off" placeholder="输入文字">
               </div>
             </el-form-item>
+            <el-form-item label="执行日期">
+              <div class="grp-input">
+                <el-date-picker
+                  v-model="plan.actionTime"
+                  :default-value="new Date()"
+                  type="date"
+                  placeholder="选择日期"
+                  format="yyyy 年 MM 月 dd 日"
+                  value-format="timestamp"
+                />
+              </div>
+            </el-form-item>
           </el-form>
         </div>
 
@@ -191,7 +203,7 @@ export default class Builder extends Vue {
 
   savePlan() {
     // 刷新时间
-    this.plan.time = new Date().getTime()
+    this.plan.createdTime = new Date().getTime()
     this.$dataAction.savePlan(this.plan)
     this.$router.replace('/')
   }

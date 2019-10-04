@@ -51,7 +51,9 @@ export interface Plan {
   /** 计划标题 */
   name: string
   /** 计划创建时间 */
-  time: number
+  createdTime: number
+  /** 计划执行时间 */
+  actionTime: number
   /** 计划中的小组列表 */
   grpList: PlanGrp[]
 }

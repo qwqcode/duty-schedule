@@ -273,7 +273,8 @@ export default class Setting extends Vue {
       PlanList.push({
         id: Number(item.time),
         name: item.title as string,
-        time: Number(item.time),
+        actionTime: Number(item.time),
+        createdTime: Number(item.time),
         grpList: planGrpList
       })
     })

@@ -72,7 +72,7 @@ export default class DataQuery extends Vue {
   public getPersonLastWorkPlan (personName: string): Plan|null {
     const planList = this.$dataStore.PlanList
     if (!planList) return null
-    const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
+    const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.actionTime) || null
     if (!planListSorted) return null
     let plan: Plan|null = null
     _.forEach(planListSorted, (planItem) => {
@@ -113,7 +113,7 @@ export default class DataQuery extends Vue {
 
   /** 某组是否存在于最新的 Plan 中 */
   public getIsGrpExitsInLatestPlan (grpId: number) {
-    const latestPlan = _.sortBy(this.$dataStore.PlanList, o => -o.time)[0]
+    const latestPlan = _.sortBy(this.$dataStore.PlanList, o => -o.actionTime)[0]
     if (!latestPlan) return false
     return !!latestPlan.grpList.find(o => o.grpId === grpId)
   }
@@ -122,7 +122,7 @@ export default class DataQuery extends Vue {
   public getGrpLastWorkPlan (grpId: number): Plan|null {
     const planList = this.$dataStore.PlanList
     if (!planList) return null
-    const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
+    const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.actionTime) || null
     if (!planListSorted) return null
     let plan: Plan|null = null
     _.forEach(planListSorted, (planItem) => {

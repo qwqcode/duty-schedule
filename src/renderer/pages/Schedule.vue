@@ -151,7 +151,8 @@ export default class Schedule extends Vue {
         id: +new Date(),
         name: '测试计划',
         grpList: newPlanGrpList,
-        time: +new Date()
+        actionTime: +new Date(),
+        createdTime: +new Date()
       }
 
       window.console.log(plan)
@@ -182,7 +183,7 @@ export default class Schedule extends Vue {
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    ;(this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$dataQuery.timeAgo(new Date(newPlan.time))}`)
+    ;(this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$dataQuery.timeAgo(new Date(newPlan.actionTime))}`)
   }
 
   @Watch('curtGrpKey')
@@ -201,7 +202,7 @@ export default class Schedule extends Vue {
 
   /** 计划列表 */
   get planList() {
-    return _.sortBy(this.$dataStore.PlanList, (o) => -o.time)
+    return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
   }
 
   /** 当前显示的组 */
@@ -306,7 +307,7 @@ export default class Schedule extends Vue {
     if (this.plan === null) return null
 
     let bookmark: { type: 'warn'|'info', text: string }|null = null
-    if (this.plan.time < new Date().getTime() && this.$dataQuery.dateFormat(new Date(this.plan.time)) !== this.$dataQuery.dateFormat(new Date())) {
+    if (this.plan.actionTime < new Date().getTime() && this.$dataQuery.dateFormat(new Date(this.plan.actionTime)) !== this.$dataQuery.dateFormat(new Date())) {
       bookmark = { type: 'info', text: '历史计划' }
     }
 
