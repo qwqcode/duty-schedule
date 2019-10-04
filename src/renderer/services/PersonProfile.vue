@@ -6,8 +6,8 @@
         <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
         <span
           @click="openPersonTaskChart()"
-          class="click-able"
-        >历史图表</span>
+          class="btn"
+        ><i class="zmdi zmdi-calendar-check" /> 历史图表</span>
 
         <slide-y-up-transition>
           <div v-if="taskRecView.show" class="task-rec-view">
@@ -212,9 +212,17 @@ export default class PersonProfile extends Vue {
         margin-bottom: 20px;
       }
 
-      &.click-able {
+      & > i {
+        margin-right: 5px;
+      }
+
+      &.btn {
+        margin: 5px 0;
         cursor: pointer;
         color: #1a73e8;
+        padding: 4px 13px;
+        border-radius: 2px;
+        border: 1px solid #1a73e8;
 
         &:hover {
           opacity: .9;

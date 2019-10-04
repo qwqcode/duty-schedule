@@ -162,7 +162,7 @@ export default class DataAction extends Vue {
     }
 
     const data = new FormData()
-    data.append('data', this.$dataStore.getAllDataAsJsonStr(this.$dataStore.DATA_ALLOW_UPLOAD_FIELDS))
+    data.set('data', this.$dataStore.getAllDataAsJsonStr(this.$dataStore.DATA_ALLOW_UPLOAD_FIELDS))
     axios.post(this.$dataStore.Settings.remoteSync.server, data, {
       params: { 'op': 'upload' }
     }).then(({ data: respData }) => {
