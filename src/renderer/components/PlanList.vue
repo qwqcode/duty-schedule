@@ -23,7 +23,9 @@
         <!--<span class="flag flag-red" v-if="plan.actionTime < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
       <span class="act-btns">
-        <span @click="$permission.adminBtn(() => { deletePlan(plan) })" class="btn-item"><i class="zmdi zmdi-delete" /></span>
+        <DelConfirm @confirmed="$permission.adminBtn(() => { deletePlan(plan) })">
+          <span class="btn-item"><i class="zmdi zmdi-delete" /></span>
+        </DelConfirm>
       </span>
     </div>
   </div>
@@ -34,14 +36,13 @@ import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Component } from 'vue-property-decorator'
 import { Plan } from '@/core/data-interfaces'
+import DelConfirm from './DelConfirm.vue'
 
-@Component({})
+@Component({
+  components: { DelConfirm }
+})
 export default class PlanList extends Vue {
   @Prop() readonly selectedPlan!: Plan
-
-  deleteBtnClickTime: number = 0
-
-  removingPlanId: number | null = null
 
   get planList () {
     return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
@@ -61,19 +62,8 @@ export default class PlanList extends Vue {
   }
 
   deletePlan (plan: Plan) {
-    if (this.removingPlanId !== plan.id) {
-      this.removingPlanId = plan.id
-      this.deleteBtnClickTime = 0
-    }
-    if (this.deleteBtnClickTime < 3 - 1) {
-      this.deleteBtnClickTime++
-      window.notify(`危险操作，请再点 ${(3 - this.deleteBtnClickTime)} 次`, 'e')
-      return
-    }
     this.$dataAction.delPlan(plan)
     window.notify(`"${plan.name}" 已删除`, 'i')
-    this.deleteBtnClickTime = 0
-    this.removingPlanId = null
   }
 }
 </script>

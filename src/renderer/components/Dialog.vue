@@ -39,7 +39,7 @@ export default class Dialog extends Vue {
 
   onCloseBtnClick () {
     this.isShow = false
-    this.$emit('onclosed')
+    this.$emit('closed')
   }
 }
 </script>
