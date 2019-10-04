@@ -22,7 +22,7 @@ import Vue from 'vue'
 import { Prop, Component } from 'vue-property-decorator'
 
 @Component({})
-export default class DelConfirm extends Vue {
+export default class ConfirmPopover extends Vue {
   isShow: boolean = false
 
   @Prop({
@@ -30,7 +30,7 @@ export default class DelConfirm extends Vue {
   }) readonly placement!: string
 
   @Prop({
-    default: '是否确定删除？'
+    default: '是否确定？'
   }) readonly text!: string
 
   show () {

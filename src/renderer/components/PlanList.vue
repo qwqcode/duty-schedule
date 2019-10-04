@@ -23,9 +23,9 @@
         <!--<span class="flag flag-red" v-if="plan.actionTime < new Date().getTime() - 24*60*60*1000">已过期</span>-->
       </div>
       <span class="act-btns">
-        <DelConfirm @confirmed="$permission.adminBtn(() => { deletePlan(plan) })">
+        <ConfirmPopover :text="`是否删除计划: “${plan.name}” ?`" @confirmed="$permission.adminBtn(() => { deletePlan(plan) })">
           <span class="btn-item"><i class="zmdi zmdi-delete" /></span>
-        </DelConfirm>
+        </ConfirmPopover>
       </span>
     </div>
   </div>
@@ -36,10 +36,10 @@ import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Component } from 'vue-property-decorator'
 import { Plan } from '@/core/data-interfaces'
-import DelConfirm from './DelConfirm.vue'
+import ConfirmPopover from './ConfirmPopover.vue'
 
 @Component({
-  components: { DelConfirm }
+  components: { ConfirmPopover }
 })
 export default class PlanList extends Vue {
   @Prop() readonly selectedPlan!: Plan

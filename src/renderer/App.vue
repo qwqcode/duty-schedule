@@ -81,12 +81,13 @@
       font-size: 14px;
       vertical-align: sub;
 
-      & > span {
+      .action-item {
+        user-select: none;
         float: left;
         padding: 1px 6px;
         cursor: pointer;
 
-        &:hover {
+        &:hover, &.active {
           color: #1a73e8;
         }
 

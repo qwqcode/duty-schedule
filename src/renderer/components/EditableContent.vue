@@ -20,6 +20,9 @@
 <script lang="ts">
 import Vue from 'vue'
 import { Component, Prop, Watch } from 'vue-property-decorator'
+import { Route } from 'vue-router'
+
+const ALL_THIS_INSTANCE: EditableContent[] = []
 
 @Component({})
 export default class EditableContent extends Vue {
@@ -31,8 +34,21 @@ export default class EditableContent extends Vue {
 
   isEditing: boolean = false
 
+  mounted () {
+    ALL_THIS_INSTANCE.push(this)
+  }
+
+  beforeDestroy () {
+    ALL_THIS_INSTANCE.splice(ALL_THIS_INSTANCE.indexOf(this), 1)
+  }
+
   showEditor () {
     if (!this.editable) { return }
+
+    // 自动提交其他正在编辑的内容
+    ALL_THIS_INSTANCE.forEach(item => {
+      if (item.isEditing) item.submit()
+    })
 
     this.isEditing = true
   }
