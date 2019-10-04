@@ -3,7 +3,7 @@
     <div class="top-bar">
       <div class="left">
         值日任务表
-        <span v-if="isWeb" class="version-badge">Clound Version</span>
+        <span v-if="isWeb" class="version-badge">Online Version</span>
         <span class="sub-title">{{ subTitle }}</span>
       </div>
       <div v-if="!isWeb" class="right">
