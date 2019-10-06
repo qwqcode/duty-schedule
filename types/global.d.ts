@@ -9,6 +9,7 @@ import Permission from '@/services/Permission.vue'
 
 declare module 'vue/types/vue' {
   interface Vue {
+    $marked: (src: string, callback?: (error: any, parseResult: string) => void) => string
     $dataStore: DataStore
     $dataAction: DataAction
     $dataQuery: DataQuery

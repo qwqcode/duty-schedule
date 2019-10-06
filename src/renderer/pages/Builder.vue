@@ -25,13 +25,20 @@
           </div>
           <div class="badge-box">
             <span v-if="$dataQuery.getIsGrpExitsInLatestPlan(grp.id)" class="warn">上次</span>
-            <span>{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
+            <span v-if="!!getGrpAssignedArea(grp)" class="success">本次: {{ getGrpAssignedArea(grp) }}</span>
+            <span v-if="grpBadgeConf.showAreaHistory">{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
             <span>
               {{ $dataQuery.getGrpAreaRec(grp.id, '教室') + $dataQuery.getGrpAreaRec(grp.id, '公区') }} =
               {{ $dataQuery.getGrpAreaRec(grp.id, '教室') }} + {{ $dataQuery.getGrpAreaRec(grp.id, '公区') }}
             </span>
           </div>
         </div>
+      </div>
+      <div class="grp-badge-controller">
+        <span @click="grpBadgeConf.showAreaHistory = !grpBadgeConf.showAreaHistory">
+          <i :class="`zmdi zmdi-${grpBadgeConf.showAreaHistory ? 'check-circle' : 'circle-o'}`" />
+          历史区域
+        </span>
       </div>
     </div>
 
@@ -54,6 +61,11 @@
                   format="yyyy 年 MM 月 dd 日"
                   value-format="timestamp"
                 />
+              </div>
+            </el-form-item>
+            <el-form-item label="提醒事项">
+              <div class="grp-input">
+                <textarea v-model="plan.note" type="text" placeholder="输入文字" />
               </div>
             </el-form-item>
           </el-form>
@@ -126,16 +138,25 @@ import Dialog from '../components/Dialog.vue'
 })
 export default class Builder extends Vue {
   plan: Plan = this.$dataAction.newEmptyPlan()
-
   selGrpList: Grp[] = []
 
-  created() {}
+  grpBadgeConf = {
+    showAreaHistory: false
+  }
 
-  // /
-  // / 小组选择
-  // /
+  created () {}
 
-  selectGrp(grp: Grp) {
+  getGrpAssignedArea (grp: Grp) {
+    const findAssigned = this.plan.grpList.find(o => o.grpId === grp.id)
+    if (!findAssigned) return undefined
+    return (findAssigned.area || '?').substr(0, 1)
+  }
+
+  //
+  // 小组选择
+  //
+
+  selectGrp (grp: Grp) {
     if (!this.isGrpSelected(grp)) {
       // 若未选中
       this.selGrpList.push(grp)
@@ -144,7 +165,7 @@ export default class Builder extends Vue {
     }
   }
 
-  isGrpSelected(grp: Grp) {
+  isGrpSelected (grp: Grp) {
     return this.selGrpList.indexOf(grp) > -1
   }
 
@@ -166,7 +187,7 @@ export default class Builder extends Vue {
   // /
 
   @Watch('selGrpList')
-  onSelGrpListChanged(selGrpList: Grp[]) {
+  onSelGrpListChanged (selGrpList: Grp[]) {
     window.console.log('selGrpList', selGrpList)
 
     const areaOrder = ['教室', '教室', '公区', '公区']
@@ -201,7 +222,7 @@ export default class Builder extends Vue {
     window.console.log("\n\n")
   }
 
-  savePlan() {
+  savePlan () {
     // 刷新时间
     this.plan.createdTime = new Date().getTime()
     this.$dataAction.savePlan(this.plan)
@@ -240,6 +261,10 @@ export default class Builder extends Vue {
 
       &.warn {
         background: rgba(255, 166, 32, 0.264);
+      }
+
+      &.success {
+        background: rgba(0, 188, 212, 0.2);
       }
     }
   }
@@ -281,10 +306,12 @@ export default class Builder extends Vue {
       }
     }
 
+    $grp-badge-controller-height: 35px;
+
     .grp-list {
       overflow-y: auto;
       overflow-x: hidden;
-      height: calc(100% - 45px - $bar-height);
+      height: calc(100% - 47px - 10px - #{$bar-height} - #{$grp-badge-controller-height});
       padding-top: 10px;
 
       .grp-item {
@@ -316,6 +343,29 @@ export default class Builder extends Vue {
         }
       }
     }
+
+    .grp-badge-controller {
+      height: $grp-badge-controller-height;
+      line-height: $grp-badge-controller-height;
+      display: flex;
+      flex-direction: row;
+
+      & > span {
+        font-size: 12px;
+        flex: 1;
+        cursor: pointer;
+        padding: 0 15px;
+
+        & > i {
+          margin-right: 4px;
+        }
+
+        &:hover {
+          color: #0083ff;
+          background: #FFF;
+        }
+      }
+    }
   }
 
   .plan-editor {
@@ -340,7 +390,7 @@ export default class Builder extends Vue {
         width: 100%;
       }
 
-      .grp-input > input {
+      .grp-input > input, .grp-input > textarea {
         border-radius: 2px;
         height: 34px;
         line-height: 34px;
@@ -363,6 +413,13 @@ export default class Builder extends Vue {
           border-color: #409eff;
           outline: 0;
         }
+      }
+
+      .grp-input > textarea {
+        min-height: 100px;
+        resize: vertical;
+        padding: 6px 12px;
+        line-height: 20px;
       }
     }
 

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
-import { Area, Plan, Grp, PersonProfile } from './data-interfaces'
+import { Area, Plan, Grp, PersonProfile, PlanGrp } from './data-interfaces'
 
 /**
  * 数据查询类
@@ -109,6 +109,21 @@ export default class DataQuery extends Vue {
     }
 
     return profile
+  }
+
+  /** 根据 PlanGrp 获取每个任务下的成员名字列表 */
+  getTaskPersonListByPlanGrp (planGrp: PlanGrp) {
+    const taskList: { task: string; persons: string[] }[] = []
+    _.forEach(planGrp.personTaskList, ({ task, person }) => {
+      let taskItem = taskList.find((o) => o.task === task)
+      if (!taskItem) {
+        taskItem = { task, persons: [] }
+        taskList.push(taskItem)
+      }
+      taskItem.persons.push(person)
+    })
+
+    return taskList
   }
 
   /** 某组是否存在于最新的 Plan 中 */

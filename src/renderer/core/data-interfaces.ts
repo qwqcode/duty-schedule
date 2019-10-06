@@ -56,6 +56,8 @@ export interface Plan {
   actionTime: number
   /** 计划中的小组列表 */
   grpList: PlanGrp[]
+  /** 备注 */
+  note?: string
 }
 
 /**

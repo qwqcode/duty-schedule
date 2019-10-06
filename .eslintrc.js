@@ -34,6 +34,7 @@ module.exports = {
     'no-param-reassign': 0,
     'vue/require-component-is': 0,
     'no-plusplus': 0,
+    'lines-between-class-members': 0,
     'vue/max-attributes-per-line': ['warn', {
       "singleline": 4,
       "multiline": {

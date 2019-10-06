@@ -5,12 +5,12 @@
       class="dialog"
       style="animation-duration: 0.3s"
     >
-      <div class="inner">
+      <div ref="inner" class="inner">
         <div v-if="showCloseBtn" @click="onCloseBtnClick" class="close-btn">
           <i class="zmdi zmdi-close" />
         </div>
-        <div class="body">
-          <slot />
+        <div :class="{ body: !noSlotStyle }">
+          <slot ref="bodyContent" />
         </div>
       </div>
     </div>
@@ -18,6 +18,7 @@
 </template>
 
 <script lang="ts">
+import $ from 'jquery'
 import Vue from 'vue'
 import { Prop, Component } from 'vue-property-decorator'
 
@@ -26,20 +27,43 @@ export default class Dialog extends Vue {
   isShow: boolean = false
 
   @Prop({
+    default: false
+  }) readonly outclickClose!: boolean
+
+  @Prop({
     default: true
   }) readonly showCloseBtn!: boolean
 
+  @Prop({
+    default: false
+  }) readonly noSlotStyle!: boolean
+
   show () {
     this.isShow = true
+    if (this.outclickClose) {
+      $(document).bind('click.dialogOutClickHide', (e) => {
+        if ($(e.target).is(this.$refs.inner as Element) || !$(e.target).closest(this.$refs.bodyContent as Element)) {
+          this.hide()
+          $(document).unbind('click.dialogOutClickHide')
+        }
+      })
+    }
   }
 
   hide () {
     this.isShow = false
+    if (this.outclickClose) {
+      $(document).unbind('click.dialogOutClickHide')
+    }
   }
 
   onCloseBtnClick () {
     this.isShow = false
     this.$emit('closed')
+  }
+
+  breforeDestroy () {
+    this.hide()
   }
 }
 </script>

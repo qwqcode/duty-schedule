@@ -121,9 +121,7 @@ import ConfirmPopover from '../components/ConfirmPopover.vue'
 })
 export default class AreaList extends Vue {
   editMode = false
-
-  showAlias = true
-
+  showAlias = false
   areaList: Area[] = []
 
   created () {

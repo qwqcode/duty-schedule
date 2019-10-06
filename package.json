@@ -2,8 +2,8 @@
   "name": "duty-schedule",
   "version": "0.0.6",
   "author": "qwqcode <1149527164@qq.com>",
-  "description": "A duty schedule.",
-  "license": null,
+  "description": "值日任务表 - Duty Schedule",
+  "license": "GPL-2.0",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder --win --ia32",
@@ -54,11 +54,13 @@
   "dependencies": {
     "@types/jquery": "^3.3.31",
     "@types/lodash": "^4.14.141",
+    "@types/marked": "^0.6.5",
     "axios": "^0.18.0",
     "element-theme-chalk": "^2.12.0",
     "element-ui": "^2.12.0",
     "jquery": "^3.4.1",
     "lodash": "^4.17.15",
+    "marked": "^0.7.0",
     "material-design-iconic-font": "^2.2.0",
     "normalize.css": "^8.0.1",
     "vue": "^2.5.18",
@@ -69,7 +71,6 @@
     "vue2-transitions": "^0.3.0"
   },
   "devDependencies": {
-    "vue-property-decorator": "^8.2.2",
     "@types/node": "^12.0.2",
     "@types/vue": "^2.0.0",
     "@types/vue-router": "^2.0.0",
@@ -124,6 +125,7 @@
     "vue-eslint-parser": "^6.0.4",
     "vue-html-loader": "^1.2.4",
     "vue-loader": "^15.2.4",
+    "vue-property-decorator": "^8.2.2",
     "vue-style-loader": "^4.1.0",
     "vue-template-compiler": "^2.5.18",
     "webpack": "^4.15.1",
