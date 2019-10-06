@@ -1,87 +1,112 @@
 <template>
-  <div class="person-profile" :class="{ 'as-selector': !!asSel, 'hide-task-sel': !showTaskSel }">
-    <div class="base-info">
-      <span class="name">{{ personName }}</span>
-      <template v-if="profile">
-        <span>最后执行：{{ profile.lastWorkPlan ? `${profile.lastWorkPlan.name} (${$dataQuery.timeAgo(new Date(profile.lastWorkPlan.time))})` : '无' }}</span>
-      </template>
+  <Dialog ref="dialog">
+    <div v-if="!!profile" :class="{ 'as-selector': !!selMode, 'hide-task-sel': !showTaskSel }" class="person-profile">
+      <div class="base-info">
+        <span class="name">{{ personName }}</span>
+        <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
+        <span
+          @click="openPersonTaskChart()"
+          class="btn"
+        ><i class="zmdi zmdi-calendar-check" /> 历史图表</span>
 
-      <slide-y-up-transition>
-        <div v-if="taskRecView.show" class="task-rec-view">
-          <div class="view-desc">"{{ personName }}" 的 “{{ taskRecView.taskName }}” 记录</div>
-          <calendar-heatmap v-if="!showTaskSel" :values="taskRecViewData" :end-date="$dataQuery.dateFormat(new Date())" />
-        </div>
-      </slide-y-up-transition>
-    </div>
+        <slide-y-up-transition>
+          <div v-if="taskRecView.show" class="task-rec-view">
+            <div class="view-desc">
+              "{{ personName }}" 的 “{{ taskRecView.taskName }}” 记录
+            </div>
+            <calendar-heatmap v-if="!showTaskSel" :values="taskRecViewData" :end-date="$dataQuery.dateFormat(new Date())" />
+          </div>
+        </slide-y-up-transition>
+      </div>
 
-    <div class="task-sel">
-      <div v-if="showTaskSel" class="area-list">
-        <div v-for="(area, areaI) in areaList" :key="areaI" class="area-item">
-          <div class="area-name">{{ area.name }}</div>
-          <div class="task-list">
-            <div
-              v-for="(task, taskI) in area.taskList"
-              :key="taskI"
-              class="task-item" @click="asSel ? selectTask(task) : null"
-              :class="{ 'selected': !!asSel && task === value.task }"
-            >
-              <div class="name">{{ task }}</div>
-              <div class="badge-box">
-                <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`">
-                  <i class="zmdi zmdi-calendar-check" />
-                  {{ $dataQuery.getPersonTaskRec(personName, task) }}
-                </span>
+      <div class="task-sel">
+        <div v-if="showTaskSel" class="area-list">
+          <div v-for="(area, areaI) in areaList" :key="areaI" class="area-item">
+            <div class="area-name">
+              {{ area.name }}
+            </div>
+            <div class="task-list">
+              <div
+                v-for="(task, taskI) in area.taskList"
+                :key="taskI"
+                @click="selectTask(task)"
+                :class="{ 'selected': !!selMode && task === selMode.data.task }"
+                class="task-item"
+              >
+                <div class="name">
+                  {{ task }}
+                </div>
+                <div class="badge-box">
+                  <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`">
+                    <i class="zmdi zmdi-calendar-check" />
+                    {{ $dataQuery.getPersonTaskRec(personName, task) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div v-else class="action-bar">
-        <span @click="closeTaskRecView()"><i class="zmdi zmdi-arrow-left" /> 返回</span>
+        <div v-else class="action-bar">
+          <span @click="closeTaskRecView()"><i class="zmdi zmdi-arrow-left" /> 返回</span>
+        </div>
       </div>
     </div>
-  </div>
+  </Dialog>
 </template>
 
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
-import { Component, Prop } from 'vue-property-decorator'
-import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
+import { Component } from 'vue-property-decorator'
 import { CalendarHeatmap } from 'vue-calendar-heatmap'
+import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
+import Dialog from '@/components/Dialog.vue'
+
+type SelMode = {
+  data: PersonTaskItem
+  beforeSel?: ((taskName: string) => boolean|void)
+}
 
 @Component({
-  components: { CalendarHeatmap }
+  components: { CalendarHeatmap, Dialog }
 })
 export default class PersonProfile extends Vue {
+  personName: string = ''
+
+  selMode: SelMode|null = null
+
   showTaskSel = true
+
   taskRecView = {
     show: false,
-    taskName: <string|null>null
+    taskName: null as string|null
   }
 
-  @Prop({
-    type: Boolean,
-    default: false
-  }) readonly asSel!: boolean
-  @Prop({
-    required: true
-  }) readonly personName!: string
-  @Prop() readonly value!: PersonTaskItem
-  @Prop() readonly plan!: Plan
-
-  created() {
+  created () {
+    Vue.prototype.$personProfile = this
   }
 
   mounted () {
   }
 
-  selectTask (taskName: string) {
-    this.$emit('input', Object.assign(this.value, { task: taskName }))
+  open (personName: string, selMode?: SelMode) {
+    this.personName = personName
+    this.selMode = selMode || null;
+
+    (this.$refs.dialog as Dialog).show()
   }
 
-  get DataValue(): any {
-    return this.value
+  hide () {
+    (this.$refs.dialog as Dialog).hide()
+  }
+
+  selectTask (taskName: string) {
+    if (this.selMode) {
+      if (this.selMode.beforeSel !== undefined && (this.selMode.beforeSel(taskName) === false)) {
+        return
+      }
+      this.selMode.data.task = taskName
+    }
   }
 
   get areaList () {
@@ -89,20 +114,28 @@ export default class PersonProfile extends Vue {
   }
 
   get profile () {
-    return this.$dataQuery.getPersonProfile(this.personName)
+    return this.personName ? this.$dataQuery.getPersonProfile(this.personName) : null
+  }
+
+  get profileDetails (): {[label: string]: string} {
+    if (!this.profile) { return {} }
+
+    return {
+      '最后执行': this.profile.lastWorkPlan ? `${this.profile.lastWorkPlan.name} (${this.$dataQuery.timeAgo(new Date(this.profile.lastWorkPlan.actionTime))})` : '无'
+    }
   }
 
   get taskRecViewData () {
-    let dateToCount: {[date: string]: number} = {}
+    const dateToCount: {[date: string]: number} = {}
 
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
-      let date = this.$dataQuery.dateFormat(new Date(plan.time))
+      const date = this.$dataQuery.dateFormat(new Date(plan.actionTime))
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
         if (planGrp.personTaskList.find(o => (o.person === this.personName && o.task === this.taskRecView.taskName))) {
-          if (!dateToCount.hasOwnProperty(date)) {
+          if (!_.has(dateToCount, date)) {
             dateToCount[date] = 1
           } else {
-            dateToCount[date] += 1;
+            dateToCount[date]++
           }
         }
       })
@@ -120,6 +153,10 @@ export default class PersonProfile extends Vue {
   closeTaskRecView () {
     this.showTaskSel = true
     this.taskRecView.show = false
+  }
+
+  openPersonTaskChart () {
+    this.$personTaskChart.open(this.personName)
   }
 }
 </script>
@@ -154,6 +191,8 @@ export default class PersonProfile extends Vue {
   }
 
   .base-info {
+    display: flex;
+    flex-direction: column;
     flex-basis: 35%;
     background: #FFF;
     padding: 40px 50px;
@@ -161,7 +200,8 @@ export default class PersonProfile extends Vue {
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
 
     & > span {
-      display: block;
+      display: inline-block;
+      width: fit-content;
 
       &:not(:last-child) {
         margin-bottom: 10px;
@@ -171,13 +211,30 @@ export default class PersonProfile extends Vue {
         font-size: 26px;
         margin-bottom: 20px;
       }
+
+      & > i {
+        margin-right: 5px;
+      }
+
+      &.btn {
+        margin: 5px 0;
+        cursor: pointer;
+        color: #1a73e8;
+        padding: 4px 13px;
+        border-radius: 2px;
+        border: 1px solid #1a73e8;
+
+        &:hover {
+          opacity: .9;
+        }
+      }
     }
 
     .task-rec-view {
       margin-top: 30px;
 
       .view-desc {
-        color: #0083ff;
+        color: #1a73e8;
         margin-bottom: 30px;
       }
     }
@@ -199,7 +256,7 @@ export default class PersonProfile extends Vue {
         .area-name {
           font-size: 18px;
           padding-left: 17px;
-          border-left: 2px solid #0083ff;
+          border-left: 2px solid #1a73e8;
         }
 
         .task-list {
@@ -254,7 +311,7 @@ export default class PersonProfile extends Vue {
 
                 &:hover {
                   color: #FFF;
-                  background: #0083ff;
+                  background: #1a73e8;
                 }
               }
             }

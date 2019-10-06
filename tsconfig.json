@@ -15,7 +15,7 @@
     "strict": true,
     "allowJs": true,
     "experimentalDecorators": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   },
   "include": [
     "./src/**/*",

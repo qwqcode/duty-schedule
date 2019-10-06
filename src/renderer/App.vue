@@ -1,41 +1,86 @@
 <template>
   <div id="app">
-    <DataHelper />
-    <top-bar :sub-title="subTitle"></top-bar>
+    <component v-for="name in serviceNames" :is="name" :key="name" />
+    <top-bar :sub-title="subTitle" />
     <div class="page-wrap">
       <transition :name="transitionName">
-        <router-view></router-view>
+        <router-view />
       </transition>
     </div>
-    <bottom-bar></bottom-bar>
+    <bottom-bar />
   </div>
 </template>
 
 <script lang="ts">
-  import Vue from 'vue'
-  import { Watch, Component } from 'vue-property-decorator'
-  import DataHelper from './DataHelper.vue'
-  import TopBar from './components/TopBar.vue'
-  import BottomBar from './components/BottomBar.vue'
+import Vue from 'vue'
+import marked from 'marked'
+import { Watch, Component } from 'vue-property-decorator'
+import Services from './services'
+import TopBar from './components/TopBar.vue'
+import BottomBar from './components/BottomBar.vue'
 
-  @Component({
-    components: { TopBar, BottomBar, DataHelper }
-  })
-  export default class App extends Vue {
-    transitionName: string = ''
-    subTitle: string = ''
+@Component({
+  components: { TopBar, BottomBar, ...Services }
+})
+export default class App extends Vue {
+  transitionName: string = ''
 
-    setSubTitle (str: string) {
-      this.subTitle = str
+  subTitle: string = ''
+
+  created () {
+    // Local Test
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+      try {
+        // eslint-disable-next-line
+        require('./core/data-test.local.ts').runTest(this)
+      } catch (err) {
+        window.console.error('Local Test', err)
+      }
     }
 
-    @Watch('$route')
-    onRouteChanged (to: any, from: any) {
-      const toDepth = to.path.split('/').length
-      const fromDepth = from.path.split('/').length
-      this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
-    }
+    this.initMarked()
   }
+
+  setSubTitle (str: string) {
+    this.subTitle = str
+  }
+
+  @Watch('$route')
+  onRouteChanged (to: any, from: any) {
+    const toDepth = to.path.split('/').length
+    const fromDepth = from.path.split('/').length
+    this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
+    this.setSubTitle('')
+  }
+
+  get serviceNames () {
+    return Object.keys(Services)
+  }
+
+  private initMarked () {
+    const renderer = new marked.Renderer()
+    const linkRenderer = renderer.link
+    renderer.link = (href, title, text) => {
+      const html = linkRenderer.call(renderer, href, title, text)
+      return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ')
+    }
+
+    const nMarked = marked
+    nMarked.setOptions({
+      renderer,
+      pedantic: false,
+      gfm: true,
+      tables: true,
+      breaks: true,
+      sanitize: true, // 净化
+      smartLists: true,
+      smartypants: true,
+      xhtml: false
+    })
+
+    Vue.prototype.$marked = nMarked
+  }
+}
 </script>
 
 <style lang="scss">
@@ -56,7 +101,7 @@
     overflow-x: hidden;
     padding-top: 20px;
     padding-bottom: 40px;
-    transition: all .5s cubic-bezier(0.55, 0, 0.1, 1);
+    transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
 
     &.fullscreen {
       margin-top: 0;
@@ -69,14 +114,38 @@
   .page-title {
     font-size: 2em;
     margin-bottom: 10px;
+
+    .action-box {
+      display: inline-block;
+      font-size: 14px;
+      vertical-align: sub;
+
+      .action-item {
+        user-select: none;
+        float: left;
+        padding: 1px 6px;
+        cursor: pointer;
+
+        &:hover,
+        &.active {
+          color: #1a73e8;
+        }
+
+        &:not(:last-child) {
+          margin-right: 2px;
+        }
+      }
+    }
   }
 }
 
-.slide-left-enter, .slide-right-leave-active {
+.slide-left-enter,
+.slide-right-leave-active {
   opacity: 0;
   transform: translate(30px, 0);
 }
-.slide-left-leave-active, .slide-right-enter {
+.slide-left-leave-active,
+.slide-right-enter {
   opacity: 0;
   transform: translate(-30px, 0);
 }

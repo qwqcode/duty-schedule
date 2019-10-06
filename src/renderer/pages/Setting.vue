@@ -1,55 +1,105 @@
 <template>
   <div class="page setting-page">
     <div class="setting-list">
-      <div class="page-title">Settings</div>
+      <div class="page-title">
+        Settings
+      </div>
 
       <div class="setting-card">
-        <div class="title">基础设置</div>
+        <div class="title">
+          基础设置
+        </div>
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
               <template v-for="(fieldName, index) in $dataStore.DATA_FIELDS">
                 <el-button
-                  size="small"
                   :key="index"
-                  @click="toggleDataEditor(fieldName)"
-                >{{ fieldName }}</el-button>
+                  @click="$permission.adminBtn(() => { toggleDataEditor(fieldName) })"
+                  size="small"
+                >
+                  {{ fieldName }}
+                </el-button>
               </template>
-              <el-button size="small" @click="toggleDataEditor('__ALL__')">__ALL__</el-button>
-              <el-button size="small" @click="toggleDataEditor('__ALL_OLD_VERSION__')">__ALL__ (旧版)</el-button>
+              <el-button @click="$permission.adminBtn(() => { toggleDataEditor('__ALL__') })" size="small">
+                __ALL__
+              </el-button>
+              <el-button @click="$permission.adminBtn(() => { toggleDataEditor('__ALL_OLD_VERSION__') })" size="small">
+                __ALL__ (旧版)
+              </el-button>
             </div>
           </div>
           <div
-            class="setting-item"
             v-if="dataEditorTargetFieldName !== null"
+            class="setting-item"
           >
             <div class="field">
               <el-input
-                type="textarea"
-                :rows="5"
-                :placeholder="`编辑数据 ${dataEditorTargetFieldName}`"
                 v-model="dataEditorVal"
-              ></el-input>
+                :rows="15"
+                :placeholder="`编辑数据 ${dataEditorTargetFieldName}`"
+                type="textarea"
+              />
             </div>
-            <el-button type="success" size="mini" @click="dataEditorSave">
-              <i class="zmdi zmdi-save"></i> 保存
+            <el-button @click="$permission.adminBtn(dataEditorSave)" type="success" size="mini">
+              <i class="zmdi zmdi-save" /> 保存
             </el-button>
           </div>
         </div>
       </div>
 
       <div class="setting-card">
-        <div class="title">其他操作</div>
+        <div class="title">
+          维护操作
+        </div>
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
-              <el-button size="small" @click="syncRecList()">同步 RecList</el-button>
-              <el-button size="small" @click="openDevTools()">打开调试工具</el-button>
+              <el-button @click="$permission.openModifyPasswordDialog()" size="small">
+                修改密码
+              </el-button>
+              <el-button @click="$permission.adminBtn(syncRecList)" size="small">
+                同步 RecList
+              </el-button>
+              <el-button v-if="!isWeb" @click="$permission.adminBtn(openDevTools)" size="small">
+                打开调试工具
+              </el-button>
               <el-button
-                size="small"
-                @click="deleteVuexStoreData()"
                 ref="deleteVuexStoreDataBtn"
-              >清除所有内容和设定</el-button>
+                @click="$permission.adminBtn(deleteVuexStoreData)"
+                size="small"
+              >
+                清除所有内容和设定
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="title">
+          云端同步
+        </div>
+        <div class="inner">
+          <div class="setting-item">
+            <el-form @submit.native.prevent class="form">
+              <el-checkbox :checked="$dataStore.Settings.remoteSync.enabled" @change="remoteSyncSwitch('enabled', $event)">
+                启用
+              </el-checkbox>
+              <el-checkbox :checked="$dataStore.Settings.remoteSync.autoSync" @change="remoteSyncSwitch('autoSync', $event)">
+                自动同步
+              </el-checkbox>
+              <el-form-item label="服务器">
+                <el-input v-model="$dataStore.Settings.remoteSync.server" @input="$dataStore.save()" placeholder="输入 Server URL" />
+              </el-form-item>
+            </el-form>
+            <div class="buttons">
+              <el-button @click="$permission.adminBtn($dataAction.remoteSyncUpload)" size="small">
+                上传数据到云端
+              </el-button>
+              <el-button @click="$permission.adminBtn($dataAction.remoteSyncDownload)" size="small">
+                从云端同步数据
+              </el-button>
             </div>
           </div>
         </div>
@@ -64,21 +114,23 @@
         <br>© 2019
         <span @click="openBlog()" style="cursor: pointer;color: #1a73e8">qwqaq.com</span>
       </div>
-
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import _ from 'lodash'
-import { ipcRenderer, shell } from 'electron'
+import { Component } from 'vue-property-decorator'
 import Vue from 'vue'
+import Dialog from '../components/Dialog.vue'
 import * as DataType from '@/core/data-interfaces'
-import { Component } from 'vue-property-decorator';
 
-@Component({})
+@Component({
+  components: { Dialog }
+})
 export default class Setting extends Vue {
   dataEditorTargetFieldName: string | null = null
+
   dataEditorVal: string = ""
 
   mounted() {
@@ -88,20 +140,8 @@ export default class Setting extends Vue {
   }
 
   get version() {
+    // eslint-disable-next-line global-require
     return require("../../../package.json").version
-  }
-
-  isDataAllowEdit() {
-    if (
-      typeof (window as any).SETTING_DATA_ALLOW_EDIT !== "boolean" ||
-      (window as any).SETTING_DATA_ALLOW_EDIT !== true
-    ) {
-      window.notify("没有权限修改数据", "w")
-      console.log("[window.SETTING_DATA_ALLOW_EDIT]")
-      return false
-    } else {
-      return true
-    }
   }
 
   toggleDataEditor(fieldName: string) {
@@ -119,7 +159,7 @@ export default class Setting extends Vue {
 
     let jsonObj = {}
     if (fieldName === "__ALL__") {
-      let allJson: any = {}
+      const allJson: any = {}
       _.forEach(this.$dataStore.DATA_FIELDS, (key) => {
         allJson[key] = (this.$dataStore as any)[key]
       })
@@ -137,11 +177,7 @@ export default class Setting extends Vue {
   }
 
   dataEditorSave() {
-    if (!this.isDataAllowEdit()) {
-      return
-    }
-
-    let targetKey = this.dataEditorTargetFieldName
+    const targetKey = this.dataEditorTargetFieldName
     if (targetKey !== null) {
       if (targetKey === "__ALL_OLD_VERSION__") {
         this.oldVersionDataImport(JSON.parse(this.dataEditorVal))
@@ -149,10 +185,10 @@ export default class Setting extends Vue {
       }
 
       if (targetKey === "__ALL__") {
-        let obj = JSON.parse(this.dataEditorVal)
-        for (let key in obj) {
-          this.$dataAction.settingSetData(key, obj[key])
-        }
+        const obj = JSON.parse(this.dataEditorVal)
+        _.forEach(obj, (val, key) => {
+          this.$dataAction.settingSetData(key, val)
+        })
       } else {
         this.$dataAction.settingSetData(targetKey, JSON.parse(this.dataEditorVal))
       }
@@ -163,36 +199,52 @@ export default class Setting extends Vue {
     this.$dataAction.syncRec()
     window.notify('RecList 已同步')
   }
-  deleteVuexStoreData() {
-    if (!this.isDataAllowEdit()) {
-      return
-    }
 
-    let el = this.$refs.deleteVuexStoreDataBtn as any
+  deleteVuexStoreData() {
+    const el = this.$refs.deleteVuexStoreDataBtn as any
     if (typeof el.clickTime !== "number") {
       el.clickTime = 1
     } else {
       el.clickTime++
     }
     if (el.clickTime < 5) {
-      window.notify("危险操作，请再点 " + (5 - el.clickTime) + " 次", 'e')
+      window.notify(`危险操作，请再点 ${  5 - el.clickTime  } 次`, 'e')
     } else {
       this.$dataStore.clearAll()
     }
   }
 
   openDevTools() {
-    ipcRenderer.send("open-dev-tools")
+    if (this.isWeb) { return }
+    // eslint-disable-next-line global-require
+    require('electron').ipcRenderer.send("open-dev-tools")
   }
 
   openBlog() {
-    shell.openExternal("https://qwqaq.com")
+    if (this.isWeb) {
+      window.location.href = 'https://qwqaq.com'
+      return
+    }
+    // eslint-disable-next-line global-require
+    require('electron').shell.openExternal("https://qwqaq.com")
+  }
+
+  remoteSyncSwitch (fieldName: string, isEnabled: boolean) {
+    if (!_.has(this.$dataStore.Settings.remoteSync, fieldName)) {
+      const err = `remoteSyncSwitch() "${fieldName}" fieldName not found.`
+      window.notify(err, 'e')
+      throw new Error(err)
+    }
+    this.$permission.adminBtn(() => {
+      (this.$dataStore.Settings.remoteSync as any)[fieldName] = isEnabled
+      this.$dataStore.save()
+    })
   }
 
   oldVersionDataImport(data: any) {
-    let PlanList: DataType.Plan[] = []
-    let GrpList: DataType.Grp[] = []
-    let AreaList: DataType.Area[] = []
+    const PlanList: DataType.Plan[] = []
+    const GrpList: DataType.Grp[] = []
+    const AreaList: DataType.Area[] = []
 
     const getGrpIdByStr = (str: string) => { return Number((str.match(/第 ([0-9]+) 组/) as any)[1]) }
     const getHandledAreaName = (str: string) => {
@@ -202,26 +254,27 @@ export default class Setting extends Vue {
     }
 
     // PlanList
-    _.forEach(data.taskList, (item, i) => {
-      let planGrpList: DataType.PlanGrp[] = []
+    _.forEach(data.taskList, (item) => {
+      const planGrpList: DataType.PlanGrp[] = []
 
-      _.forEach(item.memberGroupList, (grpItem, i) => {
-        let personTaskList: DataType.PersonTaskItem[] = []
-        _.forEach(grpItem.data, (personTaskItem, i) => {
+      _.forEach(item.memberGroupList, (grpItem) => {
+        const personTaskList: DataType.PersonTaskItem[] = []
+        _.forEach(grpItem.data, (personTaskItem) => {
           personTaskList.push({ person: personTaskItem.name, task: personTaskItem.task })
         })
 
         planGrpList.push({
           grpId: getGrpIdByStr(grpItem.name),
           area: getHandledAreaName(grpItem.taskTypeGroupName),
-          personTaskList: personTaskList
+          personTaskList
         })
       })
 
       PlanList.push({
         id: Number(item.time),
         name: item.title as string,
-        time: Number(item.time),
+        actionTime: Number(item.time),
+        createdTime: Number(item.time),
         grpList: planGrpList
       })
     })
@@ -241,7 +294,7 @@ export default class Setting extends Vue {
         findArea = { name: getHandledAreaName(areaItem.name), taskList: areaItem.data }
         AreaList.push(findArea)
       } else {
-        _.forEach(areaItem.data, (item) => { if (!!findArea) { findArea.taskList.push(item) } })
+        _.forEach(areaItem.data, (item) => { if (findArea) { findArea.taskList.push(item) } })
       }
     })
 
@@ -252,6 +305,10 @@ export default class Setting extends Vue {
 
     // 同步 Res
     this.$dataAction.syncRec()
+  }
+
+  get isWeb () {
+    return process.env.IS_WEB
   }
 }
 </script>
@@ -278,6 +335,10 @@ export default class Setting extends Vue {
 
       .setting-item {
         &:not(:last-child) {
+          margin-bottom: 10px;
+        }
+
+        & > *:not(:last-child) {
           margin-bottom: 10px;
         }
       }

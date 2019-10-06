@@ -19,7 +19,7 @@ let webConfig = {
   module: {
     rules: [
       {
-        test: /\.(js|vue)$/,
+        test: /\.(js|vue|ts)$/,
         enforce: 'pre',
         exclude: /node_modules/,
         use: {
@@ -31,7 +31,7 @@ let webConfig = {
       },
       {
         test: /\.scss$/,
-        use: ['vue-style-loader', 'css-loader', 'sass-loader']
+        use: ['vue-style-loader', `css-loader?sourceMap=${process.env.NODE_ENV !== 'production' ? 'true' : 'false'}`, 'sass-loader']
       },
       {
         test: /\.sass$/,
@@ -50,18 +50,38 @@ let webConfig = {
         use: 'vue-html-loader'
       },
       {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader'
+          },
+          {
+            loader: 'ts-loader',
+            options: {
+              appendTsSuffixTo: [/\.vue$/]
+            }
+          }
+        ]
+      },
+      {
         test: /\.js$/,
         use: 'babel-loader',
-        include: [ path.resolve(__dirname, '../src/renderer') ],
         exclude: /node_modules/
+      },
+      {
+        test: /\.node$/,
+        use: 'node-loader'
       },
       {
         test: /\.vue$/,
         use: {
           loader: 'vue-loader',
           options: {
-            extractCSS: true,
+            extractCSS: process.env.NODE_ENV === 'production',
             loaders: {
+              js: 'ts-loader',
+              ts: 'ts-loader',
               sass: 'vue-style-loader!css-loader!sass-loader?indentedSyntax=1',
               scss: 'vue-style-loader!css-loader!sass-loader',
               less: 'vue-style-loader!css-loader!less-loader'
@@ -75,8 +95,16 @@ let webConfig = {
           loader: 'url-loader',
           query: {
             limit: 10000,
-            name: 'imgs/[name].[ext]'
+            name: 'imgs/[name]--[folder].[ext]'
           }
+        }
+      },
+      {
+        test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
+        loader: 'url-loader',
+        options: {
+          limit: 10000,
+          name: 'media/[name]--[folder].[ext]'
         }
       },
       {
@@ -85,11 +113,14 @@ let webConfig = {
           loader: 'url-loader',
           query: {
             limit: 10000,
-            name: 'fonts/[name].[ext]'
+            name: 'fonts/[name]--[folder].[ext]'
           }
         }
       }
     ]
+  },
+  node: {
+    fs: 'empty'
   },
   plugins: [
     new VueLoaderPlugin(),
@@ -117,9 +148,11 @@ let webConfig = {
   resolve: {
     alias: {
       '@': path.join(__dirname, '../src/renderer'),
-      'vue$': 'vue/dist/vue.esm.js'
+      '~': path.join(__dirname, '../'),
+      'vue$': 'vue/dist/vue.esm.js',
+      'jquery': 'jquery/src/jquery'
     },
-    extensions: ['.js', '.vue', '.json', '.css']
+    extensions: ['.ts', '.js', '.vue', '.json', '.css', '.node']
   },
   target: 'web'
 }

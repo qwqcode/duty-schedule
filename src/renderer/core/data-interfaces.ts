@@ -23,14 +23,12 @@ export interface Grp {
  * 小组内工作次数记录
  */
 export interface Rec {
-  /** 小组 ID */
-  grpId: number
-  /** 小组区域记录表 (key: 区域名) */
-  areaList: {[area: string]: number}
-  /** 个人任务记录表 (key: 任务名.人名) */
-  taskList: {[task: string]: {
-    [person: string]: number
-  }}
+  /** Rec 名 */
+  name: string
+  /** 类别 */
+  type: 'Area'|'Task'
+  /** 数据 */
+  data: {[key: string]: number}
 }
 
 /**
@@ -41,6 +39,8 @@ export interface Area {
   name: string
   /** 工作类型列表 */
   taskList: string[]
+  /** 别名（"改动划归"/"记录转移" 功能） */
+  taskAliasList?: { [targetTask: string]: string[] }
 }
 
 /**
@@ -51,9 +51,13 @@ export interface Plan {
   /** 计划标题 */
   name: string
   /** 计划创建时间 */
-  time: number
+  createdTime: number
+  /** 计划执行时间 */
+  actionTime: number
   /** 计划中的小组列表 */
   grpList: PlanGrp[]
+  /** 备注 */
+  note?: string
 }
 
 /**

@@ -1,11 +1,11 @@
 <template>
-  <div class="page">
-
-  </div>
+  <div class="page" />
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { Vue, Component, Watch } from 'vue-property-decorator'
+
+@Component({})
 export default class Example extends Vue {
 
 }

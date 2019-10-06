@@ -1,7 +1,8 @@
 import _ from 'lodash'
+import axios from 'axios'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
-import { Plan, Rec, PlanGrp } from './data-interfaces'
+import { Plan, Rec, PlanGrp, Area } from './data-interfaces'
 
 /**
  * 数据操作类
@@ -12,15 +13,17 @@ export default class DataAction extends Vue {
     Vue.prototype.$dataAction = this
   }
 
-  render () { return '' }
+  public render () { return '' }
 
   /** 获取一个空 Plan */
   public newEmptyPlan () : Plan {
     return {
       id: new Date().getTime(),
       name: `${this.getDateText()}`,
-      time: new Date().getTime(),
-      grpList: []
+      actionTime: new Date().getTime(),
+      createdTime: new Date().getTime(),
+      grpList: [],
+      note: ''
     }
   }
 
@@ -40,45 +43,55 @@ export default class DataAction extends Vue {
 
   /** 同步 Rec */
   public syncRec (): void {
-    let recList: Rec[] = []
+    const recList: Rec[] = []
+
+    const pushRec = (name: string, type: 'Area'|'Task', dataItemKey: string|number) => {
+      let rec = _.find(recList, (o) => o.type === type && o.name === name)
+      if (!rec) {
+        rec = { name, type, data: {} }
+        recList.push(rec)
+      }
+      if (!_.has(rec.data, dataItemKey)) {
+        rec.data[dataItemKey] = 1
+      } else {
+        rec.data[dataItemKey]++
+      }
+    }
+
     // 遍历计划列表
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
-        // 初始化 recList 中的该组数据 rec
-        let rec: Rec
-        let findRec = _.find(recList, (o) => o.grpId === planGrp.grpId)
-        if (findRec === undefined) {
-          rec = {
-            grpId: planGrp.grpId,
-            areaList: {},
-            taskList: {}
-          }
-          recList.push(rec)
-        } else {
-          rec = findRec
+        if (this.$dataStore.AreaList.find(o => o.name === planGrp.area)) { // 仅记录 AreaList 存在项
+          pushRec(planGrp.area, 'Area', planGrp.grpId)
         }
-        // 更新该组的区域列表
-        if (!rec.areaList.hasOwnProperty(planGrp.area)) {
-          rec.areaList[planGrp.area] = 1
-        } else {
-          rec.areaList[planGrp.area] += 1
-        }
+
         // 更新该组的个人任务列表
         _.forEach(planGrp.personTaskList, (item) => {
-          let task = item.task
-          let person = item.person
-          if (!rec.taskList.hasOwnProperty(task)) {
-            rec.taskList[task] = {}
+          const { task, person } = item
+          if (
+            this.$dataStore.AreaList.find(o => o.name === planGrp.area && o.taskList.includes(task)) // 仅记录 AreaList 存在项
+          ) {
+            pushRec(task, 'Task', person)
           }
-          if (!rec.taskList[task].hasOwnProperty(person)) {
-            rec.taskList[task][person] = 1
-          } else {
-            rec.taskList[task][person] += 1
+
+          // Alias
+          const area = this.$dataStore.AreaList.find(o => o.name === planGrp.area)
+          if (area && area.taskAliasList) {
+            _.forEach(area.taskAliasList, (taskAliasList, targetTask) => {
+              _.forEach(taskAliasList, (taskAlias) => {
+                if (taskAlias === task) {
+                  pushRec(targetTask, 'Task', person)
+                  return false
+                }
+                return true
+              })
+            })
           }
         })
       })
     })
+
     // 保存数据
     this.$dataStore.RecList = recList
     this.$dataStore.save()
@@ -101,11 +114,64 @@ export default class DataAction extends Vue {
 
   /** 获取日期文字 */
   public getDateText () {
-    let myDate = new Date()
-    let year = myDate.getFullYear()
-    let month = myDate.getMonth() + 1
-    let date = myDate.getDate()
-    let str = '星期' + '日一二三四五六'.charAt(new Date().getDay())
-    return year + '-' + month + '-' + date + ' ' + str
+    const myDate = new Date()
+    const year = myDate.getFullYear()
+    const month = myDate.getMonth() + 1
+    const date = myDate.getDate()
+    const str = `星期${'日一二三四五六'.charAt(new Date().getDay())}`
+    return `${year}-${month}-${date} ${str}`
+  }
+
+  /** 从远程同步数据 */
+  public remoteSyncDownload (onFinished?: () => void) {
+    if (!this.$dataStore.Settings.remoteSync.enabled) {
+      window.notify('云端同步功能未开启', 'w')
+      return
+    }
+
+    axios.get(this.$dataStore.Settings.remoteSync.server, {
+      params: { 'op': 'download' }
+    }).then(({ data }) => {
+      if (data.success) {
+        const jsonData = data.data
+        if (!!jsonData && String(jsonData).trim() !== '') {
+          try {
+            this.$dataStore.loadDataByJsonStr(jsonData)
+            this.$dataStore.save()
+          } catch (err) {
+            window.notify('数据从云端同步失败', 'e')
+            if (onFinished !== undefined) { onFinished() }
+            throw new Error(err)
+          }
+          if (onFinished !== undefined) { onFinished() }
+          window.notify('数据已成功从云端同步', 's')
+        } else {
+          if (onFinished !== undefined) { onFinished() }
+          window.notify('数据从云端同步失败', 'e')
+        }
+      } else {
+        window.notify('数据从云端同步失败', 'e')
+        if (onFinished !== undefined) { onFinished() }
+      }
+    })
+  }
+
+  public remoteSyncUpload () {
+    if (!this.$dataStore.Settings.remoteSync.enabled) {
+      window.notify('云端同步功能未开启', 'w')
+      return
+    }
+
+    const data = new FormData()
+    data.set('data', this.$dataStore.getAllDataAsJsonStr(this.$dataStore.DATA_ALLOW_UPLOAD_FIELDS))
+    axios.post(this.$dataStore.Settings.remoteSync.server, data, {
+      params: { 'op': 'upload' }
+    }).then(({ data: respData }) => {
+      if (respData.success) {
+        window.notify('数据已成功上传到云端', 's')
+      } else {
+        window.notify('数据上传到云端失败', 'e')
+      }
+    })
   }
 }

@@ -1,8 +1,8 @@
 <template>
-  <div class="page group-list-page" :class="{ 'as-selector': !!asSelector }">
+  <div :class="{ 'as-selector': !!asSelector }" class="page group-list-page">
     <div class="search">
       <el-input v-model="searchKeyWords" placeholder="搜索" autocomplete="off" clearable>
-        <i slot="prefix" class="el-input__icon el-icon-search"></i>
+        <i slot="prefix" class="el-input__icon el-icon-search" />
       </el-input>
     </div>
 
@@ -10,27 +10,23 @@
       <el-col
         v-for="grp in grpList"
         :key="grp.id"
-        class="group-item"
-        :class="{ 'is-selected': isGrpSelected(grp) }"
         :span="6"
+        :class="{ 'is-selected': isGrpSelected(grp) }"
+        class="group-item"
       >
-        <div class="inner" @click="!!asSelector ? selectGrp(grp) : null">
+        <div @click="!!asSelector ? selectGrp(grp) : null" class="inner">
           <div class="group-title">
             <span class="group-title-text">第 {{ grp.id }} 组</span>
             <span v-if="!!asSelector" class="select-btn">
-              <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+              <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
             </span>
           </div>
-          <div class="item" v-for="person in grp.personList" :key="person">
-            <div class="name" @click="showProfile(person)" v-html="searchHighlight(person)"></div>
+          <div v-for="person in grp.personList" :key="person" class="item">
+            <div v-html="searchHighlight(person)" @click="$personProfile.open(person)" class="name" />
           </div>
         </div>
       </el-col>
     </el-row>
-
-    <Dialog :isOpened="profileDialog.isOpened" @close="hideProfile()">
-      <PersonProfile :personName="profileDialog.personName" />
-    </Dialog>
   </div>
 </template>
 
@@ -39,18 +35,17 @@ import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Watch, Component } from 'vue-property-decorator'
 import Dialog from '../components/Dialog.vue'
-import PersonProfile from '../components/PersonProfile.vue'
 import { Grp } from '../core/data-interfaces'
 
 @Component({
-  components: { Dialog, PersonProfile }
+  components: { Dialog }
 })
 export default class GrpList extends Vue {
   grpSelList: Grp[] = []
+
   searchKeyWords: string = ''
 
   profileDialog = {
-    isOpened: false,
     personName: ''
   }
 
@@ -95,25 +90,16 @@ export default class GrpList extends Vue {
     if (!this.searchKeyWords) {
       return text
     }
-    let index = text.indexOf(this.searchKeyWords)
+    const index = text.indexOf(this.searchKeyWords)
     if (index >= 0) {
       text =
-        text.substring(0, index) +
-        '<span style="color: red;font-weight: bold;">' +
-        text.substring(index, index + text.length) +
-        '</span>' +
-        text.substring(index + text.length)
+        `${text.substring(0, index)
+        }<span style="color: red;font-weight: bold;">${
+        text.substring(index, index + text.length)
+        }</span>${
+        text.substring(index + text.length)}`
     }
     return text
-  }
-
-  showProfile(personName: string) {
-    this.profileDialog.isOpened = true
-    this.profileDialog.personName = personName
-  }
-
-  hideProfile() {
-    this.profileDialog.isOpened = false
   }
 }
 </script>

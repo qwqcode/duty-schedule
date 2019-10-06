@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 import Router from 'vue-router'
 
 export default new Router({
@@ -5,23 +6,23 @@ export default new Router({
     {
       path: '/Schedule',
       name: 'home',
-      component: require('@/pages/Schedule').default
+      component: require('@/pages/Schedule.vue').default
     },
     {
       path: '/Builder',
-      component: require('@/pages/Builder').default
+      component: require('@/pages/Builder.vue').default
     },
     {
       path: '/GrpList',
-      component: require('@/pages/GrpList').default
+      component: require('@/pages/GrpList.vue').default
     },
     {
       path: '/AreaList',
-      component: require('@/pages/AreaList').default
+      component: require('@/pages/AreaList.vue').default
     },
     {
       path: '/Setting',
-      component: require('@/pages/Setting').default
+      component: require('@/pages/Setting.vue').default
     },
     {
       path: '*',

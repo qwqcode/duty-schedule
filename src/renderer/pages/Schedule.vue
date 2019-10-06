@@ -1,302 +1,232 @@
 <template>
   <div class="page schedule-page fullscreen">
-    <div class="task-list-sidebar" style="display: none">
-      <div class="inner" ref="taskListSidebarInner">
-        <plan-list class="plan-list" @openPlan="openPlan" :selected-plan="plan"></plan-list>
-      </div>
+    <!-- 标识书签 -->
+    <div v-if="!!taskBookmark" :class="`bookmark ${taskBookmark.type}`">
+      {{ taskBookmark.text }}
     </div>
+    <!-- Plan 选择 侧边栏 -->
+    <PlanListSidebar ref="planListSidebar" @openPlan="openPlan" :selected-plan="plan" />
+
+    <BarTimer ref="autoSwitcher" />
+
     <div class="inner">
+      <!-- 左侧操作条 -->
       <div class="left-bar">
         <div class="card group-switch">
-          <div class="item" @click="showTaskListSidebar()">
-            <i class="zmdi zmdi-menu"></i>
+          <div @click="openPlanListSidebar()" class="item">
+            <i class="zmdi zmdi-menu" />
           </div>
-          <div class="dividing"></div>
-          <div class="item">
-            <i class="zmdi zmdi-flag"></i>
+          <div class="dividing" />
+          <div @click="switchNoteCard()" :class="{ 'active': !!cardList[curtCardPos] && cardList[curtCardPos].type === 'text' }" class="item">
+            <i class="zmdi zmdi-flag" />
           </div>
         </div>
-        <div class="card group-switch" v-if="plan !== null">
-          <div class="title">组</div>
+
+        <div v-if="plan !== null" class="card group-switch">
+          <div class="title">
+            组
+          </div>
           <div
+            v-for="grp in plan.grpList"
+            :key="grp.grpId"
+            @click="switchGrp(grp)"
+            :class="{ 'active': !!cardList[curtCardPos] && grp === cardList[curtCardPos].value }"
             class="item"
-            v-for="(group, key) in plan.grpList"
-            :key="key"
-            :class="{ 'active': key == curtGrpKey }"
-            @click="switchGrp(key)"
-          >{{ group.grpId }}</div>
+          >
+            {{ grp.grpId }}
+          </div>
         </div>
+
         <div class="card group-switch">
-          <div class="item" @click="autoSwitch = !autoSwitch">
-            <i :class="`zmdi zmdi-${!autoSwitch ? 'play' : 'pause'}`"></i>
+          <div @click="!isAutoSwitcherOn ? startAutoSwitcher() : stopAutoSwitcher()" class="item">
+            <i :class="`zmdi zmdi-${!isAutoSwitcherOn ? 'play' : 'pause'}`" />
           </div>
         </div>
       </div>
-      <div class="right-card" v-if="plan !== null">
+
+      <!-- 卡片堆叠 -->
+      <div v-if="plan !== null" class="right-card">
         <transition-group name="zoom" tag="div">
-          <div
-            class="float-card group-info"
-            v-for="(grp, key) in plan.grpList"
-            :key="grp.grpId"
-            :ref="`groupInfoCard_${key}`"
-            v-show="key == curtGrpKey"
-          >
-            <div class="inner">
-              <div class="auto-switch-bar" v-show="autoSwitch"></div>
-              <div class="content">
-                <div class="title">第 {{ grp.grpId }} 组</div>
-                <el-row class="task-type-group-wrap" :gutter="30">
-                  <el-col
-                    class="task-type-group"
-                    v-for="(item, i) in tasksPersonNameList"
-                    :key="i"
-                    :span="8"
-                    style="margin-bottom: 20px;"
-                  >
-                    <div class="type-name">{{ item.task }}</div>
-                    <div class="members">
-                      <div
-                        class="member-item"
-                        v-for="(person, pi) in item.persons"
-                        :key="pi"
-                        @click="showProfile(person)"
-                      >{{ person }}</div>
-                    </div>
-                  </el-col>
-                </el-row>
-              </div>
-            </div>
-          </div>
+          <ScheduleCard
+            v-for="(card, i) in cardList"
+            :key="i"
+            v-show="i == curtCardPos"
+            :card="card"
+          />
         </transition-group>
       </div>
     </div>
-
-    <Dialog :isOpened="profileDialog.isOpened" @close="hideProfile()">
-      <PersonProfile :personName="profileDialog.personName" />
-    </Dialog>
   </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
-import PlanList from './PlanList.vue'
-import Dialog from '../components/Dialog.vue'
-import PersonProfile from '../components/PersonProfile.vue'
 import _ from 'lodash'
 import $ from 'jquery'
-import { Plan, PlanGrp } from '../core/data-interfaces'
 import { Watch, Component } from 'vue-property-decorator'
-import { GrpList, AreaList } from '../core/data-localtest'
+import { Plan, PlanGrp } from '../core/data-interfaces'
+import PlanListSidebar from '../components/PlanListSidebar.vue'
+import Dialog from '../components/Dialog.vue'
+import ScheduleCard, { Card } from '../components/ScheduleCard.vue'
+import BarTimer from '../components/BarTimer.vue'
 
 @Component({
-  components: { PlanList, Dialog, PersonProfile }
+  components: { PlanListSidebar, ScheduleCard, Dialog, BarTimer }
 })
 export default class Schedule extends Vue {
   plan: Plan | null = null
-  curtGrpKey: number = 0
-  autoSwitch: boolean = false
-  autoSwitchInterval: number|null = null
+
+  planListSidebar?: PlanListSidebar
   isTaskListSidebarShow: boolean = false
 
-  created() {
-    // 测试
-    // this.$dataStore.clearAll()
-    /*this.$dataStore.GrpList = GrpList
-    this.$dataStore.AreaList = AreaList
-    this.$dataStore.save()*/
+  cardList: Card[] = []
+  curtCardPos: number = 0
+  autoSwitcher?: BarTimer
+  isAutoSwitcherOn = false
 
-    let createTestPlan = (grpIdList: number[] = [1, 2, 3, 4], areaArr: string[] = ['教室', '教室', '公区', '公区']) => {
-      let selGrp = this.$dataStore.GrpList.filter(o => grpIdList.includes(o.id))
-
-      let areaDict: { [grpId: number]: string } = {}
-      grpIdList.forEach((id, index) => {
-        areaDict[id] = areaArr[index]
-      })
-
-      let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrp, areaDict)
-
-      let grpList2 = JSON.parse(JSON.stringify(selGrp))
-      let newPlanGrpList: PlanGrp[] = []
-
-      _.forEach(grpList2, (grp, key) => {
-        let nPl: { person: string, task: string }[] = []
-        _.forEach(grp.personList, (person, index) => {
-          if (!personToTask[person]) return
-          nPl.push({ person: person, task: personToTask[person]})
-        })
-
-        let planGrp: PlanGrp = {
-          grpId: grp.id,
-          personTaskList: nPl,
-          area: areaDict[grp.id]
-        }
-
-        newPlanGrpList.push(planGrp)
-      })
-
-      let plan: Plan = {
-        id: +new Date(),
-        name: '测试计划',
-        grpList: newPlanGrpList,
-        time: +new Date()
-      }
-
-      console.log(plan)
-
-      this.$dataAction.savePlan(plan)
+  created () {
+    if (this.PlanList.length >= 1) {
+      // eslint-disable-next-line prefer-destructuring
+      this.openPlan(this.PlanList[0])
     }
+  }
 
-    for (let i = 0; i < 100; i++) {
-      //createTestPlan([1, 2, 3, 4], ['教室', '教室', '公区', '公区'])
-      //createTestPlan([3, 4, 1, 2], ['教室', '教室', '公区', '公区'])
+  mounted () {
+    this.autoSwitcher = this.$refs.autoSwitcher as BarTimer
+    this.planListSidebar = this.$refs.planListSidebar as PlanListSidebar
+  }
+
+  @Watch('PlanList')
+  onPlanListChanged () {
+    if (this.PlanList.length >= 1) {
+      // eslint-disable-next-line prefer-destructuring
+      this.openPlan(this.PlanList[0])
     }
-
-    console.log(this.$dataStore)
-
-    this.plan = this.planList[0]
   }
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    (this.$parent as any).setSubTitle(' ' + newPlan.name)
+    (this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$dataQuery.timeAgo(new Date(newPlan.actionTime))}`)
   }
 
-  @Watch('curtGrpKey')
-  onCurtGrpKeyChanged(newKey: number, oldKey: number) {
-    // 当切换组时
+  switchGrp (grp: PlanGrp) {
+    const findCardPos = this.cardList.findIndex(o => o.type === 'grp' && o.value === grp)
+    if (findCardPos <= -1) return
+
+    this.curtCardPos = findCardPos
   }
 
-  @Watch('autoSwitch')
-  onAutoSwitchChanged(newVal: boolean) {
-    if (newVal === true) {
-      this.startAutoSwitch()
-    } else {
-      if (this.autoSwitchInterval !== null) {
-        window.clearInterval(this.autoSwitchInterval)
-      }
-    }
+  switchNoteCard () {
+    const findCardPos = this.cardList.findIndex(o => o.type === 'text')
+    if (findCardPos <= -1) return
+
+    this.curtCardPos = findCardPos
   }
 
-  /** 计划列表 */
-  get planList() {
-    return _.sortBy(this.$dataStore.PlanList, o => -o.time)
-  }
-
-  /** 当前显示的组 */
-  get currGrp() {
-    return this.plan !== null ? this.plan.grpList[this.curtGrpKey] || null : null
-  }
-
-  /** 每个任务下的成员名字 列表 */
-  get tasksPersonNameList() {
-    let list: Array<{ task: string; persons: string[] }> = []
-    _.forEach((this.currGrp as PlanGrp).personTaskList, (personTaskItem) => {
-      let person = personTaskItem.person,
-          task = personTaskItem.task
-      let item = list.find(o => o.task === task)
-      if (item === undefined) {
-        item = { task: task, persons: [] }
-        list.push(item)
-      }
-      item.persons.push(person)
-    })
-
-    return list
-  }
-
-  openPlan(plan: Plan) {
-    this.plan = plan
-    this.curtGrpKey = 0
-    this.autoSwitch = false // 停止自动播放
-    this.hideTaskListSidebar()
-  }
-
-  switchGrp(grpKey: number) {
-    this.curtGrpKey = grpKey
-    if (this.autoSwitch === true) {
-      this.autoSwitch = false
+  @Watch('curtCardPos')
+  onCurtCardPosChanged () {
+    if (this.isAutoSwitcherOn && this.autoSwitcher) {
+      this.autoSwitcher.resetTimer()
       window.setTimeout(() => {
-        this.autoSwitch = true
+        this.startAutoSwitcher()
       }, 80)
     }
   }
 
-  getSwitchBar () {
-    return ((this.$refs[`groupInfoCard_${this.curtGrpKey}`] as Element[])[0] as Element).querySelector('.auto-switch-bar') as HTMLElement
+  startAutoSwitcher () {
+    if (this.plan === null || !this.plan.grpList) return
+    if (!this.autoSwitcher) return
+
+    this.autoSwitcher.startTimer(() => {
+      // 切换 Card
+      if ((this.curtCardPos + 1) < this.cardList.length) {
+        this.curtCardPos += 1
+      } else {
+        this.curtCardPos = 0
+      }
+    })
+    this.isAutoSwitcherOn = true
   }
 
-  startAutoSwitch() {
-    if (this.plan === null || !this.plan.grpList) {
-      return
+  stopAutoSwitcher () {
+    if (this.autoSwitcher) this.autoSwitcher.resetTimer()
+    this.isAutoSwitcherOn = false
+  }
+
+  /** 计划列表 */
+  get PlanList() {
+    return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
+  }
+
+  openPlan (plan: Plan) {
+    this.plan = plan
+    this.stopAutoSwitcher()
+    this.closePlanListSidebar()
+
+    this.curtCardPos = 0
+    this.cardList = []
+    _.forEach(this.plan.grpList, (grp) => {
+      this.cardList.push({
+        type: 'grp',
+        value: grp
+      })
+    })
+    if (this.plan.note) {
+      this.cardList.push({
+        type: 'text',
+        value: this.plan.note
+      })
+    }
+  }
+
+  openPlanListSidebar () {
+    if (this.planListSidebar)
+      this.planListSidebar.open()
+  }
+
+  closePlanListSidebar () {
+    if (this.planListSidebar)
+      this.planListSidebar.close()
+  }
+
+  get taskBookmark () {
+    if (this.plan === null) return null
+
+    let bookmark: { type: 'warn'|'info', text: string }|null = null
+    if (this.plan.actionTime < new Date().getTime() && this.$dataQuery.dateFormat(new Date(this.plan.actionTime)) !== this.$dataQuery.dateFormat(new Date())) {
+      bookmark = { type: 'info', text: '历史计划' }
     }
 
-    const timeout = 10 * 1000 // 10s
-    const perTime = 50
-
-    let timeLeft = 0
-
-    this.getSwitchBar().style.height = '100%';
-
-    this.autoSwitchInterval = window.setInterval(() => {
-      let switchBar = this.getSwitchBar()
-      switchBar.style.height = (((timeout - timeLeft) / timeout) * 100).toFixed(2) + '%'
-      timeLeft += perTime
-      if (timeLeft > timeout) {
-        // 切换组
-        if (this.curtGrpKey + 1 < Object.keys((this.plan as Plan).grpList).length) {
-          this.curtGrpKey++
-        } else {
-          this.curtGrpKey = 0
-        }
-        timeLeft = 0
-        switchBar.style.height = '100%';
-      }
-    }, perTime)
-  }
-
-  showTaskListSidebar() {
-    $('.task-list-sidebar')
-      .show()
-      .css('background-color', 'rgba(110, 110, 110, 0.39)')
-    $(this.$refs.taskListSidebarInner).removeClass('show')
-    this.isTaskListSidebarShow = true
-    window.setTimeout(() => {
-      $(this.$refs.taskListSidebarInner).addClass('show')
-      $(document).bind('click.hideSidebar', e => {
-        if ($(e.target).is($('.task-list-sidebar')) || !$(e.target).closest(this.$refs.taskListSidebarInner as Element)) {
-          this.hideTaskListSidebar()
-          $(document).unbind('click.hideSidebar')
-        }
-      })
-    }, 20)
-  }
-
-  hideTaskListSidebar() {
-    $(this.$refs.taskListSidebarInner).removeClass('show')
-    $('.task-list-sidebar').css('background-color', '')
-    window.setTimeout(() => {
-      this.isTaskListSidebarShow = false
-      $('.task-list-sidebar').hide()
-    }, 400)
-  }
-
-  profileDialog = {
-    isOpened: false,
-    personName: ''
-  }
-
-  showProfile(personName: string) {
-    this.profileDialog.isOpened = true
-    this.profileDialog.personName = personName
-  }
-
-  hideProfile() {
-    this.profileDialog.isOpened = false
+    return bookmark
   }
 }
 </script>
 
 <style scoped lang="scss">
+.bookmark {
+  text-align: center;
+  pointer-events: none;
+  z-index: 999;
+  position: fixed;
+  padding: 0 45px;
+  height: 45px;
+  line-height: 45px;
+  font-size: 1.7em;
+  top: 50px;
+  right: 0;
+  color: #fff;
+  background: rgba(59, 59, 59, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+  &.warn {
+    background: rgba(239, 83, 80, 0.77);
+  }
+
+  &.info {
+    background: rgba(33, 150, 243, 0.68);
+  }
+}
+
 .schedule-page {
   background: #f4f4f4;
 
@@ -305,31 +235,6 @@ export default class Schedule extends Vue {
     height: 100%;
     display: flex;
     flex-direction: row;
-  }
-
-  .task-list-sidebar {
-    z-index: 20;
-    transition: background-color 400ms;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-
-    & > .inner {
-      overflow-y: auto;
-      width: 40%;
-      height: 100%;
-      transform: translate(-100%, 0);
-      transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1) 0ms;
-
-      &.show {
-        transform: translate(0, 0);
-      }
-    }
-
-    .task-list {
-      background: #fff;
-    }
   }
 
   .left-bar {
@@ -382,19 +287,6 @@ export default class Schedule extends Vue {
           font-weight: bold;
           background: rgba(66, 133, 244, 0.12);
         }
-
-        /*&.active:after {
-          content: ' ';
-          position: absolute;
-          right: -30px;
-          top: 10px;
-          border-top: 10px solid transparent;
-          transform: rotate(-135deg);
-          border-style: solid;
-          border-width: 10px;
-          border-color: #fff #fff transparent transparent;
-          box-shadow: 0 0px 3px rgba(0, 0, 0, 0.22)
-        }*/
       }
     }
   }
@@ -403,79 +295,6 @@ export default class Schedule extends Vue {
     position: relative;
     flex: 1;
     overflow: hidden;
-
-    .float-card {
-      position: absolute;
-      background: #fff;
-      top: 70px;
-      left: 15px;
-      height: calc(100% - 100px);
-      width: calc(100% - 40px);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-      border-radius: 3px;
-
-      & > .inner {
-        position: relative;
-        height: 100%;
-
-        .auto-switch-bar {
-          top: 0;
-          left: 0;
-          height: 100%;
-          width: 3px;
-          position: absolute;
-          transition: height 0.2s;
-          background: linear-gradient(#1a73e8, #0eefff);
-          box-shadow: 0 1px 3px rgba(14, 239, 255, 0.4);
-        }
-
-        .content {
-          padding: 20px;
-        }
-      }
-
-      &.group-info {
-        .title {
-          font-size: 30px;
-          padding-left: 10px;
-          margin-bottom: 25px;
-          &:before {
-            content: '\f2fb';
-            font-family: 'Material-Design-Iconic-Font';
-            padding-right: 20px;
-          }
-        }
-
-        .task-type-group-wrap {
-          padding: 0 25px;
-
-          .task-type-group {
-            .type-name {
-              color: #1a73e8;
-              font-size: 22px;
-              margin-bottom: 15px;
-            }
-
-            .members {
-              margin-left: 10px;
-              .member-item {
-                display: block;
-                width: fit-content;
-                cursor: pointer;
-                font-size: 25px;
-                &:not(:last-child) {
-                  margin-bottom: 10px;
-                }
-
-                &:hover {
-                  color: #1a73e8;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
   }
 }
 </style>

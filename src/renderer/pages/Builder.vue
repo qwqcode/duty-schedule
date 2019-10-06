@@ -3,33 +3,42 @@
     <div class="grp-selector">
       <div class="sel-action-bar">
         <span class="action-btn">
-          <i class="zmdi zmdi-flare"></i> 一键安排
+          <i class="zmdi zmdi-flare" /> 一键安排
         </span>
-        <span class="action-btn" @click="autoSelectGrp()">
-          <i class="zmdi zmdi-graphic-eq"></i> 自动选组
+        <span @click="autoSelectGrp()" class="action-btn">
+          <i class="zmdi zmdi-graphic-eq" /> 自动选组
         </span>
       </div>
       <div class="grp-list">
         <div
-          class="grp-item"
           v-for="grp in $dataStore.GrpList"
           :key="grp.id"
-          :class="{ 'is-selected': isGrpSelected(grp) }"
           @click="selectGrp(grp)"
+          :class="{ 'is-selected': isGrpSelected(grp) }"
+          class="grp-item"
         >
           <div class="grp-sel-icon">
-            <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'"></i>
+            <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
           </div>
-          <div class="grp-name">第 {{ grp.id }} 组</div>
+          <div class="grp-name">
+            第 {{ grp.id }} 组
+          </div>
           <div class="badge-box">
             <span v-if="$dataQuery.getIsGrpExitsInLatestPlan(grp.id)" class="warn">上次</span>
-            <span>{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
+            <span v-if="!!getGrpAssignedArea(grp)" class="success">本次: {{ getGrpAssignedArea(grp) }}</span>
+            <span v-if="grpBadgeConf.showAreaHistory">{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
             <span>
               {{ $dataQuery.getGrpAreaRec(grp.id, '教室') + $dataQuery.getGrpAreaRec(grp.id, '公区') }} =
               {{ $dataQuery.getGrpAreaRec(grp.id, '教室') }} + {{ $dataQuery.getGrpAreaRec(grp.id, '公区') }}
             </span>
           </div>
         </div>
+      </div>
+      <div class="grp-badge-controller">
+        <span @click="grpBadgeConf.showAreaHistory = !grpBadgeConf.showAreaHistory">
+          <i :class="`zmdi zmdi-${grpBadgeConf.showAreaHistory ? 'check-circle' : 'circle-o'}`" />
+          历史区域
+        </span>
       </div>
     </div>
 
@@ -39,7 +48,24 @@
           <el-form class="center-form">
             <el-form-item label="标题">
               <div class="grp-input">
-                <input v-model="plan.name" type="text" autocomplete="off" placeholder="输入文字" />
+                <input v-model="plan.name" type="text" autocomplete="off" placeholder="输入文字">
+              </div>
+            </el-form-item>
+            <el-form-item label="执行日期">
+              <div class="grp-input">
+                <el-date-picker
+                  v-model="plan.actionTime"
+                  :default-value="new Date()"
+                  type="date"
+                  placeholder="选择日期"
+                  format="yyyy 年 MM 月 dd 日"
+                  value-format="timestamp"
+                />
+              </div>
+            </el-form-item>
+            <el-form-item label="提醒事项">
+              <div class="grp-input">
+                <textarea v-model="plan.note" type="text" placeholder="输入文字" />
               </div>
             </el-form-item>
           </el-form>
@@ -47,33 +73,35 @@
 
         <div class="plan-grp-list">
           <div
-            class="grp-item form-box anim-fade-in"
             v-for="planGrp in plan.grpList"
             :key="planGrp.grpId"
+            class="grp-item form-box anim-fade-in"
           >
-            <div class="grp-head">第 {{ planGrp.grpId }} 组</div>
+            <div class="grp-head">
+              第 {{ planGrp.grpId }} 组
+            </div>
 
             <div
-              class="grp-person-item"
               v-for="(item, index) in planGrp.personTaskList"
               :key="index"
+              class="grp-person-item"
             >
               <div class="item-form">
                 <div class="left-part">
                   <div class="grp-input person-input">
-                    <input v-model="item.person" type="text" autocomplete="off" placeholder="名字" />
+                    <input v-model="item.person" type="text" autocomplete="off" placeholder="名字">
                   </div>
                 </div>
                 <div class="right-part">
                   <div class="grp-input task-input">
                     <input
                       :value="item.task"
-                      @focus="showTaskSelDialog(item)"
+                      @focus="$personProfile.open(item.person, { data: item })"
                       type="text"
                       readonly="readonly"
                       autocomplete="off"
                       placeholder="任务"
-                    />
+                    >
                     <div class="badge-box">
                       <span v-if="$dataQuery.getIsPersonLastDidTheTask(item.person, item.task)" class="warn">上次做过</span>
                       <span>{{ $dataQuery.getPersonTaskRec(item.person, item.task) }}</span>
@@ -88,47 +116,47 @@
     </div>
 
     <div class="plan-action-bar">
-      <div class="plan-save-btn" @click="savePlan()">
+      <div @click="$permission.adminBtn(() => { savePlan() })" class="plan-save-btn">
         保存
-        <i class="zmdi zmdi-save"></i>
+        <i class="zmdi zmdi-save" />
       </div>
     </div>
-
-    <Dialog :isOpened="taskSelDialog.isShow" @close="hideTaskSelDialog()">
-      <PersonProfile v-model="taskSelDialog.personTaskItem" :asSel="true" :personName="taskSelDialog.personTaskItem.person" />
-    </Dialog>
   </div>
 </template>
 
 <script lang="ts">
-import GrpList from './GrpList.vue'
-import PersonProfile from '../components/PersonProfile.vue'
-import Dialog from '../components/Dialog.vue'
-import $ from 'jQuery'
+import $ from 'jquery'
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component, Watch } from 'vue-property-decorator'
+import GrpList from './GrpList.vue'
 import { Plan, Grp, PlanGrp, PersonTaskItem, Area } from '../core/data-interfaces'
+import Dialog from '../components/Dialog.vue'
 
 @Component({
-  components: { GrpList, Dialog, PersonProfile }
+  components: { GrpList, Dialog }
 })
 export default class Builder extends Vue {
   plan: Plan = this.$dataAction.newEmptyPlan()
   selGrpList: Grp[] = []
 
-  taskSelDialog = {
-    isShow: false,
-    personTaskItem: <PersonTaskItem>{}
+  grpBadgeConf = {
+    showAreaHistory: false
   }
 
-  created() {}
+  created () {}
 
-  ///
-  /// 小组选择
-  ///
+  getGrpAssignedArea (grp: Grp) {
+    const findAssigned = this.plan.grpList.find(o => o.grpId === grp.id)
+    if (!findAssigned) return undefined
+    return (findAssigned.area || '?').substr(0, 1)
+  }
 
-  selectGrp(grp: Grp) {
+  //
+  // 小组选择
+  //
+
+  selectGrp (grp: Grp) {
     if (!this.isGrpSelected(grp)) {
       // 若未选中
       this.selGrpList.push(grp)
@@ -137,85 +165,51 @@ export default class Builder extends Vue {
     }
   }
 
-  isGrpSelected(grp: Grp) {
+  isGrpSelected (grp: Grp) {
     return this.selGrpList.indexOf(grp) > -1
   }
 
   /** 自动选组 */
   autoSelectGrp () {
-    let areaGrpList: { [areaName: string]: Grp[] } = {}
-
-    _.forEach(this.$dataStore.AreaList, area => {
-      let grpList: Grp[] = areaGrpList[area.name] = []
-      let grpListSorted = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id, area.name))
-      _.forEach(grpListSorted, grp => {
-        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
-        if (Object.values(grpList).length >= 2) { return } // 若已排满
-        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return } // 条件 1
-        if (this.$dataQuery.getIsGrpLastDidTheArea(grp.id, area.name)) { return } // 条件 2
-        grpList.push(grp)
-      })
-    })
-
-    // 补充缺的组（上次做同样的 Area 也满足条件）
-    let grpListSortedByRecSum = _.sortBy(this.$dataStore.GrpList, o => this.$dataQuery.getGrpAreaRec(o.id))
-    _.forEach(areaGrpList, (grpList, areaName) => {
-      if (grpList.length >= 2) { return }
-      _.forEach(grpListSortedByRecSum, grp => {
-        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
-        if (Object.values(grpList).length >= 2) { return } // 若已排满
-        if (this.$dataQuery.getIsGrpExitsInLatestPlan(grp.id)) { return } // 条件 1
-        grpList.push(grp)
-      })
-    })
-
-    // 补充缺的组（上周刚做了的也满足条件）
-    _.forEach(areaGrpList, (grpList, areaName) => {
-      if (grpList.length >= 2) { return }
-      _.forEach(grpListSortedByRecSum, grp => {
-        if (_.flatMap(areaGrpList).find(o => o.id === grp.id)) { return } // 若已安排
-        if (Object.values(grpList).length >= 2) { return } // 若已排满
-        grpList.push(grp)
-      })
-    })
+    const fateList = this.$dataFate.getGrpFateList()
 
     this.selGrpList = [
-      areaGrpList['教室'][0],
-      areaGrpList['教室'][1],
-      areaGrpList['公区'][0],
-      areaGrpList['公区'][1]
+      fateList['教室'][0],
+      fateList['教室'][1],
+      fateList['公区'][0],
+      fateList['公区'][1]
     ]
   }
 
 
-  ///
-  /// 小组成员任务安排
-  ///
+  // /
+  // / 小组成员任务安排
+  // /
 
   @Watch('selGrpList')
-  onSelGrpListChanged(selGrpList: Grp[]) {
-    console.log(selGrpList)
+  onSelGrpListChanged (selGrpList: Grp[]) {
+    window.console.log('selGrpList', selGrpList)
 
-    let areaOrder = ['教室', '教室', '公区', '公区']
-    let grpToAreaDict: { [grpId: number]: string } = {}
+    const areaOrder = ['教室', '教室', '公区', '公区']
+    const grpToAreaDict: { [grpId: number]: string } = {}
     _.forEach(selGrpList, (grp, index) => {
       grpToAreaDict[grp.id] = areaOrder[index]
     })
-    console.log(grpToAreaDict)
+    window.console.log('grpToAreaDict', grpToAreaDict)
 
-    let personToTask = this.$dataFate.assignTaskToGrpListPersons(selGrpList, grpToAreaDict)
-    console.log(personToTask)
+    const personToTask = this.$dataFate.getPersonFateList(selGrpList, grpToAreaDict)
+    window.console.log('personToTask', personToTask)
 
     // 创建新 grpList
-    let PlanGrpList: PlanGrp[] = []
+    const PlanGrpList: PlanGrp[] = []
 
     _.forEach(selGrpList, (grp, key) => {
-      let nPl: { person: string; task: string }[] = []
+      const nPl: { person: string; task: string }[] = []
       _.forEach(grp.personList, (person, index) => {
-        nPl.push({ person: person, task: personToTask[person] || '' })
+        nPl.push({ person, task: personToTask[person] || '' })
       })
 
-      let planGrp: PlanGrp = {
+      const planGrp: PlanGrp = {
         grpId: grp.id,
         personTaskList: nPl,
         area: grpToAreaDict[grp.id]
@@ -225,23 +219,14 @@ export default class Builder extends Vue {
     })
 
     this.plan.grpList = PlanGrpList
-    console.log("\n\n")
+    window.console.log("\n\n")
   }
 
-  savePlan() {
+  savePlan () {
     // 刷新时间
-    this.plan.time = new Date().getTime()
+    this.plan.createdTime = new Date().getTime()
     this.$dataAction.savePlan(this.plan)
     this.$router.replace('/')
-  }
-
-  showTaskSelDialog (personTaskItem: PersonTaskItem) {
-    this.taskSelDialog.isShow = true
-    this.taskSelDialog.personTaskItem = personTaskItem
-  }
-
-  hideTaskSelDialog () {
-    this.taskSelDialog.isShow = false
   }
 }
 </script>
@@ -263,12 +248,12 @@ export default class Builder extends Vue {
     place-items: center;
 
     & > span {
-      height: 23px;
-      line-height: 23px;
+      height: 20px;
+      line-height: 20px;
       background: rgba(66, 133, 244, 0.12);
-      padding: 0 10px;
+      padding: 0 7px;
       border-radius: 1px;
-      font-size: 12px;
+      font-size: 11px;
 
       &:not(:last-child) {
         margin-right: 5px;
@@ -276,6 +261,10 @@ export default class Builder extends Vue {
 
       &.warn {
         background: rgba(255, 166, 32, 0.264);
+      }
+
+      &.success {
+        background: rgba(0, 188, 212, 0.2);
       }
     }
   }
@@ -317,10 +306,12 @@ export default class Builder extends Vue {
       }
     }
 
+    $grp-badge-controller-height: 35px;
+
     .grp-list {
       overflow-y: auto;
       overflow-x: hidden;
-      height: calc(100% - 45px - $bar-height);
+      height: calc(100% - 47px - 10px - #{$bar-height} - #{$grp-badge-controller-height});
       padding-top: 10px;
 
       .grp-item {
@@ -352,6 +343,29 @@ export default class Builder extends Vue {
         }
       }
     }
+
+    .grp-badge-controller {
+      height: $grp-badge-controller-height;
+      line-height: $grp-badge-controller-height;
+      display: flex;
+      flex-direction: row;
+
+      & > span {
+        font-size: 12px;
+        flex: 1;
+        cursor: pointer;
+        padding: 0 15px;
+
+        & > i {
+          margin-right: 4px;
+        }
+
+        &:hover {
+          color: #0083ff;
+          background: #FFF;
+        }
+      }
+    }
   }
 
   .plan-editor {
@@ -376,7 +390,7 @@ export default class Builder extends Vue {
         width: 100%;
       }
 
-      .grp-input > input {
+      .grp-input > input, .grp-input > textarea {
         border-radius: 2px;
         height: 34px;
         line-height: 34px;
@@ -399,6 +413,13 @@ export default class Builder extends Vue {
           border-color: #409eff;
           outline: 0;
         }
+      }
+
+      .grp-input > textarea {
+        min-height: 100px;
+        resize: vertical;
+        padding: 6px 12px;
+        line-height: 20px;
       }
     }
 

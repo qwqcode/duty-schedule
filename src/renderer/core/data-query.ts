@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
-import { Rec, Area, Plan, Grp, PersonProfile, PlanGrp } from './data-interfaces'
+import { Area, Plan, Grp, PersonProfile, PlanGrp } from './data-interfaces'
 
 /**
  * 数据查询类
@@ -21,7 +21,7 @@ export default class DataQuery extends Vue {
 
   /** 获取所有区域的全部任务类型 */
   public getAllTaskInAllArea (): string[] {
-    let arr: string[] = []
+    const arr: string[] = []
     _.forEach(this.$dataStore.AreaList, (area) => {
       _.forEach(area.taskList, (taskName) => {
         arr.push(taskName)
@@ -35,67 +35,64 @@ export default class DataQuery extends Vue {
     return _.uniq(this.getAllTaskInAllArea())
   }
 
-  /** 获取 TaskList 已去除重复的 AreaList */
+  /** 获取 已去重 TaskList 的 AreaList */
   public getAreaListWithUniqueTask (): Area[] {
-    let areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
+    const areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
     _.forEach(areaList, (area) => {
       area.taskList = _.uniq(area.taskList)
     })
     return areaList
   }
 
-  /** 获取某个组的 Rec 实例 */
-  public getGrpRec (grpId: number): Rec | undefined {
-    return _.find(this.$dataStore.RecList, (o) => o.grpId === grpId)
-  }
-
   /** 获取某个人的任务次数记录 */
   public getPersonTaskRec (personName: string, taskName: string): number {
-    let result: number = 0
-    _.find(this.$dataStore.RecList, (rec) => {
-      if (rec.taskList.hasOwnProperty(taskName) && rec.taskList[taskName].hasOwnProperty(personName)) {
-        result = rec.taskList[taskName][personName] || 0
-        return false
-      }
-    })
-    return result
+    const taskRec = this.$dataStore.RecList.find(o => o.type === 'Task' && o.name === taskName)
+    if (!taskRec) { return 0 }
+    return taskRec.data[personName] || 0
   }
 
   /** 获取某个组的区域次数记录 */
   public getGrpAreaRec (grpId: number, areaName: string|null = null): number {
-    let grpRec = this.getGrpRec(grpId)
-    if (grpRec === undefined) return 0
+    let result = 0
     if (areaName === null) {
       // 所有 Area 次数之和
-      return _.sum(_.flatMap(grpRec.areaList))
+      const allAreaRec = _.filter(this.$dataStore.RecList, o => o.type === 'Area')
+      if (!allAreaRec) { return 0 }
+      _.forEach(allAreaRec, (rec) => {
+        result += rec.data[grpId] || 0
+      })
+    } else {
+      const rec = this.$dataStore.RecList.find(o => o.type === 'Area' && o.name === areaName)
+      result = rec ? (rec.data[grpId] || 0) : 0
     }
-    return grpRec.areaList[areaName] || 0
+    return result
   }
 
   /** 获取某个人最后一次执行的 Plan */
   public getPersonLastWorkPlan (personName: string): Plan|null {
-    let planList = this.$dataStore.PlanList
+    const planList = this.$dataStore.PlanList
     if (!planList) return null
-    let planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
+    const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.actionTime) || null
     if (!planListSorted) return null
     let plan: Plan|null = null
     _.forEach(planListSorted, (planItem) => {
-      let isExisting = _.flatMap(_.flatMap(planItem.grpList, o => o.personTaskList), o => o.person).includes(personName)
+      const isExisting = _.flatMap(_.flatMap(planItem.grpList, o => o.personTaskList), o => o.person).includes(personName)
       if (isExisting) {
         plan = planItem
         return false // 停止遍历
       }
+      return true
     })
     return plan
   }
 
   /** 某人最后做的是否为这个 Task */
   public getIsPersonLastDidTheTask (personName: string, taskName: string) {
-    let planList = this.$dataStore.PlanList
+    const planList = this.$dataStore.PlanList
     if (!planList) return false
-    let lastWorkPlan = this.getPersonLastWorkPlan(personName)
+    const lastWorkPlan = this.getPersonLastWorkPlan(personName)
     if (!lastWorkPlan) return false
-    let findOne = _.flatMap(lastWorkPlan.grpList, o => o.personTaskList).find((o) => {
+    const findOne = _.flatMap(lastWorkPlan.grpList, o => o.personTaskList).find((o) => {
       return o.person === personName && o.task === taskName
     })
     return !!findOne
@@ -103,10 +100,10 @@ export default class DataQuery extends Vue {
 
   /** 获取个人资料 */
   public getPersonProfile (personName: string) {
-    let findPerson = _.flatMap(this.$dataStore.GrpList, (o) => o.personList).includes(personName)
+    const findPerson = _.flatMap(this.$dataStore.GrpList, (o) => o.personList).includes(personName)
     if (!findPerson) { return null }
 
-    let profile: PersonProfile = {
+    const profile: PersonProfile = {
       name: personName,
       lastWorkPlan: this.getPersonLastWorkPlan(personName)
     }
@@ -114,18 +111,33 @@ export default class DataQuery extends Vue {
     return profile
   }
 
+  /** 根据 PlanGrp 获取每个任务下的成员名字列表 */
+  getTaskPersonListByPlanGrp (planGrp: PlanGrp) {
+    const taskList: { task: string; persons: string[] }[] = []
+    _.forEach(planGrp.personTaskList, ({ task, person }) => {
+      let taskItem = taskList.find((o) => o.task === task)
+      if (!taskItem) {
+        taskItem = { task, persons: [] }
+        taskList.push(taskItem)
+      }
+      taskItem.persons.push(person)
+    })
+
+    return taskList
+  }
+
   /** 某组是否存在于最新的 Plan 中 */
   public getIsGrpExitsInLatestPlan (grpId: number) {
-    let latestPlan = _.sortBy(this.$dataStore.PlanList, o => -o.time)[0]
+    const latestPlan = _.sortBy(this.$dataStore.PlanList, o => -o.actionTime)[0]
     if (!latestPlan) return false
     return !!latestPlan.grpList.find(o => o.grpId === grpId)
   }
 
   /** 获取某组最后一次执行的 Plan */
   public getGrpLastWorkPlan (grpId: number): Plan|null {
-    let planList = this.$dataStore.PlanList
+    const planList = this.$dataStore.PlanList
     if (!planList) return null
-    let planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.time) || null
+    const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.actionTime) || null
     if (!planListSorted) return null
     let plan: Plan|null = null
     _.forEach(planListSorted, (planItem) => {
@@ -133,28 +145,29 @@ export default class DataQuery extends Vue {
         plan = planItem
         return false // 停止遍历
       }
+      return true
     })
     return plan
   }
 
   /** 某组最后做的 Area */
   public getGrpLastDidArea (grpId: number) {
-    let planList = this.$dataStore.PlanList
+    const planList = this.$dataStore.PlanList
     if (!planList) return null
-    let lastWorkPlan = this.getGrpLastWorkPlan(grpId)
+    const lastWorkPlan = this.getGrpLastWorkPlan(grpId)
     if (!lastWorkPlan) return null
-    let find = lastWorkPlan.grpList.find(o => o.grpId === grpId)
+    const find = lastWorkPlan.grpList.find(o => o.grpId === grpId)
     if (!find) return null
     return find.area
   }
 
   /** 某组最后做的是否为这个 Area */
   public getIsGrpLastDidTheArea (grpId: number, areaName: string) {
-    let planList = this.$dataStore.PlanList
+    const planList = this.$dataStore.PlanList
     if (!planList) return false
-    let lastWorkPlan = this.getGrpLastWorkPlan(grpId)
+    const lastWorkPlan = this.getGrpLastWorkPlan(grpId)
     if (!lastWorkPlan) return false
-    let findOne = lastWorkPlan.grpList.find((o) => {
+    const findOne = lastWorkPlan.grpList.find((o) => {
       return o.grpId === grpId && o.area === areaName
     })
     return !!findOne
@@ -165,22 +178,55 @@ export default class DataQuery extends Vue {
    * @param grpToAreaDict 小组区域指定表 { [grpId]: areaName }
    */
   public getPersonsOfAreaNameDict (grpToAreaDict: {[grpId: number]: string}) {
-    let personNamesOfAreas: {[areaName: string]: string[]} = {}
+    const personNamesOfAreas: {[areaName: string]: string[]} = {}
     _.forEach(grpToAreaDict, (area, grpId) => {
       let persons: string[] = []
-      if (!personNamesOfAreas.hasOwnProperty(area)) {
+      if (!_.has(personNamesOfAreas, area)) {
         personNamesOfAreas[area] = persons // 初始化
       } else {
         persons = personNamesOfAreas[area]
       }
       // 查询该组的全部人
-      let findGrp = this.$dataStore.GrpList.find((o) => o.id === Number(grpId))
+      const findGrp = this.$dataStore.GrpList.find((o) => o.id === Number(grpId))
       if (findGrp !== undefined) {
         // 名字丢进 personNamesOfAreas[某区域] 里
         _.forEach(findGrp.personList, (personName) => persons.push(personName))
       }
     })
     return personNamesOfAreas
+  }
+
+  public getOldTaskRecList (rangeGrpList: Grp[]) {
+    const allTaskRec = _.filter(this.$dataStore.RecList, o => o.type === 'Task')
+    type OldRec = {
+      grpId: number
+      /** 小组区域记录表 (key: 区域名) */
+      areaList: {[area: string]: number}
+      /** 个人任务记录表 (key: 任务名.人名) */
+      taskList: {[task: string]: {
+        [person: string]: number
+      }}
+    }
+    const recList: OldRec[] = []
+    _.forEach(rangeGrpList, (grp) => {
+      const resultRec: OldRec = {
+        grpId: grp.id,
+        areaList: {},
+        taskList: {}
+      }
+      _.forEach(allTaskRec, (recItem) => {
+        _.forEach(recItem.data, (num, personName) => {
+          if (grp.personList.includes(personName)) {
+            if (!_.has(resultRec.taskList, recItem.name)) {
+              resultRec.taskList[recItem.name] = {}
+            }
+            resultRec.taskList[recItem.name][personName] = num
+          }
+        })
+      })
+      recList.push(resultRec)
+    })
+    return recList
   }
 
   /**
@@ -192,13 +238,14 @@ export default class DataQuery extends Vue {
    * (TaskName 按全部组中全部人在 RecList 中做过该 Task 次数极差 (最大次数值 - 最小次数值) 值倒序排列)
    */
   public getTaskNameArrSorted (taskList: string[], rangeGrpList: Grp[]) {
-    let arr: {task: string, diff: number}[] = []
-    _.forEach(taskList, (task) => arr.push({task: task, diff: 0}))
+    const oldRecList = this.getOldTaskRecList(rangeGrpList)
+    const arr: {task: string, diff: number}[] = []
+    _.forEach(taskList, (task) => arr.push({ task, diff: 0 }))
     _.forEach(rangeGrpList, (grp) => {
-      let grpRec = this.$dataStore.RecList.find(o => o.grpId === grp.id)
+      const grpRec = oldRecList.find(o => o.grpId === grp.id)
       if (grpRec !== undefined) {
         _.forEach(grpRec.taskList, (personNumList, task) => {
-          let listTask = arr.find(o => o.task === task)
+          const listTask = arr.find(o => o.task === task)
           if (listTask === undefined) return
           let diff = (_.max(Object.values(personNumList)) || 0) - (_.min(Object.values(personNumList)) || 0)
           if (diff < 0) diff = 0
@@ -206,22 +253,85 @@ export default class DataQuery extends Vue {
         })
       }
     })
-    let arrSorted = _.sortBy(arr, o => -o.diff)
+    const arrSorted = _.sortBy(arr, o => -o.diff)
     return _.flatMap(arrSorted, o => o.task)
   }
 
+  /**
+   * 获取 Plan 中所有 小组ID 的简介
+   * @return 例：'<span title="教室">2, 3</span> - <span title="公区">4, 5</span>'
+   */
+  public getPlanGrpIdSummary (plan: Plan) {
+    let str = ''
+    const areaList: { [areaName: string]: number[] } = {}
+    _.forEach(plan.grpList, (group) => {
+      if (!_.has(areaList, group.area)) {
+        areaList[group.area] = []
+      }
+      areaList[group.area].push(group.grpId)
+    })
+
+
+    _.forEach(this.$dataStore.AreaList, ({ name: areaName }) => {
+      str += `<span title="${areaName}">${_.sortBy(areaList[areaName]).join(', ')}</span>`
+      str += ' - '
+    })
+
+    return _.trimEnd(str, ' - ')
+  }
+
+  /**
+   * 获取 Task 的别名列表
+   * @param taskName（目前 $dataStore.AreaList 中的 Task）
+   */
+  public getTaskAliasList (taskName: string) {
+    const area = this.$dataStore.AreaList.find(o => o.taskList.includes(taskName))
+    if (!area) return null
+    return (area.taskAliasList && _.has(area.taskAliasList, taskName)) ? area.taskAliasList[taskName] : null
+  }
+
+  /**
+   * 反向获取 目前全部存在该别名的 Task
+   */
+  public getTaskListByAlias (aliasTask: string) {
+    const resultList: string[] = []
+    _.forEach(this.$dataStore.AreaList, (area) => {
+      _.forEach(area.taskAliasList, (aliasTaskList, curtTaskName) => {
+        if (aliasTaskList.includes(aliasTask)) {
+          resultList.push(curtTaskName)
+        }
+      })
+    })
+    return resultList
+  }
+
+  /**
+   * 判断是否为别名 Task
+   *
+   * @param testTask 待测试的 Task
+   * @param curtTask 指定待测 Task 范围（目前 $dataStore.AreaList 中的 Task）
+   */
+  public testIsAliasTask (testTask: string, curtTask?: string) {
+    if (!curtTask) {
+      return this.getTaskListByAlias(testTask).length > 0
+    }
+    const aliasList = this.getTaskAliasList(curtTask)
+    if (!aliasList) return false
+    return (aliasList.includes(testTask))
+  }
+
   public padWithZeros (vNumber: number, width: number): string {
-    var numAsString = vNumber.toString()
+    let numAsString = vNumber.toString()
     while (numAsString.length < width) {
-      numAsString = '0' + numAsString
+      numAsString = `0${numAsString}`
     }
     return numAsString
   }
 
   public dateFormat (date: Date) {
-    var vDay = this.padWithZeros(date.getDate(), 2)
-    var vMonth = this.padWithZeros(date.getMonth() + 1, 2)
-    var vYear = this.padWithZeros(date.getFullYear(), 2)
+    const vDay = this.padWithZeros(date.getDate(), 2)
+    const vMonth = this.padWithZeros(date.getMonth() + 1, 2)
+    const vYear = this.padWithZeros(date.getFullYear(), 2)
     // var vHour = padWithZeros(date.getHours(), 2);
     // var vMinute = padWithZeros(date.getMinutes(), 2);
     // var vSecond = padWithZeros(date.getSeconds(), 2);
@@ -230,38 +340,35 @@ export default class DataQuery extends Vue {
 
   public timeAgo (date: Date) {
     try {
-      var oldTime = date.getTime()
-      var currTime = new Date().getTime()
-      var diffValue = currTime - oldTime
+      const oldTime = date.getTime()
+      const currTime = new Date().getTime()
+      const diffValue = currTime - oldTime
 
-      var days = Math.floor(diffValue / (24 * 3600 * 1000))
+      const days = Math.floor(diffValue / (24 * 3600 * 1000))
       if (days === 0) {
         // 计算相差小时数
-        var leave1 = diffValue % (24 * 3600 * 1000) // 计算天数后剩余的毫秒数
-        var hours = Math.floor(leave1 / (3600 * 1000))
+        const leave1 = diffValue % (24 * 3600 * 1000) // 计算天数后剩余的毫秒数
+        const hours = Math.floor(leave1 / (3600 * 1000))
         if (hours === 0) {
           // 计算相差分钟数
-          var leave2 = leave1 % (3600 * 1000) // 计算小时数后剩余的毫秒数
-          var minutes = Math.floor(leave2 / (60 * 1000))
+          const leave2 = leave1 % (3600 * 1000) // 计算小时数后剩余的毫秒数
+          const minutes = Math.floor(leave2 / (60 * 1000))
           if (minutes === 0) {
             // 计算相差秒数
-            var leave3 = leave2 % (60 * 1000) // 计算分钟数后剩余的毫秒数
-            var seconds = Math.round(leave3 / 1000)
-            return seconds + ' 秒前'
+            const leave3 = leave2 % (60 * 1000) // 计算分钟数后剩余的毫秒数
+            const seconds = Math.round(leave3 / 1000)
+            return `${seconds} 秒前`
           }
-          return minutes + ' 分钟前'
+          return `${minutes} 分钟前`
         }
-        return hours + ' 小时前'
+        return `${hours} 小时前`
       }
       if (days < 0) return '刚刚'
 
-      if (days < 8) {
-        return days + ' 天前'
-      } else {
-        return this.dateFormat(date)
-      }
+      return (days < 8) ? `${days} 天前` : this.dateFormat(date)
     } catch (error) {
-      console.error(error)
+      window.console.error(error)
+      return ''
     }
   }
 }

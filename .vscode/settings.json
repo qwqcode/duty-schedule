@@ -3,9 +3,19 @@
   "vetur.format.defaultFormatter.html": "prettyhtml",
   "vetur.experimental.templateInterpolationService": true,
   "eslint.validate": [
-    "javascript",
+    {
+      "language": "vue",
+      "autoFix": true
+    },
+    {
+      "language": "javascript",
+      "autoFix": true
+    },
+    {
+      "language": "typescript",
+      "autoFix": true
+    },
     "javascriptreact",
-    "typescript",
     "typescriptreact"
   ]
 }
