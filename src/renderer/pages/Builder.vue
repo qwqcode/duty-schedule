@@ -2,7 +2,7 @@
   <div class="page fullscreen builder-page">
     <div class="grp-selector">
       <div class="sel-action-bar">
-        <span class="action-btn">
+        <span @click="autoSelectGrp()" class="action-btn">
           <i class="zmdi zmdi-flare" /> 一键安排
         </span>
         <span @click="autoSelectGrp()" class="action-btn">
@@ -89,14 +89,21 @@
               <div class="item-form">
                 <div class="left-part">
                   <div class="grp-input person-input">
-                    <input v-model="item.person" type="text" autocomplete="off" placeholder="名字">
+                    <input
+                      v-model="item.person"
+                      @focus="exchangeTool.on ? exchangePerson(item, $event.target) : null"
+                      readonly
+                      type="text"
+                      autocomplete="off"
+                      placeholder="名字"
+                    >
                   </div>
                 </div>
                 <div class="right-part">
                   <div class="grp-input task-input">
                     <input
                       :value="item.task"
-                      @focus="$personProfile.open(item.person, { data: item })"
+                      @focus="$personProfile.open(item.person, { data: item, plan })"
                       type="text"
                       readonly="readonly"
                       autocomplete="off"
@@ -116,10 +123,19 @@
     </div>
 
     <div class="plan-action-bar">
-      <div @click="$permission.adminBtn(() => { savePlan() })" class="plan-save-btn">
-        保存
-        <i class="zmdi zmdi-save" />
-      </div>
+      <span class="left-btns">
+        <span @click="toggleExchangeTool()" :class="{ active: exchangeTool.on }" class="tool-btn action-btn no-hover">
+          置换工具
+          <i class="zmdi zmdi-swap-alt" />
+        </span>
+      </span>
+
+      <span class="right-btns">
+        <span @click="$permission.adminBtn(() => { savePlan() })" class="save-plan-btn action-btn">
+          保存
+          <i class="zmdi zmdi-save" />
+        </span>
+      </span>
     </div>
   </div>
 </template>
@@ -139,6 +155,14 @@ import Dialog from '../components/Dialog.vue'
 export default class Builder extends Vue {
   plan: Plan = this.$dataAction.newEmptyPlan()
   selGrpList: Grp[] = []
+
+  exchangeTool: {
+    on: boolean,
+    personTaskItem: PersonTaskItem|null
+  } = {
+    on: false,
+    personTaskItem: null,
+  }
 
   grpBadgeConf = {
     showAreaHistory: false
@@ -228,6 +252,33 @@ export default class Builder extends Vue {
     this.$dataAction.savePlan(this.plan)
     this.$router.replace('/')
   }
+
+  exchangePerson (personTaskItem: PersonTaskItem, inputEl: HTMLElement) {
+    if (!this.exchangeTool.on) return
+    if (!this.exchangeTool.personTaskItem) {
+      // 添加置换源
+      this.exchangeTool.personTaskItem = personTaskItem
+    } else {
+      // 执行置换
+      const aRawTask = this.exchangeTool.personTaskItem.task
+      const bRawTask = personTaskItem.task
+
+      this.exchangeTool.personTaskItem.task = bRawTask
+      personTaskItem.task = aRawTask
+
+      this.exchangeTool.personTaskItem = null
+      this.exchangeTool.on = false
+
+      inputEl.blur()
+    }
+  }
+
+  toggleExchangeTool () {
+    this.exchangeTool.on = !this.exchangeTool.on
+    if (this.exchangeTool.on === false) {
+      this.exchangeTool.personTaskItem = null
+    }
+  }
 }
 </script>
 
@@ -264,7 +315,8 @@ export default class Builder extends Vue {
       }
 
       &.success {
-        background: rgba(0, 188, 212, 0.2);
+        color: #009474;
+        background: rgba(35, 209, 96, 0.16)
       }
     }
   }
@@ -416,7 +468,7 @@ export default class Builder extends Vue {
       }
 
       .grp-input > textarea {
-        min-height: 100px;
+        min-height: 80px;
         resize: vertical;
         padding: 6px 12px;
         line-height: 20px;
@@ -507,24 +559,42 @@ export default class Builder extends Vue {
     flex-direction: row;
     place-items: center;
     z-index: 999;
-    bottom: 25px;
+    bottom: 45px;
     right: 30px;
-    background: rgba(255, 255, 255, 0.82);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    width: calc(100% - 337px);
+    height: 0;
+    place-content: space-between;
 
-    .plan-save-btn {
-      cursor: pointer;
-      padding: 7px 15px;
-      background: rgba(35, 209, 96, 0.85);
-      color: #fff;
-      user-select: none;
-
-      &:hover {
-        opacity: 0.9;
-      }
+    .action-btn {
+	    cursor: pointer;
+	    padding: 7px 15px;
+	    user-select: none;
+ 	    background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 
       i {
-        margin-left: 10px;
+        margin-left: 6px;
+      }
+
+      &.active {
+        color: #1a73e8;
+        background: rgb(202, 222, 255);
+      }
+
+      &:hover:not(.no-hover) {
+        color: #1a73e8;
+        background: rgba(202, 222, 255, 0.74);
+      }
+
+      &.save-plan-btn {
+        color: #fff;
+        background: rgba(35, 209, 96, 0.85);
+
+        &:hover {
+          color: #fff;
+          background: rgba(35, 209, 96, 0.85);
+          opacity: 0.9;
+        }
       }
     }
   }
