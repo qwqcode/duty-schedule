@@ -53,6 +53,9 @@ export default class DataQuery extends Vue {
 
   public getPlanListFilteredForGrpFate () {
     const effectivePlanDate = this.$dataStore.Settings.fate.effectivePlanDateForGrp
+    if (!effectivePlanDate || effectivePlanDate.toString().trim() === '')
+      return this.$dataStore.PlanList
+
     const planList = this.$dataStore.PlanList.filter(plan => {
       return plan.actionTime >= new Date(effectivePlanDate).getTime()
     })

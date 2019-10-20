@@ -31,7 +31,7 @@ class DataStore extends Vue {
       autoSync: false
     },
     fate: {
-      effectivePlanDateForGrp: '2019-10-14'
+      effectivePlanDateForGrp: ''
     }
   }
 
