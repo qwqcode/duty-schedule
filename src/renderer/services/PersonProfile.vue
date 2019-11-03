@@ -15,6 +15,11 @@
               "{{ personName }}" 的 “{{ taskRecView.taskName }}” 记录
             </div>
             <calendar-heatmap v-if="!showTaskSel" :values="taskRecViewData" :end-date="$dataQuery.dateFormat(new Date())" />
+            <div class="plan-work-rec-list">
+              <div v-for="(item, i) in taskRecViewData" :key="i" class="rec-item">
+                {{ i+1 }}. {{ item.date }}: {{ _.flatMap(item.planList, (o => o.name)) }}
+              </div>
+            </div>
           </div>
         </slide-y-up-transition>
       </div>
@@ -37,10 +42,13 @@
                   {{ task }}
                 </div>
                 <div class="badge-box">
-                  <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`">
+                  <span v-if="selMode !== null && !!selMode.plan && (getTaskMaxNeed(task) - countPlanTask(task) > 0)" class="warn">还差 {{ getTaskMaxNeed(task) - countPlanTask(task) }} 人</span>
+                  <span v-if="$dataQuery.getIsPersonLastDidTheTask(personName, task)" :title="`${personName} 上次做的就是这个任务`" class="warn">上次</span>
+                  <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`" class="clickable">
                     <i class="zmdi zmdi-calendar-check" />
                     {{ $dataQuery.getPersonTaskRec(personName, task) }}
                   </span>
+                  <span v-if="selMode !== null && !!selMode.plan" :title="`本次计划共有 ${countPlanTask(task)} 人参与该任务`" class="success">{{ countPlanTask(task) }} 人</span>
                 </div>
               </div>
             </div>
@@ -63,6 +71,7 @@ import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
 import Dialog from '@/components/Dialog.vue'
 
 type SelMode = {
+  plan: Plan
   data: PersonTaskItem
   beforeSel?: ((taskName: string) => boolean|void)
 }
@@ -76,7 +85,6 @@ export default class PersonProfile extends Vue {
   selMode: SelMode|null = null
 
   showTaskSel = true
-
   taskRecView = {
     show: false,
     taskName: null as string|null
@@ -109,6 +117,15 @@ export default class PersonProfile extends Vue {
     }
   }
 
+  countPlanTask (taskName: string) {
+    if (!this.selMode) return 0
+    return _.countBy(_.flatMap(this.selMode.plan.grpList, o => o.personTaskList), o => o.task)[taskName]
+  }
+
+  getTaskMaxNeed (taskName: string) {
+    return _.countBy(_.flatMap(this.$dataStore.AreaList, o => o.taskList))[taskName]
+  }
+
   get areaList () {
     return this.$dataQuery.getAreaListWithUniqueTask()
   }
@@ -126,22 +143,23 @@ export default class PersonProfile extends Vue {
   }
 
   get taskRecViewData () {
-    const dateToCount: {[date: string]: number} = {}
+    const map: { date: string, count: number, planList: Plan[] }[] = []
+    const planList = this.$dataStore.PlanList.filter(o => _.flatMap(o.grpList, grp => grp.personTaskList).find(
+      ptItem => ptItem.person === this.personName && ptItem.task === this.taskRecView.taskName
+    ))
 
-    _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
+    _.forEach(planList, (plan: Plan) => {
       const date = this.$dataQuery.dateFormat(new Date(plan.actionTime))
-      _.forEach(plan.grpList, (planGrp: PlanGrp) => {
-        if (planGrp.personTaskList.find(o => (o.person === this.personName && o.task === this.taskRecView.taskName))) {
-          if (!_.has(dateToCount, date)) {
-            dateToCount[date] = 1
-          } else {
-            dateToCount[date]++
-          }
-        }
-      })
+      let mapItem = map.find(o => o.date === date)
+      if (!mapItem) {
+        mapItem = { date, count: 0, planList: [] }
+        map.push(mapItem)
+      }
+      mapItem.count++
+      mapItem.planList.push(plan)
     })
 
-    return _.map(dateToCount, (value, key) => ({ date: key, count: value }))
+    return map
   }
 
   openTaskRecView (taskName: string|null = null) {
@@ -267,15 +285,19 @@ export default class PersonProfile extends Vue {
             align-items: center;
             flex-direction: row;
             padding: 5px 10px;
+            transition: all 200ms cubic-bezier(0.4,0.0,0.2,1);
 
             &.selected, &.selected:hover {
-              color: #fff;
-              background: #67c23a;
+              border-left: 3px solid #1a73e8;
+              color: #1a73e8;
+              background: #ffffff;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
               &:before {
                 content: "\F26B";
                 font: normal normal normal 14px/1 Material-Design-Iconic-Font;
-                margin-right: 10px;
+                margin-left: 4px;
+                margin-right: 12px;
               }
             }
 
@@ -293,13 +315,14 @@ export default class PersonProfile extends Vue {
             }
 
             & > .badge-box {
+              display: flex;
+              flex-direction: row;
+
               & > span {
-                cursor: pointer;
-                display: inline-block;
-                background: rgba(66,133,244,.12);
-                padding: 3px 10px;
-                border-radius: 50px;
-                font-size: 12px;
+                background: rgba(66, 133, 244, 0.12);
+                padding: 3px 7px;
+                border-radius: 1px;
+                font-size: 11px;
 
                 &:not(:last-child) {
                   margin-right: 5px;
@@ -309,9 +332,22 @@ export default class PersonProfile extends Vue {
                   margin-right: 5px;
                 }
 
-                &:hover {
-                  color: #FFF;
-                  background: #1a73e8;
+                &.clickable {
+                  cursor: pointer;
+
+                  &:hover {
+                    color: #FFF;
+                    background: #1a73e8;
+                  }
+                }
+
+                &.warn {
+                  background: rgba(255, 166, 32, 0.264);
+                }
+
+                &.success {
+                  color: #009474;
+                  background: rgba(35, 209, 96, 0.16)
                 }
               }
             }

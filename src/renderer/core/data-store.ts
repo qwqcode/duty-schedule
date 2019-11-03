@@ -29,6 +29,9 @@ class DataStore extends Vue {
       enabled: false,
       server: '',
       autoSync: false
+    },
+    fate: {
+      effectivePlanDateForGrp: ''
     }
   }
 
@@ -62,7 +65,14 @@ class DataStore extends Vue {
           (this as any)[key] = []
           _.forEach(obj[key], (item) => (this as any)[key].push(item))
         } else if (typeof obj[key] === 'object') {
-          (this as any)[key] = Object.assign((this as any)[key], obj[key])
+          const newObj = _.extend({}, (this as any)[key], obj[key])
+          Array.prototype.forEach.call(Object.keys((this as any)[key]), (iKey) => {
+            const iValue = (this as any)[key][iKey]
+            if (typeof iValue === 'object') {
+              newObj[iKey] = _.extend({}, iValue, newObj[iKey])
+            }
+          });
+          (this as any)[key] = newObj
         } else {
           (this as any)[key] = obj[key]
         }

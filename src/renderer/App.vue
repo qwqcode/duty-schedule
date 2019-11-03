@@ -13,6 +13,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import _ from 'lodash'
+import sanitizeHtml from 'sanitize-html'
 import marked from 'marked'
 import { Watch, Component } from 'vue-property-decorator'
 import Services from './services'
@@ -28,6 +30,8 @@ export default class App extends Vue {
   subTitle: string = ''
 
   created () {
+    Vue.prototype._ = _
+
     // Local Test
     if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
       try {
@@ -72,7 +76,8 @@ export default class App extends Vue {
       gfm: true,
       tables: true,
       breaks: true,
-      sanitize: true, // 净化
+      sanitize: false, // 净化（TODO: 存在问题，以后搞）
+      sanitizer: (dirty) => sanitizeHtml(dirty, { allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]) }),
       smartLists: true,
       smartypants: true,
       xhtml: false

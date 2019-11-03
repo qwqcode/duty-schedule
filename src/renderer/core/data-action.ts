@@ -62,10 +62,6 @@ export default class DataAction extends Vue {
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
       // 遍历所有参加任务的小组
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
-        if (this.$dataStore.AreaList.find(o => o.name === planGrp.area)) { // 仅记录 AreaList 存在项
-          pushRec(planGrp.area, 'Area', planGrp.grpId)
-        }
-
         // 更新该组的个人任务列表
         _.forEach(planGrp.personTaskList, (item) => {
           const { task, person } = item
@@ -89,6 +85,15 @@ export default class DataAction extends Vue {
             })
           }
         })
+      })
+    })
+
+    // 统计小组区域历史
+    _.forEach(this.$dataQuery.getPlanListFilteredForGrpFate(), (plan: Plan) => {
+      _.forEach(plan.grpList, (planGrp: PlanGrp) => {
+        if (this.$dataStore.AreaList.find(o => o.name === planGrp.area)) { // 仅记录 AreaList 存在项
+          pushRec(planGrp.area, 'Area', planGrp.grpId)
+        }
       })
     })
 

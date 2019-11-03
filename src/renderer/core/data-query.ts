@@ -51,6 +51,17 @@ export default class DataQuery extends Vue {
     return taskRec.data[personName] || 0
   }
 
+  public getPlanListFilteredForGrpFate () {
+    const effectivePlanDate = this.$dataStore.Settings.fate.effectivePlanDateForGrp
+    if (!effectivePlanDate || effectivePlanDate.toString().trim() === '')
+      return this.$dataStore.PlanList
+
+    const planList = this.$dataStore.PlanList.filter(plan => {
+      return plan.actionTime >= new Date(effectivePlanDate).getTime()
+    })
+    return planList
+  }
+
   /** 获取某个组的区域次数记录 */
   public getGrpAreaRec (grpId: number, areaName: string|null = null): number {
     let result = 0
@@ -128,14 +139,14 @@ export default class DataQuery extends Vue {
 
   /** 某组是否存在于最新的 Plan 中 */
   public getIsGrpExitsInLatestPlan (grpId: number) {
-    const latestPlan = _.sortBy(this.$dataStore.PlanList, o => -o.actionTime)[0]
+    const latestPlan = _.sortBy(this.getPlanListFilteredForGrpFate(), o => -o.actionTime)[0]
     if (!latestPlan) return false
     return !!latestPlan.grpList.find(o => o.grpId === grpId)
   }
 
   /** 获取某组最后一次执行的 Plan */
   public getGrpLastWorkPlan (grpId: number): Plan|null {
-    const planList = this.$dataStore.PlanList
+    const planList = this.getPlanListFilteredForGrpFate()
     if (!planList) return null
     const planListSorted: Plan[] | null = _.sortBy(planList, (o) => -o.actionTime) || null
     if (!planListSorted) return null
@@ -152,7 +163,7 @@ export default class DataQuery extends Vue {
 
   /** 某组最后做的 Area */
   public getGrpLastDidArea (grpId: number) {
-    const planList = this.$dataStore.PlanList
+    const planList = this.getPlanListFilteredForGrpFate()
     if (!planList) return null
     const lastWorkPlan = this.getGrpLastWorkPlan(grpId)
     if (!lastWorkPlan) return null
@@ -163,7 +174,7 @@ export default class DataQuery extends Vue {
 
   /** 某组最后做的是否为这个 Area */
   public getIsGrpLastDidTheArea (grpId: number, areaName: string) {
-    const planList = this.$dataStore.PlanList
+    const planList = this.getPlanListFilteredForGrpFate()
     if (!planList) return false
     const lastWorkPlan = this.getGrpLastWorkPlan(grpId)
     if (!lastWorkPlan) return false
