@@ -51,6 +51,13 @@ export default class DataQuery extends Vue {
     return taskRec.data[personName] || 0
   }
 
+  /** 获取某个人的任务最后执行日期记录 */
+  public getPersonTaskTime (personName: string, taskName: string): number {
+    const taskRec = this.$dataStore.RecList.find(o => o.type === 'TaskTime' && o.name === taskName)
+    if (!taskRec) { return -1 }
+    return taskRec.data[personName] || -1
+  }
+
   public getPlanListFilteredForGrpFate () {
     const effectivePlanDate = this.$dataStore.Settings.fate.effectivePlanDateForGrp
     if (!effectivePlanDate || effectivePlanDate.toString().trim() === '')

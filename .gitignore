@@ -10,3 +10,4 @@ thumbs.db
 !.gitkeep
 *.localtest.ts
 server/data.php
+.history

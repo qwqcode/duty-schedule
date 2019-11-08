@@ -45,43 +45,45 @@ export default class DataAction extends Vue {
   public syncRec (): void {
     const recList: Rec[] = []
 
-    const pushRec = (name: string, type: 'Area'|'Task', dataItemKey: string|number) => {
+    const pushRec = (name: string, type: 'Area'|'Task'|'TaskTime', dataItemKey: string|number, dataItemVal?: number) => {
       let rec = _.find(recList, (o) => o.type === type && o.name === name)
       if (!rec) {
         rec = { name, type, data: {} }
         recList.push(rec)
       }
-      if (!_.has(rec.data, dataItemKey)) {
-        rec.data[dataItemKey] = 1
+
+      if (type === 'TaskTime' && dataItemVal !== undefined && (rec.data[dataItemKey] || -1) >= dataItemVal)
+        return
+
+      if (dataItemVal === undefined) {
+        rec.data[dataItemKey] = (rec.data[dataItemKey] || 0) + 1
       } else {
-        rec.data[dataItemKey]++
+        rec.data[dataItemKey] = dataItemVal
       }
     }
 
     // 遍历计划列表
     _.forEach(this.$dataStore.PlanList, (plan: Plan) => {
+      const { actionTime } = plan
       // 遍历所有参加任务的小组
       _.forEach(plan.grpList, (planGrp: PlanGrp) => {
+        const { area } = planGrp
         // 更新该组的个人任务列表
         _.forEach(planGrp.personTaskList, (item) => {
           const { task, person } = item
           if (
-            this.$dataStore.AreaList.find(o => o.name === planGrp.area && o.taskList.includes(task)) // 仅记录 AreaList 存在项
+            this.$dataStore.AreaList.find(o => o.name === area && o.taskList.includes(task)) // 仅记录 AreaList 存在项
           ) {
             pushRec(task, 'Task', person)
+            pushRec(task, 'TaskTime', person, actionTime)
           }
 
           // Alias
-          const area = this.$dataStore.AreaList.find(o => o.name === planGrp.area)
-          if (area && area.taskAliasList) {
-            _.forEach(area.taskAliasList, (taskAliasList, targetTask) => {
-              _.forEach(taskAliasList, (taskAlias) => {
-                if (taskAlias === task) {
-                  pushRec(targetTask, 'Task', person)
-                  return false
-                }
-                return true
-              })
+          const taskListByAlias = this.$dataQuery.getTaskListByAlias(task)
+          if (taskListByAlias.length > 0) {
+            _.forEach(taskListByAlias, (val) => {
+              pushRec(val, 'Task', person)
+              pushRec(val, 'TaskTime', person, actionTime)
             })
           }
         })
