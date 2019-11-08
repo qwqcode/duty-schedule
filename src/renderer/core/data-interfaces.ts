@@ -26,7 +26,7 @@ export interface Rec {
   /** Rec 名 */
   name: string
   /** 类别 */
-  type: 'Area'|'Task'
+  type: 'Area'|'Task'|'TaskTime'
   /** 数据 */
   data: {[key: string]: number}
 }

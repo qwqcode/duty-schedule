@@ -45,15 +45,16 @@ export default class DataFate extends Vue {
       _.forEach(areaPersonList, (personList, areaName) => {
         _.forEach(sortedTaskNameList[areaName], (assignTask) => {
           if (isTaskFull(assignTask)) { return }
-          let personTaskSortList: {name: string, rec: number}[] = []
+          let personTaskSortList: {name: string, rec: number, lastTime: number}[] = []
           _.forEach(personList, (person) => {
             if (isPersonAssigned(person)) { return }
             personTaskSortList.push({
               name: person,
-              rec: this.$dataQuery.getPersonTaskRec(person, assignTask)
+              rec: this.$dataQuery.getPersonTaskRec(person, assignTask),
+              lastTime: this.$dataQuery.getPersonTaskTime(person, assignTask)
             })
           })
-          personTaskSortList = _.sortBy(personTaskSortList, (o) => o.rec)
+          personTaskSortList = _.sortBy(personTaskSortList, ['rec', 'lastTime'])
           const needNum = getNeedTaskPersonNum(assignTask) // 不能写到 for (...) 的括号内。艹，不然 needNum 会一直改变
           for (let i = 0; i < needNum; i++) {
             if (!_.has(personTaskSortList, i)) break
