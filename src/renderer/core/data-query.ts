@@ -214,6 +214,9 @@ export default class DataQuery extends Vue {
     return personNamesOfAreas
   }
 
+  /**
+   * @deprecated
+   */
   public getOldTaskRecList (rangeGrpList: Grp[]) {
     const allTaskRec = _.filter(this.$dataStore.RecList, o => o.type === 'Task')
     type OldRec = {
@@ -250,6 +253,7 @@ export default class DataQuery extends Vue {
   /**
    * 获取一定规则顺序的 TaskNameArray
    *
+   * @deprecated
    * @param taskList
    * @param rangeGrpList
    * @returns 根据 rangeGrpList 的全部组中全部人的 “Task RecList 记录” 极差值生成倒序排列 ["TaskName.1", ...]
