@@ -25,7 +25,8 @@ export default class DataFate extends Vue {
 
     const sortedTaskNameList: { [areaName: string]: string[] } = {}
     _.forEach(this.$dataStore.AreaList, (area) => {
-      sortedTaskNameList[area.name] = this.$dataQuery.getTaskNameArrSorted(_.uniq(area.taskList), grpList)
+      // 任务需要人数越少越排前面，先安排
+      sortedTaskNameList[area.name] = _.sortBy(_.uniq(area.taskList), o => _.countBy(area.taskList)[o])
     })
 
     const taskSelectedCount: { [taskName: string]: number } = {}
