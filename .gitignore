@@ -11,3 +11,4 @@ thumbs.db
 *.localtest.ts
 server/data.php
 .history
+yarn-error.log

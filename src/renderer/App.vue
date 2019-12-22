@@ -16,6 +16,7 @@ import Vue from 'vue'
 import _ from 'lodash'
 import sanitizeHtml from 'sanitize-html'
 import marked from 'marked'
+import DutyScheduleCore from 'duty-schedule-core'
 import { Watch, Component } from 'vue-property-decorator'
 import Services from './services'
 import TopBar from './components/TopBar.vue'
@@ -31,6 +32,7 @@ export default class App extends Vue {
 
   created () {
     Vue.prototype._ = _
+    Vue.prototype.$duty = Vue.observable(DutyScheduleCore)
 
     // Local Test
     if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {

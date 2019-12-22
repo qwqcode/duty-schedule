@@ -1,4 +1,5 @@
 import { LoDashStatic } from 'lodash'
+import { DutyScheduleCoreInterface } from 'duty-schedule-core'
 import DataStore from '@/core/data-store'
 import DataAction from '@/core/data-action'
 import DataQuery from '@/core/data-query'
@@ -20,6 +21,7 @@ declare module 'vue/types/vue' {
     $personProfile: PersonProfile
     $personTaskChart: PersonTaskChart
     $permission: Permission
+    $duty: DutyScheduleCoreInterface
   }
 }
 
