@@ -280,29 +280,6 @@ export default class DataQuery extends Vue {
   }
 
   /**
-   * 获取 Plan 中所有 小组ID 的简介
-   * @return 例：'<span title="教室">2, 3</span> - <span title="公区">4, 5</span>'
-   */
-  public getPlanGrpIdSummary (plan: Plan) {
-    let str = ''
-    const areaList: { [areaName: string]: number[] } = {}
-    _.forEach(plan.grpList, (group) => {
-      if (!_.has(areaList, group.area)) {
-        areaList[group.area] = []
-      }
-      areaList[group.area].push(group.grpId)
-    })
-
-
-    _.forEach(this.$dataStore.AreaList, ({ name: areaName }) => {
-      str += `<span title="${areaName}">${_.sortBy(areaList[areaName]).join(', ')}</span>`
-      str += ' - '
-    })
-
-    return _.trimEnd(str, ' - ')
-  }
-
-  /**
    * 获取 Task 的别名列表
    * @param taskName（目前 $dataStore.AreaList 中的 Task）
    */

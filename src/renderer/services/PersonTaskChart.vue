@@ -152,7 +152,7 @@ export default class PersonTaskChart extends Vue {
     const isAliasTask = taskItem ? this.$dataQuery.testIsAliasTask(taskItem.task) : false
     const infoList: { [key: string]: string } = {
       '执行日期': this.$dataQuery.timeAgo(new Date(plan.actionTime)),
-      '所属小组': `${this.$dataQuery.getPlanGrpIdSummary(plan)} ${planGrp ? `(当时在 ${planGrp.grpId.toString()} 组)` : ''}`,
+      '所属小组': `${plan.getGrpNamesPreviewHTML()} ${planGrp ? `(当时在 ${planGrp.grpId.toString()} 组)` : ''}`,
       '指派任务': `${taskItem ? taskItem.task : '(未知)'}`
                + `${taskItem && isAliasTask ? ` (曾因 "${_.trimEnd(this.$dataQuery.getTaskListByAlias(taskItem.task).join(', '), ', ')}" 的变动而记录转移)` : ``}`
     }

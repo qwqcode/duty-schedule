@@ -9,20 +9,20 @@
     <el-row class="group-list">
       <el-col
         v-for="grp in grpList"
-        :key="grp.id"
+        :key="grp.name"
         :span="6"
         :class="{ 'is-selected': isGrpSelected(grp) }"
         class="group-item"
       >
         <div @click="!!asSelector ? selectGrp(grp) : null" class="inner">
           <div class="group-title">
-            <span class="group-title-text">第 {{ grp.id }} 组</span>
+            <span class="group-title-text">成员组 {{ grp.name }}</span>
             <span v-if="!!asSelector" class="select-btn">
               <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
             </span>
           </div>
-          <div v-for="person in grp.personList" :key="person" class="item">
-            <div v-html="searchHighlight(person)" @click="$personProfile.open(person)" class="name" />
+          <div v-for="one in grp.oneList" :key="one.name" class="item">
+            <div v-html="searchHighlight(one.name)" @click="$personProfile.open(one)" class="name" />
           </div>
         </div>
       </el-col>
@@ -33,9 +33,9 @@
 <script lang="ts">
 import _ from 'lodash'
 import Vue from 'vue'
+import { Grp } from 'duty-schedule-core'
 import { Prop, Watch, Component } from 'vue-property-decorator'
 import Dialog from '../components/Dialog.vue'
-import { Grp } from '../core/data-interfaces'
 
 @Component({
   components: { Dialog }
@@ -54,8 +54,8 @@ export default class GrpList extends Vue {
   mounted () {
   }
 
-  get grpList() {
-    return this.$dataStore.GrpList
+  get grpList () {
+    return this.$duty.Store.GrpList
   }
 
   @Watch('grpSelList')
