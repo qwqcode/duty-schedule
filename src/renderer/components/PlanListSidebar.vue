@@ -12,13 +12,13 @@
             {{ plan.name }}
           </div>
           <div class="meta">
-            <span class="time">{{ $dataQuery.timeAgo(new Date(plan.actionTime)) }}</span>
+            <span class="time">{{ $duty.Utils.timeAgo(new Date(plan.actionTime)) }}</span>
             <span v-html="`组: ${plan.getGrpNamesPreviewHTML()}`" class="groups" />
           </div>
         </div>
         <div class="flags">
           <span
-            v-if="$dataQuery.dateFormat(new Date(plan.actionTime)) === $dataQuery.dateFormat(new Date())"
+            v-if="$duty.Utils.dateFormat(new Date(plan.actionTime)) === $duty.Utils.dateFormat(new Date())"
             class="flag flag-green"
           >今日</span>
         <!--<span class="flag flag-red" v-if="plan.actionTime < new Date().getTime() - 24*60*60*1000">已过期</span>-->

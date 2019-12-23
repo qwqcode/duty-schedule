@@ -106,7 +106,7 @@ export default class Schedule extends Vue {
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    (this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$dataQuery.timeAgo(new Date(newPlan.actionTime))}`)
+    (this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$duty.Utils.timeAgo(new Date(newPlan.actionTime))}`)
   }
 
   switchGrp (grp: PlanGrp) {
@@ -193,7 +193,7 @@ export default class Schedule extends Vue {
     if (this.plan === null) return null
 
     let bookmark: { type: 'warn'|'info', text: string }|null = null
-    if (this.plan.actionTime < new Date().getTime() && this.$dataQuery.dateFormat(new Date(this.plan.actionTime)) !== this.$dataQuery.dateFormat(new Date())) {
+    if (this.plan.actionTime < new Date().getTime() && this.$duty.Utils.dateFormat(new Date(this.plan.actionTime)) !== this.$duty.Utils.dateFormat(new Date())) {
       bookmark = { type: 'info', text: '历史计划' }
     }
 

@@ -1,8 +1,8 @@
 <template>
   <Dialog ref="dialog">
-    <div v-if="!!profile" class="chart">
+    <div v-if="!!one" class="chart">
       <div class="title">
-        {{ personName }} PersonTaskRecChart
+        {{ one.name }} PersonTaskRecChart
       </div>
 
       <el-table
@@ -30,10 +30,10 @@
           align="center"
         />
         <el-table-column
-          v-for="task in UniqTaskList"
-          :key="task"
-          :label="`${task}`"
-          :prop="task"
+          v-for="task in TaskList"
+          :key="task.name"
+          :label="`${task.name}`"
+          :prop="task.name"
           width="100"
           align="center"
         />
@@ -45,15 +45,14 @@
 <script lang="ts">
 import _ from 'lodash'
 import { Vue, Component, Watch } from 'vue-property-decorator'
-import { Plan } from '../core/data-interfaces'
+import { One, Plan, Task } from 'duty-schedule-core'
 import Dialog from '@/components/Dialog.vue'
 
 @Component({
   components: { Dialog }
 })
 export default class PersonTaskChart extends Vue {
-  personName: string = ''
-
+  one!: One
   readonly CHECK_SIGN = '√'
 
   created () {
@@ -63,9 +62,8 @@ export default class PersonTaskChart extends Vue {
   mounted () {
   }
 
-  open (personName: string) {
-    this.personName = personName;
-
+  open (one: One) {
+    this.one = one;
     (this.$refs.dialog as Dialog).show()
   }
 
@@ -73,23 +71,18 @@ export default class PersonTaskChart extends Vue {
     (this.$refs.dialog as Dialog).hide()
   }
 
-  get profile () {
-    return this.personName ? this.$dataQuery.getPersonProfile(this.personName) : null
-  }
-
   get tableData () {
     const table: any[] = []
     _.forEach(this.PlanList, (plan) => {
       const data: { [taskName: string]: string } = {}
-      _.forEach(this.UniqTaskList, (task) => {
-        data[task] = this.isPersonSelfWorkTask(plan, task) ? this.CHECK_SIGN : ``
-        if (this.isPersonSelfWorkAliseTask(plan, task)) {
-          data[task] = `${this.CHECK_SIGN} (记录转移)`
-        }
+      _.forEach(this.TaskList, (task) => {
+        data[task.name] = this.isActionTask(plan, task) ? this.CHECK_SIGN : ``
+        if (this.isActionHasAliseTask(plan, task))
+          data[task.name] = `${this.CHECK_SIGN} (记录转移)`
       })
       table.push({
         plan,
-        date: this.$dataQuery.dateFormat(new Date(plan.actionTime)),
+        date: this.$duty.Utils.dateFormat(new Date(plan.actionTime)),
         ...data
       })
     })
@@ -97,33 +90,33 @@ export default class PersonTaskChart extends Vue {
     return table
   }
 
-  get UniqTaskList () {
-    return _.uniq(_.flatMap(this.$dataStore.AreaList, (o) => o.taskList))
+  get TaskList () {
+    return this.$duty.Store.TaskList
   }
 
   get PlanList () {
     return _.sortBy(
-      _.filter(this.$dataStore.PlanList, (o) =>
-        _.flatMap(o.grpList, (grp) => _.flatMap(grp.personTaskList, (i) => i.person)).includes(this.personName)
+      _.filter(this.$duty.Store.PlanList, (plan) =>
+        _.flatMap(plan.grpList, (grp) => _.flatMap(grp.asgnList, (a) => a.oneName)).includes(this.one.name)
       ),
       (o) => -o.actionTime
     )
   }
 
-  getPlanPersonSelfTaskItem (plan: Plan) {
-    return _.find(_.flatMap(plan.grpList, (o) => o.personTaskList), (o) => o.person === this.personName)
+  getAsgn (plan: Plan) {
+    return _.find(_.flatMap(plan.grpList, (o) => o.asgnList), (o) => o.oneName === this.one.name)
   }
 
-  isPersonSelfWorkTask (plan: Plan, task: string) {
-    const find = this.getPlanPersonSelfTaskItem(plan)
-    if (!find) return false
-    return find.task === task
+  isActionTask (plan: Plan, task: Task) {
+    const asgn = this.getAsgn(plan)
+    if (!asgn) return false
+    return asgn.taskName === task.name
   }
 
-  isPersonSelfWorkAliseTask (plan: Plan, task: string) {
-    const find = this.getPlanPersonSelfTaskItem(plan)
-    if (!find) return false
-    return this.$dataQuery.testIsAliasTask(find.task, task)
+  isActionHasAliseTask (plan: Plan, parentTask: Task) {
+    const asgn = this.getAsgn(plan)
+    if (!asgn) return false
+    return this.$duty.Store.testIsTaskAlias(asgn.taskName, parentTask.name)
   }
 
   getSummaries (param: any) {
@@ -138,23 +131,23 @@ export default class PersonTaskChart extends Vue {
         sums[index] = ''
         return
       }
-      const tableTaskTotal = _.filter(data, (item: any) => String(item[column.property]).startsWith(this.CHECK_SIGN)).length
-      const recListTaskTotal = this.$dataQuery.getPersonTaskRec(this.personName, column.property)
-      sums.push(`${tableTaskTotal.toString()} ${recListTaskTotal !== tableTaskTotal ? `[R: ${recListTaskTotal}]` : ``}`)
+      const tableTaskTotal = _.filter(data, (item: any) => String(item[column.property]).startsWith(this.CHECK_SIGN)).length // 表格中，某列(Task)有符号的行总数
+      const recListTaskTotal = this.one.getTaskActionNum(this.TaskList.find(o => o.name === column.property) as Task) // 该成员该 Task 执行次数
+      sums.push(`${tableTaskTotal.toString()} ${recListTaskTotal !== tableTaskTotal ? `[F: ${recListTaskTotal}]` : ``}`)
     })
 
     return sums
   }
 
   getPlanInfoList (plan: Plan) {
-    const planGrp = _.flatMap(plan.grpList).find(o => o.personTaskList.find(p => p.person === this.personName))
-    const taskItem = this.getPlanPersonSelfTaskItem(plan)
-    const isAliasTask = taskItem ? this.$dataQuery.testIsAliasTask(taskItem.task) : false
+    const planGrp = _.flatMap(plan.grpList).find(o => o.asgnList.find(p => p.oneName === this.one.name))
+    const asgn = this.getAsgn(plan)
+    const isAliasTask = asgn ? this.$duty.Store.testIsTaskAlias(asgn.taskName) : false
     const infoList: { [key: string]: string } = {
-      '执行日期': this.$dataQuery.timeAgo(new Date(plan.actionTime)),
-      '所属小组': `${plan.getGrpNamesPreviewHTML()} ${planGrp ? `(当时在 ${planGrp.grpId.toString()} 组)` : ''}`,
-      '指派任务': `${taskItem ? taskItem.task : '(未知)'}`
-               + `${taskItem && isAliasTask ? ` (曾因 "${_.trimEnd(this.$dataQuery.getTaskListByAlias(taskItem.task).join(', '), ', ')}" 的变动而记录转移)` : ``}`
+      '执行日期': this.$duty.Utils.timeAgo(new Date(plan.actionTime)),
+      '所属小组': `${plan.getGrpNamesPreviewHTML()} ${planGrp ? `(当时在成员组: ${planGrp.name.toString()})` : ''}`,
+      '指派任务': `${asgn ? asgn.taskName : '(未知)'}`
+               + `${asgn && isAliasTask ? ` (曾因 "${_.trimEnd(this.$duty.Store.findTasksByAlias(asgn.taskName).join(', '), ', ')}" 的变动而记录转移)` : ``}`
     }
 
     return infoList
