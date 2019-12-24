@@ -22,7 +22,7 @@
             </span>
           </div>
           <div v-for="one in grp.oneList" :key="one.name" class="item">
-            <div v-html="searchHighlight(one.name)" @click="$personProfile.open(one)" class="name" />
+            <div v-html="searchHighlight(one.name)" @click="$personProfile.open(one.name)" class="name" />
           </div>
         </div>
       </el-col>

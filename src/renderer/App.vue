@@ -32,7 +32,7 @@ export default class App extends Vue {
 
   created () {
     Vue.prototype._ = _
-    Vue.prototype.$duty = Vue.observable(DutyScheduleCore)
+    Vue.prototype.$duty = Vue.observable(DutyScheduleCore) // Core
 
     // Local Test
     if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {

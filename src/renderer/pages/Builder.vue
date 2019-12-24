@@ -110,8 +110,8 @@
                       placeholder="任务"
                     >
                     <div class="badge-box">
-                      <span v-if="!!asgn.one ? asgn.one.isJustDidTask(asgn.taskName) : false" class="warn">上次做过</span>
-                      <span v-if="!!asgn.one">{{ asgn.one.getTaskActionNum(asgn.taskName) }}</span>
+                      <span v-if="isAsgnOneJustDidAsgnTask(asgn)" class="warn">上次做过</span>
+                      <span>{{ getAsgnOneTaskActionNum(asgn) }}</span>
                     </div>
                   </div>
                 </div>
@@ -304,6 +304,18 @@ export default class Builder extends Vue {
     if (this.exchangeTool.on === false) {
       this.exchangeTool.asgn = null
     }
+  }
+
+  /** Asgn one 是否做过 Asgn task */
+  isAsgnOneJustDidAsgnTask (asgn: Asgn) {
+    const one = asgn.tryGetOne()
+    return one ? one.isJustDidTask(asgn.taskName) : false
+  }
+
+  /** Asgn One 执行这个 Task 的次数 */
+  getAsgnOneTaskActionNum (asgn: Asgn) {
+    const one = asgn.tryGetOne()
+    return one ? one.getTaskActionNum(asgn.taskName) : false
   }
 }
 </script>

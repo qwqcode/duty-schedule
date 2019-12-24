@@ -28,12 +28,12 @@
           </div>
           <div
             v-for="grp in plan.grpList"
-            :key="grp.grpId"
+            :key="grp.name"
             @click="switchGrp(grp)"
             :class="{ 'active': !!cardList[curtCardPos] && grp === cardList[curtCardPos].value }"
             class="item"
           >
-            {{ grp.grpId }}
+            {{ grp.name }}
           </div>
         </div>
 
@@ -64,7 +64,7 @@ import Vue from 'vue'
 import _ from 'lodash'
 import $ from 'jquery'
 import { Watch, Component } from 'vue-property-decorator'
-import { Plan, PlanGrp } from '../core/data-interfaces'
+import { Plan, GrpInPlan } from 'duty-schedule-core'
 import PlanListSidebar from '../components/PlanListSidebar.vue'
 import Dialog from '../components/Dialog.vue'
 import ScheduleCard, { Card } from '../components/ScheduleCard.vue'
@@ -109,7 +109,7 @@ export default class Schedule extends Vue {
     (this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$duty.Utils.timeAgo(new Date(newPlan.actionTime))}`)
   }
 
-  switchGrp (grp: PlanGrp) {
+  switchGrp (grp: GrpInPlan) {
     const findCardPos = this.cardList.findIndex(o => o.type === 'grp' && o.value === grp)
     if (findCardPos <= -1) return
 
@@ -154,8 +154,8 @@ export default class Schedule extends Vue {
   }
 
   /** 计划列表 */
-  get PlanList() {
-    return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
+  get PlanList () {
+    return this.$duty.Store.PlanListSorted
   }
 
   openPlan (plan: Plan) {
