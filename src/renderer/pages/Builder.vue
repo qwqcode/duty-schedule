@@ -275,7 +275,8 @@ export default class Builder extends Vue {
   savePlan () {
     // 刷新时间
     this.plan.createdTime = new Date().getTime()
-    this.$dataAction.savePlan(this.plan)
+    this.$duty.Store.PlanList.unshift(this.plan)
+    this.$dutyHelper.localSave()
     this.$router.replace('/')
   }
 

@@ -162,7 +162,7 @@ export default class AreaList extends Vue {
 
   editSave () {
     this.$duty.Store.AreaList = this.areaList
-    this.$duty.Store.save()
+    this.$dutyHelper.localSave()
     window.notify('数据已保存', 's')
     this.editMode = false
   }

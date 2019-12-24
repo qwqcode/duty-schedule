@@ -80,22 +80,22 @@
         <div class="inner">
           <div class="setting-item">
             <el-form @submit.native.prevent class="form">
-              <el-checkbox :checked="$dataStore.Settings.remoteSync.enabled" @change="remoteSyncSwitch('enabled', $event)">
+              <el-checkbox :checked="$duty.Setting.RemoteSync.enabled" @change="remoteSyncSwitch('enabled', $event)">
                 启用
               </el-checkbox>
-              <el-checkbox :checked="$dataStore.Settings.remoteSync.autoSync" @change="remoteSyncSwitch('autoSync', $event)">
+              <el-checkbox :checked="$duty.Setting.RemoteSync.autoSync" @change="remoteSyncSwitch('autoSync', $event)">
                 自动同步
               </el-checkbox>
               <el-form-item label="服务器">
-                <el-input v-model="$dataStore.Settings.remoteSync.server" @input="$dataStore.save()" placeholder="输入 Server URL" />
+                <el-input v-model="$duty.Setting.RemoteSync.server" @input="$dutyHelper.localSave()" placeholder="输入 Server URL" />
               </el-form-item>
             </el-form>
             <div class="buttons">
-              <el-button @click="$permission.adminBtn($dataAction.remoteSyncUpload)" size="small">
+              <el-button @click="$permission.adminBtn($dutyHelper.remoteSave)" size="small">
                 上传数据到云端
               </el-button>
-              <el-button @click="$permission.adminBtn($dataAction.remoteSyncDownload)" size="small">
-                从云端同步数据
+              <el-button @click="$permission.adminBtn($dutyHelper.remoteLoad)" size="small">
+                从云端下载数据
               </el-button>
             </div>
           </div>
@@ -177,12 +177,19 @@ export default class Setting extends Vue {
     if (targetKey === null)
       return
 
+    // 检验 JSON 是否可被解析
+    try {
+      JSON.parse(this.dataEditorVal)
+    } catch (e) {
+      throw new Error('this.dataEditorVal JSON 无法解析')
+    }
+
     if (targetKey === "__ALL__") {
       this.$duty.Store.clearAll()
     }
     this.$duty.Store.import(this.dataEditorVal)
 
-    // this.$dataStore.save()
+    this.$dutyHelper.localSave()
     window.notify(`数据 ${targetKey} 已保存`)
   }
 
@@ -221,14 +228,14 @@ export default class Setting extends Vue {
   }
 
   remoteSyncSwitch (fieldName: string, isEnabled: boolean) {
-    if (!_.has(this.$dataStore.Settings.remoteSync, fieldName)) {
+    if (!_.has(this.$duty.Setting.RemoteSync, fieldName)) {
       const err = `remoteSyncSwitch() "${fieldName}" fieldName not found.`
       window.notify(err, 'e')
       throw new Error(err)
     }
     this.$permission.adminBtn(() => {
-      (this.$dataStore.Settings.remoteSync as any)[fieldName] = isEnabled
-      this.$dataStore.save()
+      (this.$duty.Setting.RemoteSync as any)[fieldName] = isEnabled
+      this.$dutyHelper.localSave()
     })
   }
 

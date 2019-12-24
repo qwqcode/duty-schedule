@@ -63,7 +63,7 @@ export default class Permission extends Vue {
   private dialogFormSubmit () {
     switch (this.dialog.type) {
       case 'input':
-        if (this.dialog.inputVal === this.$dataStore.Settings.password) {
+        if (this.dialog.inputVal === this.$duty.Setting.Password) {
           (this.$refs.passwordDialog as Dialog).hide()
           if (this.dialog.onPermited !== null) { this.dialog.onPermited() }
         } else {
@@ -72,8 +72,8 @@ export default class Permission extends Vue {
         }
         break
       case 'modify':
-        this.$dataStore.Settings.password = this.dialog.inputVal
-        this.$dataStore.save()
+        this.$duty.Setting.Password = this.dialog.inputVal
+        this.$dutyHelper.localSave()
         window.notify('密码修改成功', 's');
         (this.$refs.passwordDialog as Dialog).hide()
         this.dialog.inputVal = ''
@@ -85,9 +85,9 @@ export default class Permission extends Vue {
 
   public adminBtn (evt: () => void) {
     if (
-      typeof this.$dataStore.Settings.password === 'undefined' ||
-      this.$dataStore.Settings.password === '' ||
-      this.dialog.inputVal === this.$dataStore.Settings.password
+      typeof this.$duty.Setting.Password === 'undefined' ||
+      this.$duty.Setting.Password === '' ||
+      this.dialog.inputVal === this.$duty.Setting.Password
     ) {
       evt()
       return
