@@ -194,19 +194,17 @@ export default class AreaList extends Vue {
 
   getOptionalAliases (taskAliasList: string[]) {
     const curtAllTaskNames = _.flatMap(this.$duty.Store.AreaList, o => _.flatMap(o.taskList, v => v.name))
-    const curtAllAliases: string[] = _.flatMap(this.$duty.Store.AreaList, o => _.flatMap(o.taskList, v => v.aliasList))
 
     const aliases: string[] = []
     _.forEach(this.$duty.Store.PlanList, (plan) => {
       _.forEach(plan.grpList, (grp) => {
-        _.forEach(grp.oneToTaskDict, (task, one) => {
-          if (String(task).trim() === '') return
-          if (aliases.includes(task)) return
-          if (taskAliasList.includes(task)) return
-          if (curtAllTaskNames.includes(task)) return
-          if (curtAllAliases.includes(task)) return
+        _.forEach(grp.asgnList, ({ taskName, oneName }) => {
+          if (String(taskName).trim() === '') return
+          if (aliases.includes(taskName)) return
+          if (taskAliasList.includes(taskName)) return
+          if (curtAllTaskNames.includes(taskName)) return
 
-          aliases.push(task)
+          aliases.push(taskName)
         })
       })
     })

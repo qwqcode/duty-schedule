@@ -37,9 +37,9 @@
                     :title="`${one.name} 上次做的就是这个任务`"
                     class="warn"
                   >上次</span>
-                  <span :title="`${one.name} 已做过 ${one.getTaskActionNum(task)} 次该任务`" class="clickable">
+                  <span :title="`${one.name} 已做过 ${one.getTaskActionNum(task.name)} 次该任务`" class="clickable">
                     <i class="zmdi zmdi-calendar-check" />
-                    {{ one.getTaskActionNum(task) }}
+                    {{ one.getTaskActionNum(task.name) }}
                   </span>
                   <span
                     v-if="selMode !== null && !!selMode.plan"

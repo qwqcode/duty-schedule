@@ -132,7 +132,7 @@ export default class PersonTaskChart extends Vue {
         return
       }
       const tableTaskTotal = _.filter(data, (item: any) => String(item[column.property]).startsWith(this.CHECK_SIGN)).length // 表格中，某列(Task)有符号的行总数
-      const recListTaskTotal = this.one.getTaskActionNum(this.TaskList.find(o => o.name === column.property) as Task) // 该成员该 Task 执行次数
+      const recListTaskTotal = this.one.getTaskActionNum((this.TaskList.find(o => o.name === column.property) as Task).name) // 该成员该 Task 执行次数
       sums.push(`${tableTaskTotal.toString()} ${recListTaskTotal !== tableTaskTotal ? `[F: ${recListTaskTotal}]` : ``}`)
     })
 
