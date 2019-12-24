@@ -12,7 +12,7 @@
         <div class="inner">
           <div class="setting-item">
             <div class="buttons">
-              <template v-for="(fieldName, index) in $dataStore.DATA_FIELDS">
+              <template v-for="(fieldName, index) in StoredDataFields">
                 <el-button
                   :key="index"
                   @click="$permission.adminBtn(() => { toggleDataEditor(fieldName) })"
@@ -23,9 +23,6 @@
               </template>
               <el-button @click="$permission.adminBtn(() => { toggleDataEditor('__ALL__') })" size="small">
                 __ALL__
-              </el-button>
-              <el-button @click="$permission.adminBtn(() => { toggleDataEditor('__ALL_OLD_VERSION__') })" size="small">
-                __ALL__ (旧版)
               </el-button>
             </div>
           </div>
@@ -122,8 +119,8 @@
 import _ from 'lodash'
 import { Component } from 'vue-property-decorator'
 import Vue from 'vue'
+import * as DutyModels from 'duty-schedule-core'
 import Dialog from '../components/Dialog.vue'
-import * as DataType from '@/core/data-interfaces'
 
 @Component({
   components: { Dialog }
@@ -133,39 +130,38 @@ export default class Setting extends Vue {
 
   dataEditorVal: string = ""
 
-  mounted() {
+  mounted () {
     if (typeof (window as any).SETTING_DATA_ALLOW_EDIT === "undefined") {
       (window as any).SETTING_DATA_ALLOW_EDIT = false
     }
   }
 
-  get version() {
+  get version () {
     // eslint-disable-next-line global-require
     return require("../../../package.json").version
   }
 
-  toggleDataEditor(fieldName: string) {
+  get StoredDataFields () {
+    return this.$duty.Store.StoredFieldNames
+  }
+
+  toggleDataEditor (fieldName: string) {
     if (this.dataEditorTargetFieldName === fieldName) {
       this.dataEditorTargetFieldName = null
       this.dataEditorVal = ''
       return
     }
 
-    if (fieldName === "__ALL_OLD_VERSION__") {
+    /* if (fieldName === "__ALL_OLD_VERSION__") {
       this.dataEditorVal = ''
       this.dataEditorTargetFieldName = fieldName
       return
-    }
+    } */
 
-    let jsonObj = {}
-    if (fieldName === "__ALL__") {
-      const allJson: any = {}
-      _.forEach(this.$dataStore.DATA_FIELDS, (key) => {
-        allJson[key] = (this.$dataStore as any)[key]
-      })
-      jsonObj = allJson
-    } else {
-      jsonObj = (this.$dataStore as any)[fieldName]
+    const storeImportObj = this.$duty.Store.toObj()
+    let jsonObj = storeImportObj
+    if (fieldName !== "__ALL__") {
+      jsonObj = storeImportObj[fieldName]
     }
 
     this.dataEditorVal = JSON.stringify(
@@ -176,31 +172,26 @@ export default class Setting extends Vue {
     this.dataEditorTargetFieldName = fieldName
   }
 
-  dataEditorSave() {
+  dataEditorSave () {
     const targetKey = this.dataEditorTargetFieldName
-    if (targetKey !== null) {
-      if (targetKey === "__ALL_OLD_VERSION__") {
-        this.oldVersionDataImport(JSON.parse(this.dataEditorVal))
-        return
-      }
+    if (targetKey === null)
+      return
 
-      if (targetKey === "__ALL__") {
-        const obj = JSON.parse(this.dataEditorVal)
-        _.forEach(obj, (val, key) => {
-          this.$dataAction.settingSetData(key, val)
-        })
-      } else {
-        this.$dataAction.settingSetData(targetKey, JSON.parse(this.dataEditorVal))
-      }
+    if (targetKey === "__ALL__") {
+      this.$duty.Store.clearAll()
     }
+    this.$duty.Store.import(this.dataEditorVal)
+
+    // this.$dataStore.save()
+    window.notify(`数据 ${targetKey} 已保存`)
   }
 
-  syncRecList() {
-    this.$dataAction.syncRec()
+  syncRecList () {
+    this.$duty.Store.recSync()
     window.notify('RecList 已同步')
   }
 
-  deleteVuexStoreData() {
+  deleteVuexStoreData () {
     const el = this.$refs.deleteVuexStoreDataBtn as any
     if (typeof el.clickTime !== "number") {
       el.clickTime = 1
@@ -210,17 +201,17 @@ export default class Setting extends Vue {
     if (el.clickTime < 5) {
       window.notify(`危险操作，请再点 ${  5 - el.clickTime  } 次`, 'e')
     } else {
-      this.$dataStore.clearAll()
+      this.$duty.Store.clearAll()
     }
   }
 
-  openDevTools() {
+  openDevTools () {
     if (this.isWeb) { return }
     // eslint-disable-next-line global-require
     require('electron').ipcRenderer.send("open-dev-tools")
   }
 
-  openBlog() {
+  openBlog () {
     if (this.isWeb) {
       window.location.href = 'https://qwqaq.com'
       return
@@ -239,72 +230,6 @@ export default class Setting extends Vue {
       (this.$dataStore.Settings.remoteSync as any)[fieldName] = isEnabled
       this.$dataStore.save()
     })
-  }
-
-  oldVersionDataImport(data: any) {
-    const PlanList: DataType.Plan[] = []
-    const GrpList: DataType.Grp[] = []
-    const AreaList: DataType.Area[] = []
-
-    const getGrpIdByStr = (str: string) => { return Number((str.match(/第 ([0-9]+) 组/) as any)[1]) }
-    const getHandledAreaName = (str: string) => {
-      return ({ '教室': '教室', '工区': '公区', '公区': '公区' } as any)[
-        (str.match(/(教室|工区|公区)/) as any)[1]
-      ]
-    }
-
-    // PlanList
-    _.forEach(data.taskList, (item) => {
-      const planGrpList: DataType.PlanGrp[] = []
-
-      _.forEach(item.memberGroupList, (grpItem) => {
-        const personTaskList: DataType.PersonTaskItem[] = []
-        _.forEach(grpItem.data, (personTaskItem) => {
-          personTaskList.push({ person: personTaskItem.name, task: personTaskItem.task })
-        })
-
-        planGrpList.push({
-          grpId: getGrpIdByStr(grpItem.name),
-          area: getHandledAreaName(grpItem.taskTypeGroupName),
-          personTaskList
-        })
-      })
-
-      PlanList.push({
-        id: Number(item.time),
-        name: item.title as string,
-        actionTime: Number(item.time),
-        createdTime: Number(item.time),
-        grpList: planGrpList
-      })
-    })
-
-    // GrpList
-    _.forEach(data.memberGroupList, (grpItem, i) => {
-      GrpList.push({
-        id: getGrpIdByStr(grpItem.name),
-        personList: grpItem.data
-      })
-    })
-
-    // AreaList
-    _.forEach(data.taskTypeGroupList, (areaItem, i) => {
-      let findArea = AreaList.find(o => o.name === getHandledAreaName(areaItem.name))
-      if (!findArea) {
-        findArea = { name: getHandledAreaName(areaItem.name), taskList: areaItem.data }
-        AreaList.push(findArea)
-      } else {
-        _.forEach(areaItem.data, (item) => { if (findArea) { findArea.taskList.push(item) } })
-      }
-    })
-
-
-    this.$dataAction.settingSetData('PlanList', PlanList)
-    this.$dataAction.settingSetData('GrpList', GrpList)
-    this.$dataAction.settingSetData('AreaList', AreaList)
-
-    // 同步 Res
-    this.$dataAction.syncRec()
   }
 
   get isWeb () {
