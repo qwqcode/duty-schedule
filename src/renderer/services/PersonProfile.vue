@@ -31,13 +31,17 @@
                   <span
                     v-if="selMode !== null && !!selMode.plan && (task.demandNumOne - countTaskInPlan(task) > 0)"
                     class="warn"
-                  >还差 {{ task.demandNumOne - countTaskInPlan(task) }} 人</span>
+                  >差 {{ task.demandNumOne - countTaskInPlan(task) }} 人</span>
                   <span
-                    v-if="one.isJustDidTask(task)"
+                    v-if="selMode !== null && !!selMode.plan && (countTaskInPlan(task) - task.demandNumOne > 0)"
+                    class="warn"
+                  >多 {{ countTaskInPlan(task) - task.demandNumOne }} 人</span>
+                  <span
+                    v-if="!!one && one.isJustDidTask(task)"
                     :title="`${one.name} 上次做的就是这个任务`"
                     class="warn"
                   >上次</span>
-                  <span :title="`${one.name} 已做过 ${one.getTaskActionNum(task.name)} 次该任务`" class="clickable">
+                  <span v-if="!!one" :title="`${one.name} 已做过 ${one.getTaskActionNum(task.name)} 次该任务`" class="clickable">
                     <i class="zmdi zmdi-calendar-check" />
                     {{ one.getTaskActionNum(task.name) }}
                   </span>
@@ -77,7 +81,7 @@ type SelMode = {
   components: { CalendarHeatmap, Dialog }
 })
 export default class PersonProfile extends Vue {
-  one!: One
+  one: One|null = null
   selMode: SelMode|null = null
   showTaskSel = true
 
@@ -130,6 +134,7 @@ export default class PersonProfile extends Vue {
   }
 
   openPersonTaskChart () {
+    if (!this.one) return
     this.$personTaskChart.open(this.one)
   }
 }

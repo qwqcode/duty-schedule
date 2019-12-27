@@ -12,7 +12,7 @@
 import Vue from 'vue'
 import _ from 'lodash'
 import axios from 'axios'
-import { Component } from 'vue-property-decorator'
+import { Component, Watch } from 'vue-property-decorator'
 import Dialog from '@/components/Dialog.vue'
 
 @Component({ components: { Dialog } })

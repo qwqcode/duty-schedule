@@ -52,7 +52,7 @@ import Dialog from '@/components/Dialog.vue'
   components: { Dialog }
 })
 export default class PersonTaskChart extends Vue {
-  one!: One
+  one: One|null = null
   readonly CHECK_SIGN = '√'
 
   created () {
@@ -97,14 +97,14 @@ export default class PersonTaskChart extends Vue {
   get PlanList () {
     return _.sortBy(
       _.filter(this.$duty.Store.PlanList, (plan) =>
-        _.flatMap(plan.grpList, (grp) => _.flatMap(grp.asgnList, (a) => a.oneName)).includes(this.one.name)
+        !!this.one && _.flatMap(plan.grpList, (grp) => _.flatMap(grp.asgnList, (a) => a.oneName)).includes(this.one.name)
       ),
       (o) => -o.actionTime
     )
   }
 
   getAsgn (plan: Plan) {
-    return _.find(_.flatMap(plan.grpList, (o) => o.asgnList), (o) => o.oneName === this.one.name)
+    return _.find(_.flatMap(plan.grpList, (o) => o.asgnList), (o) => !!this.one && o.oneName === this.one.name)
   }
 
   isActionTask (plan: Plan, task: Task) {
@@ -123,6 +123,7 @@ export default class PersonTaskChart extends Vue {
     const { columns, data } = param
     const sums: string[] = []
     columns.forEach((column: any, index: number) => {
+      if (!this.one) return
       if (index === 0) {
         sums[index] = '执行次数'
         return
@@ -140,14 +141,15 @@ export default class PersonTaskChart extends Vue {
   }
 
   getPlanInfoList (plan: Plan) {
-    const planGrp = _.flatMap(plan.grpList).find(o => o.asgnList.find(p => p.oneName === this.one.name))
+    if (!this.one) return {}
+    const planGrp = _.flatMap(plan.grpList).find(o => o.asgnList.find(p => !!this.one && p.oneName === this.one.name))
     const asgn = this.getAsgn(plan)
     const isAliasTask = asgn ? this.$duty.Store.testIsTaskAlias(asgn.taskName) : false
     const infoList: { [key: string]: string } = {
       '执行日期': this.$duty.Utils.timeAgo(new Date(plan.actionTime)),
       '所属小组': `${plan.getGrpNamesPreviewHTML()} ${planGrp ? `(当时在成员组: ${planGrp.name.toString()})` : ''}`,
       '指派任务': `${asgn ? asgn.taskName : '(未知)'}`
-               + `${asgn && isAliasTask ? ` (曾因 "${_.trimEnd(this.$duty.Store.findTasksByAlias(asgn.taskName).join(', '), ', ')}" 的变动而记录转移)` : ``}`
+               + `${asgn && isAliasTask ? ` (曾因 "${_.trimEnd(_.flatMap(this.$duty.Store.findTasksByAlias(asgn.taskName), o => o.name).join(', '), ', ')}" 的变动而记录转移)` : ``}`
     }
 
     return infoList

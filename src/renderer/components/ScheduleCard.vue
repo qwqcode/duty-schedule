@@ -44,12 +44,9 @@
 <script lang="ts">
 import { Vue, Component, Watch, Prop } from 'vue-property-decorator'
 import { GrpInPlan } from 'duty-schedule-core'
-import Schedule from '../pages/Schedule.vue'
 
 @Component({})
 export default class ScheduleCard extends Vue {
-  _this!: Schedule
-
   @Prop({})
   card!: Card
 

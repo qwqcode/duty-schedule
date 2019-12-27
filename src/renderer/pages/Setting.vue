@@ -184,10 +184,14 @@ export default class Setting extends Vue {
       throw new Error('this.dataEditorVal JSON 无法解析')
     }
 
+    let json = this.dataEditorVal
     if (targetKey === "__ALL__") {
       this.$duty.Store.clearAll()
+    } else {
+      json = `{"${targetKey}": ${json}}`
     }
-    this.$duty.Store.import(this.dataEditorVal)
+
+    this.$duty.Store.import(json)
 
     this.$dutyHelper.localSave()
     window.notify(`数据 ${targetKey} 已保存`)
@@ -195,6 +199,7 @@ export default class Setting extends Vue {
 
   syncRecList () {
     this.$duty.Store.recSync()
+    this.$dutyHelper.localSave()
     window.notify('RecList 已同步')
   }
 
@@ -209,6 +214,8 @@ export default class Setting extends Vue {
       window.notify(`危险操作，请再点 ${  5 - el.clickTime  } 次`, 'e')
     } else {
       this.$duty.Store.clearAll()
+      this.$dutyHelper.localSave()
+      window.location.reload()
     }
   }
 

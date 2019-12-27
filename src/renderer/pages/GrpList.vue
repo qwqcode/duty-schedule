@@ -16,7 +16,7 @@
       >
         <div @click="!!asSelector ? selectGrp(grp) : null" class="inner">
           <div class="group-title">
-            <span class="group-title-text">成员组 {{ grp.name }}</span>
+            <span class="group-title-text">组 {{ grp.name }}</span>
             <span v-if="!!asSelector" class="select-btn">
               <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
             </span>

@@ -153,7 +153,7 @@ import Dialog from '../components/Dialog.vue'
   components: { GrpList, Dialog }
 })
 export default class Builder extends Vue {
-  plan!: Plan
+  plan: Plan = this.getEmptyPlan()
   selGrpList: Grp[] = []
 
   exchangeTool: {
@@ -169,17 +169,18 @@ export default class Builder extends Vue {
   }
 
   created () {
-    this.createEmptyPlan()
   }
 
-  createEmptyPlan () {
-    this.plan = new Plan()
-    this.plan.id = new Date().getTime()
-    this.plan.name = `${this.getDateText()}`
-    this.plan.actionTime = new Date().getTime()
-    this.plan.createdTime = new Date().getTime()
-    this.plan.grpList = []
-    this.plan.note = ''
+  getEmptyPlan () {
+    const plan = new Plan()
+    plan.id = new Date().getTime()
+    plan.name = `${this.getDateText()}`
+    plan.actionTime = new Date().getTime()
+    plan.createdTime = new Date().getTime()
+    plan.grpList = []
+    plan.note = ''
+
+    return plan
   }
 
   public getDateText () {
@@ -217,6 +218,7 @@ export default class Builder extends Vue {
   autoSelectGrp () {
     const fateList = this.$duty.Fate.getFateAreaToGrpDict()
 
+console.log(fateList)
     this.selGrpList = [
       fateList['教室'][0],
       fateList['教室'][1],
