@@ -1,8 +1,8 @@
 import Vue from 'vue'
-import axios from 'axios'
+import Element from 'element-ui'
 import Router from 'vue-router'
 import VueTransitions from 'vue2-transitions'
-import Element from 'element-ui'
+import axios from 'axios'
 
 import App from './App.vue'
 import router from './router'
@@ -14,9 +14,7 @@ import 'vue2-animate/dist/vue2-animate.min.css'
 import 'material-design-iconic-font/dist/css/material-design-iconic-font.min.css'
 
 Vue.use(Element)
-
 Vue.use(VueTransitions)
-
 Vue.use(Router)
 
 // eslint-disable-next-line global-require

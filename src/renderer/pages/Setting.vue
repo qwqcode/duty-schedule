@@ -91,10 +91,10 @@
               </el-form-item>
             </el-form>
             <div class="buttons">
-              <el-button @click="$permission.adminBtn($dutyHelper.remoteSave)" size="small">
+              <el-button @click="$permission.adminBtn($dutyHelper.remoteUpload)" size="small">
                 上传数据到云端
               </el-button>
-              <el-button @click="$permission.adminBtn($dutyHelper.remoteLoad)" size="small">
+              <el-button @click="$permission.adminBtn($dutyHelper.remoteDownload)" size="small">
                 从云端下载数据
               </el-button>
             </div>
