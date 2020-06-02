@@ -28,12 +28,12 @@
           </div>
           <div
             v-for="grp in plan.grpList"
-            :key="grp.grpId"
+            :key="grp.name"
             @click="switchGrp(grp)"
             :class="{ 'active': !!cardList[curtCardPos] && grp === cardList[curtCardPos].value }"
             class="item"
           >
-            {{ grp.grpId }}
+            {{ grp.name }}
           </div>
         </div>
 
@@ -62,9 +62,8 @@
 <script lang="ts">
 import Vue from 'vue'
 import _ from 'lodash'
-import $ from 'jquery'
 import { Watch, Component } from 'vue-property-decorator'
-import { Plan, PlanGrp } from '../core/data-interfaces'
+import { Plan, GrpInPlan } from 'duty-schedule-core'
 import PlanListSidebar from '../components/PlanListSidebar.vue'
 import Dialog from '../components/Dialog.vue'
 import ScheduleCard, { Card } from '../components/ScheduleCard.vue'
@@ -106,10 +105,10 @@ export default class Schedule extends Vue {
 
   @Watch('plan')
   onPlanChanged(newPlan: Plan) {
-    (this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$dataQuery.timeAgo(new Date(newPlan.actionTime))}`)
+    (this.$parent as any).setSubTitle(`${newPlan.name} - ${this.$duty.Utils.timeAgo(new Date(newPlan.actionTime))}`)
   }
 
-  switchGrp (grp: PlanGrp) {
+  switchGrp (grp: GrpInPlan) {
     const findCardPos = this.cardList.findIndex(o => o.type === 'grp' && o.value === grp)
     if (findCardPos <= -1) return
 
@@ -154,8 +153,8 @@ export default class Schedule extends Vue {
   }
 
   /** 计划列表 */
-  get PlanList() {
-    return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
+  get PlanList () {
+    return this.$duty.Store.PlanListSorted
   }
 
   openPlan (plan: Plan) {
@@ -193,7 +192,7 @@ export default class Schedule extends Vue {
     if (this.plan === null) return null
 
     let bookmark: { type: 'warn'|'info', text: string }|null = null
-    if (this.plan.actionTime < new Date().getTime() && this.$dataQuery.dateFormat(new Date(this.plan.actionTime)) !== this.$dataQuery.dateFormat(new Date())) {
+    if (this.plan.actionTime < new Date().getTime() && this.$duty.Utils.dateFormat(new Date(this.plan.actionTime)) !== this.$duty.Utils.dateFormat(new Date())) {
       bookmark = { type: 'info', text: '历史计划' }
     }
 

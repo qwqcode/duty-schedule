@@ -1,6 +1,6 @@
 {
   "name": "duty-schedule",
-  "version": "0.0.7.1",
+  "version": "0.1.0",
   "author": "qwqcode <1149527164@qq.com>",
   "description": "值日任务表 - Duty Schedule",
   "license": "GPL-2.0",
@@ -69,7 +69,8 @@
     "vue-ls": "^3.2.1",
     "vue-router": "^3.0.1",
     "vue2-animate": "^2.1.0",
-    "vue2-transitions": "^0.3.0"
+    "vue2-transitions": "^0.3.0",
+    "duty-schedule-core": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^12.0.2",

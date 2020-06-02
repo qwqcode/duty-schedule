@@ -1,9 +1,6 @@
 import { LoDashStatic } from 'lodash'
-import DataStore from '@/core/data-store'
-import DataAction from '@/core/data-action'
-import DataQuery from '@/core/data-query'
-import DataFate from '@/core/data-fate'
-import DataHelper from '@/services/DataHelper.vue'
+import { DutyScheduleCoreInterface } from 'duty-schedule-core'
+import DutyHelper from '@/services/DutyHelper.vue'
 import PersonProfile from '@/services/PersonProfile.vue'
 import PersonTaskChart from '@/services/PersonTaskChart.vue'
 import Permission from '@/services/Permission.vue'
@@ -12,14 +9,11 @@ declare module 'vue/types/vue' {
   interface Vue {
     _: LoDashStatic
     $marked: (src: string, callback?: (error: any, parseResult: string) => void) => string
-    $dataStore: DataStore
-    $dataAction: DataAction
-    $dataQuery: DataQuery
-    $dataFate: DataFate
-    $dataHelper: DataHelper
+    $dutyHelper: DutyHelper
     $personProfile: PersonProfile
     $personTaskChart: PersonTaskChart
     $permission: Permission
+    $duty: DutyScheduleCoreInterface
   }
 }
 

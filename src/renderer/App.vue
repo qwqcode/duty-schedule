@@ -16,52 +16,28 @@ import Vue from 'vue'
 import _ from 'lodash'
 import sanitizeHtml from 'sanitize-html'
 import marked from 'marked'
+import DutyScheduleCore from 'duty-schedule-core'
 import { Watch, Component } from 'vue-property-decorator'
-import Services from './services'
 import TopBar from './components/TopBar.vue'
 import BottomBar from './components/BottomBar.vue'
+import Services from './services'
 
 @Component({
   components: { TopBar, BottomBar, ...Services }
 })
 export default class App extends Vue {
-  transitionName: string = ''
-
-  subTitle: string = ''
-
-  created () {
-    Vue.prototype._ = _
-
-    // Local Test
-    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-      try {
-        // eslint-disable-next-line
-        require('./core/data-test.local.ts').runTest(this)
-      } catch (err) {
-        window.console.error('Local Test', err)
-      }
-    }
-
-    this.initMarked()
-  }
-
-  setSubTitle (str: string) {
-    this.subTitle = str
-  }
-
-  @Watch('$route')
-  onRouteChanged (to: any, from: any) {
-    const toDepth = to.path.split('/').length
-    const fromDepth = from.path.split('/').length
-    this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
-    this.setSubTitle('')
-  }
-
   get serviceNames () {
     return Object.keys(Services)
   }
 
-  private initMarked () {
+  created () {
+    Vue.prototype._ = _
+    Vue.prototype.$duty = Vue.observable(DutyScheduleCore) // Core
+
+    this.initMarked()
+  }
+
+  initMarked () {
     const renderer = new marked.Renderer()
     const linkRenderer = renderer.link
     renderer.link = (href, title, text) => {
@@ -84,6 +60,20 @@ export default class App extends Vue {
     })
 
     Vue.prototype.$marked = nMarked
+  }
+
+  subTitle: string = ''
+  setSubTitle (str: string) {
+    this.subTitle = str
+  }
+
+  transitionName: string = ''
+  @Watch('$route')
+  onRouteChanged (to: any, from: any) {
+    const toDepth = to.path.split('/').length
+    const fromDepth = from.path.split('/').length
+    this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
+    this.setSubTitle('')
   }
 }
 </script>

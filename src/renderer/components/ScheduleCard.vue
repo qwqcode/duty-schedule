@@ -4,27 +4,27 @@
       <!-- TYPE-GRP -->
       <div v-if="card.type === 'grp' && !!Grp" class="content">
         <div class="title">
-          第 {{ Grp.grpId }} 组
+          组 {{ Grp.name }}
         </div>
         <el-row :gutter="30" class="grp-task-list-wrap">
           <el-col
-            v-for="(item, i) in $dataQuery.getTaskPersonListByPlanGrp(Grp)"
+            v-for="(item, i) in (Grp.getTaskOnesNameList())"
             :key="i"
             :span="8"
             class="task-list"
             style="margin-bottom: 20px;"
           >
             <div class="task-name">
-              {{ item.task }}
+              {{ item.taskName }}
             </div>
             <div class="person-list">
               <div
-                v-for="(person, pi) in item.persons"
+                v-for="(oneName, pi) in item.oneNameList"
                 :key="pi"
-                @click="$personProfile.open(person)"
+                @click="$personProfile.open(oneName)"
                 class="person-item"
               >
-                {{ person }}
+                {{ oneName }}
               </div>
             </div>
           </el-col>
@@ -43,19 +43,16 @@
 
 <script lang="ts">
 import { Vue, Component, Watch, Prop } from 'vue-property-decorator'
-import { PlanGrp } from '../core/data-interfaces'
-import Schedule from '../pages/Schedule.vue'
+import { GrpInPlan } from 'duty-schedule-core'
 
 @Component({})
 export default class ScheduleCard extends Vue {
-  _this!: Schedule
-
   @Prop({})
   card!: Card
 
-  get Grp (): PlanGrp|null {
+  get Grp (): GrpInPlan|null {
     if (this.card.type !== 'grp') return null
-    return this.card.value as PlanGrp
+    return this.card.value as GrpInPlan
   }
 
   get Text (): string|null {

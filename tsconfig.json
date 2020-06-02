@@ -8,14 +8,16 @@
     },
     "outDir": "./dist/",
     "sourceMap": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "module": "es2015",
     "moduleResolution": "node",
-    "target": "es5",
+    "lib": ["es6", "es2017", "dom"],
+    "target": "esnext",
     "strict": true,
     "allowJs": true,
     "experimentalDecorators": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "./src/**/*",

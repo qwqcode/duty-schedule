@@ -1,61 +1,62 @@
 <template>
   <Dialog ref="dialog">
-    <div v-if="!!profile" :class="{ 'as-selector': !!selMode, 'hide-task-sel': !showTaskSel }" class="person-profile">
+    <div v-if="!!one" :class="{ 'as-selector': !!selMode, 'hide-task-sel': !showTaskSel }" class="person-profile">
       <div class="base-info">
-        <span class="name">{{ personName }}</span>
+        <span class="name">{{ one.name }}</span>
         <span v-for="(val, key) in profileDetails" :key="key">{{ key }}: {{ val }}</span>
         <span
           @click="openPersonTaskChart()"
           class="btn"
         ><i class="zmdi zmdi-calendar-check" /> 历史图表</span>
-
-        <slide-y-up-transition>
-          <div v-if="taskRecView.show" class="task-rec-view">
-            <div class="view-desc">
-              "{{ personName }}" 的 “{{ taskRecView.taskName }}” 记录
-            </div>
-            <calendar-heatmap v-if="!showTaskSel" :values="taskRecViewData" :end-date="$dataQuery.dateFormat(new Date())" />
-            <div class="plan-work-rec-list">
-              <div v-for="(item, i) in taskRecViewData" :key="i" class="rec-item">
-                {{ i+1 }}. {{ item.date }}: {{ _.flatMap(item.planList, (o => o.name)) }}
-              </div>
-            </div>
-          </div>
-        </slide-y-up-transition>
       </div>
 
       <div class="task-sel">
         <div v-if="showTaskSel" class="area-list">
-          <div v-for="(area, areaI) in areaList" :key="areaI" class="area-item">
+          <div v-for="area in areaList" :key="area.name" class="area-item">
             <div class="area-name">
               {{ area.name }}
             </div>
             <div class="task-list">
               <div
-                v-for="(task, taskI) in area.taskList"
-                :key="taskI"
+                v-for="task in area.taskList"
+                :key="task.name"
                 @click="selectTask(task)"
-                :class="{ 'selected': !!selMode && task === selMode.data.task }"
+                :class="{ 'selected': !!selMode && task.name === selMode.data.taskName }"
                 class="task-item"
               >
                 <div class="name">
-                  {{ task }}
+                  {{ task.name }}
                 </div>
                 <div class="badge-box">
-                  <span v-if="selMode !== null && !!selMode.plan && (getTaskMaxNeed(task) - countPlanTask(task) > 0)" class="warn">还差 {{ getTaskMaxNeed(task) - countPlanTask(task) }} 人</span>
-                  <span v-if="$dataQuery.getIsPersonLastDidTheTask(personName, task)" :title="`${personName} 上次做的就是这个任务`" class="warn">上次</span>
-                  <span @click.stop="openTaskRecView(task)" :title="`${personName} 已做过 ${$dataQuery.getPersonTaskRec(personName, task)} 次该任务`" class="clickable">
+                  <span
+                    v-if="selMode !== null && !!selMode.plan && (task.demandNumOne - countTaskInPlan(task) > 0)"
+                    class="warn"
+                  >差 {{ task.demandNumOne - countTaskInPlan(task) }} 人</span>
+                  <span
+                    v-if="selMode !== null && !!selMode.plan && (countTaskInPlan(task) - task.demandNumOne > 0)"
+                    class="warn"
+                  >多 {{ countTaskInPlan(task) - task.demandNumOne }} 人</span>
+                  <span
+                    v-if="!!one && one.isJustDidTask(task)"
+                    :title="`${one.name} 上次做的就是这个任务`"
+                    class="warn"
+                  >上次</span>
+                  <span v-if="!!one" :title="`${one.name} 已做过 ${one.getTaskActionNum(task.name)} 次该任务`">
                     <i class="zmdi zmdi-calendar-check" />
-                    {{ $dataQuery.getPersonTaskRec(personName, task) }}
+                    {{ one.getTaskActionNum(task.name) }}
                   </span>
-                  <span v-if="selMode !== null && !!selMode.plan" :title="`本次计划共有 ${countPlanTask(task)} 人参与该任务`" class="success">{{ countPlanTask(task) }} 人</span>
+                  <span
+                    v-if="selMode !== null && !!selMode.plan"
+                    :title="`本次计划共有 ${countTaskInPlan(task)} 人参与该任务`"
+                    class="success"
+                  >{{ countTaskInPlan(task) }} 人</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div v-else class="action-bar">
-          <span @click="closeTaskRecView()"><i class="zmdi zmdi-arrow-left" /> 返回</span>
+          <span @click="() => {}"><i class="zmdi zmdi-arrow-left" /> 返回</span>
         </div>
       </div>
     </div>
@@ -67,28 +68,22 @@ import _ from 'lodash'
 import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
 import { CalendarHeatmap } from 'vue-calendar-heatmap'
-import { Plan, PlanGrp, PersonTaskItem } from '../core/data-interfaces'
+import { Task, Plan, GrpInPlan, Asgn, One } from 'duty-schedule-core'
 import Dialog from '@/components/Dialog.vue'
 
 type SelMode = {
   plan: Plan
-  data: PersonTaskItem
-  beforeSel?: ((taskName: string) => boolean|void)
+  data: Asgn
+  beforeSel?: ((task: Task) => boolean|void)
 }
 
 @Component({
   components: { CalendarHeatmap, Dialog }
 })
 export default class PersonProfile extends Vue {
-  personName: string = ''
-
+  one: One|null = null
   selMode: SelMode|null = null
-
   showTaskSel = true
-  taskRecView = {
-    show: false,
-    taskName: null as string|null
-  }
 
   created () {
     Vue.prototype.$personProfile = this
@@ -97,84 +92,51 @@ export default class PersonProfile extends Vue {
   mounted () {
   }
 
-  open (personName: string, selMode?: SelMode) {
-    this.personName = personName
-    this.selMode = selMode || null;
+  /** 显示 */
+  open (oneName: string, selMode?: SelMode) {
+    const one = this.$duty.Store.findOne(oneName)
+    if (!one) return
 
+    this.one = one
+    this.selMode = selMode || null;
     (this.$refs.dialog as Dialog).show()
   }
 
+  /** 隐藏 */
   hide () {
     (this.$refs.dialog as Dialog).hide()
   }
 
-  selectTask (taskName: string) {
-    if (this.selMode) {
-      if (this.selMode.beforeSel !== undefined && (this.selMode.beforeSel(taskName) === false)) {
-        return
-      }
-      this.selMode.data.task = taskName
-    }
+  /** 选中 Task */
+  selectTask (task: Task) {
+    if (!this.selMode) return
+    if (this.selMode.beforeSel !== undefined && (this.selMode.beforeSel(task) === false)) return
+    this.selMode.data.taskName = task.name
   }
 
-  countPlanTask (taskName: string) {
+  /** 获取某 Task 在 Plan 中已安排的人数 */
+  countTaskInPlan (task: Task) {
     if (!this.selMode) return 0
-    return _.countBy(_.flatMap(this.selMode.plan.grpList, o => o.personTaskList), o => o.task)[taskName]
-  }
-
-  getTaskMaxNeed (taskName: string) {
-    return _.countBy(_.flatMap(this.$dataStore.AreaList, o => o.taskList))[taskName]
+    return _.countBy(_.flatMap(this.selMode.plan.grpList, o => o.asgnList), o => o.taskName)[task.name]
   }
 
   get areaList () {
-    return this.$dataQuery.getAreaListWithUniqueTask()
-  }
-
-  get profile () {
-    return this.personName ? this.$dataQuery.getPersonProfile(this.personName) : null
+    return this.$duty.Store.AreaList
   }
 
   get profileDetails (): {[label: string]: string} {
-    if (!this.profile) { return {} }
+    if (!this.one) return {}
 
+    const lastDidTaskRec = this.one.getLastDidTaskRec()
     return {
-      '最后执行': this.profile.lastWorkPlan ? `${this.profile.lastWorkPlan.name} (${this.$dataQuery.timeAgo(new Date(this.profile.lastWorkPlan.actionTime))})` : '无'
+      '最后执行': lastDidTaskRec ? `${lastDidTaskRec.task.name}`
+      + ` (${this.$duty.Utils.timeAgo(new Date(lastDidTaskRec.rec.lastTime))})` : '无'
     }
   }
 
-  get taskRecViewData () {
-    const map: { date: string, count: number, planList: Plan[] }[] = []
-    const planList = this.$dataStore.PlanList.filter(o => _.flatMap(o.grpList, grp => grp.personTaskList).find(
-      ptItem => ptItem.person === this.personName && ptItem.task === this.taskRecView.taskName
-    ))
-
-    _.forEach(planList, (plan: Plan) => {
-      const date = this.$dataQuery.dateFormat(new Date(plan.actionTime))
-      let mapItem = map.find(o => o.date === date)
-      if (!mapItem) {
-        mapItem = { date, count: 0, planList: [] }
-        map.push(mapItem)
-      }
-      mapItem.count++
-      mapItem.planList.push(plan)
-    })
-
-    return map
-  }
-
-  openTaskRecView (taskName: string|null = null) {
-    this.showTaskSel = false
-    this.taskRecView.show = true
-    this.taskRecView.taskName = taskName
-  }
-
-  closeTaskRecView () {
-    this.showTaskSel = true
-    this.taskRecView.show = false
-  }
-
   openPersonTaskChart () {
-    this.$personTaskChart.open(this.personName)
+    if (!this.one) return
+    this.$personTaskChart.open(this.one)
   }
 }
 </script>
@@ -245,15 +207,6 @@ export default class PersonProfile extends Vue {
         &:hover {
           opacity: .9;
         }
-      }
-    }
-
-    .task-rec-view {
-      margin-top: 30px;
-
-      .view-desc {
-        color: #1a73e8;
-        margin-bottom: 30px;
       }
     }
   }

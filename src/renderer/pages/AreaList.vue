@@ -24,76 +24,96 @@
       </div>
 
       <div class="inner">
-        <div v-for="(area, areaIndex) in areaList" :key="areaIndex" class="group">
+        <div v-for="area in areaList" :key="area.name" class="group">
           <!-- 区域标题 -->
           <div class="group-title">
-            <EditableContent :editable="editMode" :value="area.name" :on-editing="(val) => modifyAreaName(area, val)">
+            <EditableContent
+              :editable="editMode"
+              :value="area.name"
+              :on-editing="(val) => { area.name = val }"
+            >
               {{ area.name }}
             </EditableContent>
           </div>
 
           <!-- 任务 -->
           <div
-            v-for="(count, task) in getAreaTaskUniqueList(area)"
-            :key="task"
+            v-for="task in area.taskList"
+            :key="task.name"
             class="task-item"
           >
             <div class="task-main">
               <span class="task-name">
-                <EditableContent :editable="editMode" :value="task" :on-editing="(val) => modifyTaskName(area, task, val)">{{ task }}</EditableContent>
+                <EditableContent
+                  :editable="editMode"
+                  :value="task.name"
+                  :on-editing="(val) => { task.name = val }"
+                >
+                  {{ task.name }}
+                </EditableContent>
               </span>
 
               <span class="task-info">
-                <span v-if="!editMode" :title="`一次需要 ${count} 个人做该任务`">
-                  <span class="badge count">x{{ count }}</span>
+                <span v-if="!editMode" :title="`一次需要 ${task.demandNumOne} 个人做该任务`">
+                  <span class="badge count">x{{ task.demandNumOne }}</span>
                 </span>
                 <span v-else class="badge count-input">
                   <input
-                    :value="count"
-                    @change="modifyTaskQuantity(area, task, $event.target.value)"
+                    :value="task.demandNumOne"
+                    @change="task.demandNumOne = $event.target.value"
                     type="number"
                     min="1"
                   >
                 </span>
-                <ConfirmPopover v-if="editMode" @confirmed="removeTask(area, task)" text="确定删除该项？">
+                <ConfirmPopover
+                  v-if="editMode"
+                  @confirmed="deleteTask(area, task)"
+                  text="确定删除该项？"
+                >
                   <span class="badge clickable"><i class="zmdi zmdi-delete" /></span>
                 </ConfirmPopover>
               </span>
             </div>
 
             <div v-if="showAlias" class="task-alias">
-              <div v-if="!!area.taskAliasList && !!area.taskAliasList[task]">
-                <div v-for="alias in area.taskAliasList[task]" :key="alias" class="alias-item">
+              <div>
+                <div v-for="alias in task.aliasList" :key="alias" class="alias-item">
                   <i class="zmdi zmdi-turning-sign" /> {{ alias }}
                   <span class="task-info">
-                    <span v-if="editMode" @click="removeTaskAlias(area, task, alias)" class="badge clickable"><i class="zmdi zmdi-minus" /></span>
+                    <span
+                      v-if="editMode"
+                      @click="deleteTaskAlias(task, alias)"
+                      class="badge clickable"
+                    ><i class="zmdi zmdi-minus" /></span>
                   </span>
                 </div>
               </div>
               <!-- 编辑模式新增别名 -->
               <div v-if="editMode" class="alias-item">
                 <i class="zmdi zmdi-turning-sign" />
-                <div v-if="showAliaseSelector === `${area.name}-${task}`" class="alias-add-input">
+                <div v-if="showAliaseSelector === `${area.name}-${task.name}`" class="alias-add-input">
                   <el-select
                     v-model="selectedAliase"
-                    @change="addTaskAlias(area, task, $event)"
+                    @change="addTaskAlias(task, $event)"
                     filterable
                     placeholder="请选择别名"
                     size="mini"
                   >
                     <el-option
-                      v-for="item in getOptionalAliases(area.taskAliasList ? (area.taskAliasList[task] || []) : [])"
+                      v-for="item in getOptionalAliases(task.aliasList)"
                       :key="item"
                       :label="item"
                       :value="item"
                     />
                   </el-select>
                 </div>
-                <span v-if="showAliaseSelector === `${area.name}-${task}`" class="task-info">
+                <span v-if="showAliaseSelector === `${area.name}-${task.name}`" class="task-info">
                   <span @click="showAliaseSelector = ''" class="badge clickable"><i class="zmdi zmdi-minus" /></span>
                 </span>
 
-                <span v-if="showAliaseSelector !== `${area.name}-${task}`" class="task-info"><span @click="showAliaseSelector = `${area.name}-${task}`" class="badge clickable"><i class="zmdi zmdi-plus" /></span></span>
+                <span v-if="showAliaseSelector !== `${area.name}-${task.name}`" class="task-info">
+                  <span @click="showAliaseSelector = `${area.name}-${task.name}`" class="badge clickable"><i class="zmdi zmdi-plus" /></span>
+                </span>
               </div>
             </div>
           </div>
@@ -112,7 +132,7 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Component, Prop, Watch } from 'vue-property-decorator'
-import { Plan, Area } from '../core/data-interfaces'
+import { Plan, Area, Task } from 'duty-schedule-core'
 import EditableContent from '../components/EditableContent.vue'
 import ConfirmPopover from '../components/ConfirmPopover.vue'
 
@@ -125,50 +145,13 @@ export default class AreaList extends Vue {
   areaList: Area[] = []
 
   created () {
-    this.areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
-  }
-
-  getAreaTaskUniqueList (area: Area) {
-    const list: { [taskName: string]: number } = {}
-    _.forEach(area.taskList, (taskName) => {
-      if (!_.has(list, taskName)) {
-        list[taskName] = 1
-      } else {
-        list[taskName]++
-      }
-    })
-
-    return list
-  }
-
-  modifyAreaName (area: Area, toVal: string) {
-    area.name = toVal
-  }
-
-  modifyTaskName (area: Area, taskName: string, toVal: string) {
-    area.taskList = _.map(area.taskList, (item) => item === taskName ? toVal : item)
-  }
-
-  modifyTaskQuantity (area: Area, taskName: string, numStr?: string) {
-    if (numStr === undefined || Number.isNaN(Number(numStr))) { return }
-    const num = Number(numStr)
-    if (num <= 0) { return }
-
-    let firstIndex = area.taskList.indexOf(taskName)
-    if (firstIndex <= -1) { firstIndex = 0 }
-    const newList = _.filter(area.taskList, o => o !== taskName)
-    for (let i = 0; i < num; i++) {
-      newList.splice(firstIndex + i, 0, taskName)
-    }
-    area.taskList = newList
-  }
-
-  removeTask (area: Area, taskName: string) {
-    area.taskList = _.filter(area.taskList, o => o !== taskName)
+    this.areaList = _.cloneDeep(this.$duty.Store.AreaList)
   }
 
   addNewTask (area: Area) {
-    area.taskList.push(`新任务 ${area.taskList.filter(o => o.startsWith('新任务')).length + 1}`)
+    const task = new Task()
+    task.name = `新任务 ${area.taskList.filter(o => o.name.startsWith('新任务')).length + 1}`
+    area.taskList.push(task)
   }
 
   openEditMode () {
@@ -178,60 +161,50 @@ export default class AreaList extends Vue {
   }
 
   editSave () {
-    this.$dataStore.AreaList = this.areaList
-    this.$dataStore.save()
+    this.$duty.Store.AreaList = this.areaList
+    this.$dutyHelper.localSave()
     window.notify('数据已保存', 's')
     this.editMode = false
   }
 
   editCancel () {
-    this.areaList = JSON.parse(JSON.stringify(this.$dataStore.AreaList))
+    this.areaList = _.cloneDeep(this.$duty.Store.AreaList)
     this.editMode = false
   }
 
-  addTaskAlias (area: Area, task: string, alias: string) {
+  addTaskAlias (task: Task, alias: string) {
     if (!alias || String(alias).trim() === '') return
 
-    if (!area.taskAliasList) this.$set(area, 'taskAliasList', {})
-    if (!area.taskAliasList) return
-
-    if (!area.taskAliasList[task]) this.$set(area.taskAliasList, task, [])
-    if (!area.taskAliasList[task]) return
-
-    area.taskAliasList[task].push(alias)
+    task.aliasList.push(alias)
 
     // 重置别名选择器
     this.showAliaseSelector = ''
     this.selectedAliase = ''
   }
 
-  removeTaskAlias (area: Area, task: string, alias: string) {
-    if (!area.taskAliasList) return
-    if (!area.taskAliasList[task]) return
-    if (!area.taskAliasList[task].includes(alias)) return
-
-    area.taskAliasList[task].splice(area.taskAliasList[task].indexOf(alias), 1)
+  deleteTask (area: Area, task: Task) {
+    area.taskList.splice(area.taskList.indexOf(task), 1)
+  }
+  deleteTaskAlias (task: Task, alias: string) {
+    task.aliasList.splice(task.aliasList.indexOf(alias), 1)
   }
 
   selectedAliase: string = ''
-
   showAliaseSelector: string = ''
 
   getOptionalAliases (taskAliasList: string[]) {
+    const curtAllTaskNames = _.flatMap(this.$duty.Store.AreaList, o => _.flatMap(o.taskList, v => v.name))
+
     const aliases: string[] = []
-    const curtAllTasks = _.flatMap(this.$dataStore.AreaList, o => o.taskList)
-    const curtAllAliases: string[] = _.flatMap(this.$dataStore.AreaList, o => _.flatMap(o.taskAliasList))
-
-    _.forEach(this.$dataStore.PlanList, (plan) => {
+    _.forEach(this.$duty.Store.PlanList, (plan) => {
       _.forEach(plan.grpList, (grp) => {
-        _.forEach(grp.personTaskList, ({ task }) => {
-          if (String(task).trim() === '') return
-          if (aliases.includes(task)) return
-          if (taskAliasList.includes(task)) return
-          if (curtAllTasks.includes(task)) return
-          if (curtAllAliases.includes(task)) return
+        _.forEach(grp.asgnList, ({ taskName, oneName }) => {
+          if (String(taskName).trim() === '') return
+          if (aliases.includes(taskName)) return
+          if (taskAliasList.includes(taskName)) return
+          if (curtAllTaskNames.includes(taskName)) return
 
-          aliases.push(task)
+          aliases.push(taskName)
         })
       })
     })

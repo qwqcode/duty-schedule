@@ -12,13 +12,13 @@
             {{ plan.name }}
           </div>
           <div class="meta">
-            <span class="time">{{ $dataQuery.timeAgo(new Date(plan.actionTime)) }}</span>
-            <span v-html="`组: ${$dataQuery.getPlanGrpIdSummary(plan)}`" class="groups" />
+            <span class="time">{{ $duty.Utils.timeAgo(new Date(plan.actionTime)) }}</span>
+            <span v-html="`组: ${plan.getGrpNamesPreviewHTML()}`" class="groups" />
           </div>
         </div>
         <div class="flags">
           <span
-            v-if="$dataQuery.dateFormat(new Date(plan.actionTime)) === $dataQuery.dateFormat(new Date())"
+            v-if="$duty.Utils.dateFormat(new Date(plan.actionTime)) === $duty.Utils.dateFormat(new Date())"
             class="flag flag-green"
           >今日</span>
         <!--<span class="flag flag-red" v-if="plan.actionTime < new Date().getTime() - 24*60*60*1000">已过期</span>-->
@@ -42,7 +42,7 @@
 import _ from 'lodash'
 import Vue from 'vue'
 import { Prop, Component } from 'vue-property-decorator'
-import { Plan } from '@/core/data-interfaces'
+import { Plan } from 'duty-schedule-core'
 import ConfirmPopover from './ConfirmPopover.vue'
 import Dialog from './Dialog.vue'
 
@@ -53,7 +53,7 @@ export default class PlanListSidebar extends Vue {
   @Prop() readonly selectedPlan!: Plan
 
   get PlanList () {
-    return _.sortBy(this.$dataStore.PlanList, (o) => -o.actionTime)
+    return this.$duty.Store.PlanList
   }
 
   open () {
@@ -69,7 +69,9 @@ export default class PlanListSidebar extends Vue {
   }
 
   deletePlan (plan: Plan) {
-    this.$dataAction.delPlan(plan)
+    this.$duty.Store.PlanList.splice(this.$duty.Store.PlanList.indexOf(plan), 1)
+    this.$duty.Store.recSync()
+    this.$dutyHelper.localSave()
     window.notify(`"${plan.name}" 已删除`, 'i')
   }
 }

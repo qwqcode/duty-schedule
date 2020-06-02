@@ -11,8 +11,8 @@
       </div>
       <div class="grp-list">
         <div
-          v-for="grp in $dataStore.GrpList"
-          :key="grp.id"
+          v-for="grp in $duty.Store.GrpList"
+          :key="grp.name"
           @click="selectGrp(grp)"
           :class="{ 'is-selected': isGrpSelected(grp) }"
           class="grp-item"
@@ -21,15 +21,15 @@
             <i :class="!isGrpSelected(grp) ? 'zmdi zmdi-circle' : 'zmdi zmdi-check-circle'" />
           </div>
           <div class="grp-name">
-            第 {{ grp.id }} 组
+            组 {{ grp.name }}
           </div>
           <div class="badge-box">
-            <span v-if="$dataQuery.getIsGrpExitsInLatestPlan(grp.id)" class="warn">上次</span>
-            <span v-if="!!getGrpAssignedArea(grp)" class="success">本次: {{ getGrpAssignedArea(grp) }}</span>
-            <span v-if="grpBadgeConf.showAreaHistory">{{ ($dataQuery.getGrpLastDidArea(grp.id) || '?').substr(0, 1) }}</span>
+            <span v-if="grp.isExitsInLatestPlan" class="warn">上次</span>
+            <span v-if="!!getGrpAssignedArea(grp.name)" class="success">本次: {{ getGrpAssignedArea(grp.name) }}</span>
+            <span v-if="grpBadgeConf.showAreaHistory">{{ (grp.lastDidAreaRec ? grp.lastDidAreaRec.area.name || '?' : '?').substr(0, 1) }}</span>
             <span>
-              {{ $dataQuery.getGrpAreaRec(grp.id, '教室') + $dataQuery.getGrpAreaRec(grp.id, '公区') }} =
-              {{ $dataQuery.getGrpAreaRec(grp.id, '教室') }} + {{ $dataQuery.getGrpAreaRec(grp.id, '公区') }}
+              {{ grp.getAreaActionNumTotal() }} =
+              {{ grp.getAreaActionNum('教室') }} + {{ grp.getAreaActionNum('公区') }}
             </span>
           </div>
         </div>
@@ -74,15 +74,15 @@
         <div class="plan-grp-list">
           <div
             v-for="planGrp in plan.grpList"
-            :key="planGrp.grpId"
+            :key="planGrp.name"
             class="grp-item form-box anim-fade-in"
           >
             <div class="grp-head">
-              第 {{ planGrp.grpId }} 组
+              组 {{ planGrp.name }}
             </div>
 
             <div
-              v-for="(item, index) in planGrp.personTaskList"
+              v-for="(asgn, index) in planGrp.asgnList"
               :key="index"
               class="grp-person-item"
             >
@@ -90,8 +90,8 @@
                 <div class="left-part">
                   <div class="grp-input person-input">
                     <input
-                      v-model="item.person"
-                      @focus="exchangeTool.on ? exchangePerson(item, $event.target) : null"
+                      v-model="asgn.oneName"
+                      @focus="exchangeTool.on ? exchangePerson(asgn, $event.target) : null"
                       readonly
                       type="text"
                       autocomplete="off"
@@ -102,16 +102,16 @@
                 <div class="right-part">
                   <div class="grp-input task-input">
                     <input
-                      :value="item.task"
-                      @focus="$personProfile.open(item.person, { data: item, plan })"
+                      :value="asgn.taskName"
+                      @focus="$personProfile.open(asgn.oneName, { data: asgn, plan })"
                       type="text"
                       readonly="readonly"
                       autocomplete="off"
                       placeholder="任务"
                     >
                     <div class="badge-box">
-                      <span v-if="$dataQuery.getIsPersonLastDidTheTask(item.person, item.task)" class="warn">上次做过</span>
-                      <span>{{ $dataQuery.getPersonTaskRec(item.person, item.task) }}</span>
+                      <span v-if="isAsgnOneJustDidAsgnTask(asgn, planGrp.areaName)" class="warn">上次做过</span>
+                      <span>{{ getAsgnOneTaskActionNum(asgn) }}</span>
                     </div>
                   </div>
                 </div>
@@ -141,39 +141,60 @@
 </template>
 
 <script lang="ts">
-import $ from 'jquery'
 import _ from 'lodash'
 import Vue from 'vue'
+import { Plan, Grp, GrpInPlan, Asgn, Area } from 'duty-schedule-core'
 import { Component, Watch } from 'vue-property-decorator'
 import GrpList from './GrpList.vue'
-import { Plan, Grp, PlanGrp, PersonTaskItem, Area } from '../core/data-interfaces'
 import Dialog from '../components/Dialog.vue'
 
 @Component({
   components: { GrpList, Dialog }
 })
 export default class Builder extends Vue {
-  plan: Plan = this.$dataAction.newEmptyPlan()
+  plan: Plan = this.getEmptyPlan()
   selGrpList: Grp[] = []
 
   exchangeTool: {
     on: boolean,
-    personTaskItem: PersonTaskItem|null
+    asgn: Asgn|null
   } = {
     on: false,
-    personTaskItem: null,
+    asgn: null,
   }
 
   grpBadgeConf = {
     showAreaHistory: false
   }
 
-  created () {}
+  created () {
+  }
 
-  getGrpAssignedArea (grp: Grp) {
-    const findAssigned = this.plan.grpList.find(o => o.grpId === grp.id)
-    if (!findAssigned) return undefined
-    return (findAssigned.area || '?').substr(0, 1)
+  getEmptyPlan () {
+    const plan = new Plan()
+    plan.id = new Date().getTime()
+    plan.name = `${this.getDateText()}`
+    plan.actionTime = new Date().getTime()
+    plan.createdTime = new Date().getTime()
+    plan.grpList = []
+    plan.note = ''
+
+    return plan
+  }
+
+  public getDateText () {
+    const myDate = new Date()
+    const year = myDate.getFullYear()
+    const month = myDate.getMonth() + 1
+    const date = myDate.getDate()
+    const str = `星期${'日一二三四五六'.charAt(new Date().getDay())}`
+    return `${year}-${month}-${date} ${str}`
+  }
+
+  getGrpAssignedArea (grpName: string) {
+    const grpInPlan = this.plan.grpList.find(o => o.name === grpName)
+    if (!grpInPlan) return undefined
+    return (grpInPlan.areaName || '?').substr(0, 1)
   }
 
   //
@@ -181,8 +202,7 @@ export default class Builder extends Vue {
   //
 
   selectGrp (grp: Grp) {
-    if (!this.isGrpSelected(grp)) {
-      // 若未选中
+    if (!this.isGrpSelected(grp)) { // 若未选中
       this.selGrpList.push(grp)
     } else {
       this.selGrpList.splice(this.selGrpList.indexOf(grp), 1)
@@ -195,8 +215,9 @@ export default class Builder extends Vue {
 
   /** 自动选组 */
   autoSelectGrp () {
-    const fateList = this.$dataFate.getGrpFateList()
+    const fateList = this.$duty.Fate.getFateAreaToGrpDict()
 
+console.log(fateList)
     this.selGrpList = [
       fateList['教室'][0],
       fateList['教室'][1],
@@ -215,58 +236,66 @@ export default class Builder extends Vue {
     window.console.log('selGrpList', selGrpList)
 
     const areaOrder = ['教室', '教室', '公区', '公区']
-    const grpToAreaDict: { [grpId: number]: string } = {}
+    const areaToGrps: { [areaName: string]: Grp[] } = {}
+    const grpToAreaDict: { [grpName: string]: string } = {}
     _.forEach(selGrpList, (grp, index) => {
-      grpToAreaDict[grp.id] = areaOrder[index]
+      const areaName = areaOrder[index]
+      const areaGrps = areaToGrps[areaName] || (areaToGrps[areaName] = [])
+      areaGrps.push(grp)
+      grpToAreaDict[grp.name] = areaName
     })
-    window.console.log('grpToAreaDict', grpToAreaDict)
+    window.console.log('grpToAreaDict', areaToGrps)
 
-    const personToTask = this.$dataFate.getPersonFateList(selGrpList, grpToAreaDict)
-    window.console.log('personToTask', personToTask)
+    const oneToTaskDict = this.$duty.Fate.getFateOneToTaskDict(areaToGrps)
+    window.console.log('personToTask', oneToTaskDict)
 
     // 创建新 grpList
-    const PlanGrpList: PlanGrp[] = []
+    const GrpInPlanList: GrpInPlan[] = []
 
-    _.forEach(selGrpList, (grp, key) => {
-      const nPl: { person: string; task: string }[] = []
-      _.forEach(grp.personList, (person, index) => {
-        nPl.push({ person, task: personToTask[person] || '' })
+    _.forEach(selGrpList, (grp) => {
+      const asgnList: Asgn[] = []
+      _.forEach(grp.oneList, (one) => {
+        const asgn = new Asgn()
+        asgn.oneName = one.name
+        asgn.taskName = oneToTaskDict[one.name] || ''
+        asgnList.push(asgn)
       })
 
-      const planGrp: PlanGrp = {
-        grpId: grp.id,
-        personTaskList: nPl,
-        area: grpToAreaDict[grp.id]
-      }
+      const grpInPlan = new GrpInPlan()
+      grpInPlan.name = grp.name
+      grpInPlan.asgnList = asgnList
+      grpInPlan.areaName = grpToAreaDict[grp.name]
 
-      PlanGrpList.push(planGrp)
+      GrpInPlanList.push(grpInPlan)
     })
 
-    this.plan.grpList = PlanGrpList
+    this.plan.grpList = GrpInPlanList
     window.console.log("\n\n")
   }
 
   savePlan () {
     // 刷新时间
     this.plan.createdTime = new Date().getTime()
-    this.$dataAction.savePlan(this.plan)
+    this.$duty.Store.PlanList.unshift(this.plan)
+    this.$duty.Store.recSync()
+    this.$dutyHelper.localSave()
     this.$router.replace('/')
   }
 
-  exchangePerson (personTaskItem: PersonTaskItem, inputEl: HTMLElement) {
+  exchangePerson (asgn: Asgn, inputEl: HTMLElement) {
     if (!this.exchangeTool.on) return
-    if (!this.exchangeTool.personTaskItem) {
+    if (!this.exchangeTool.asgn) {
       // 添加置换源
-      this.exchangeTool.personTaskItem = personTaskItem
+      this.exchangeTool.asgn = asgn
     } else {
       // 执行置换
-      const aRawTask = this.exchangeTool.personTaskItem.task
-      const bRawTask = personTaskItem.task
+      const aRawTaskName = this.exchangeTool.asgn.taskName
+      const bRawTaskName = asgn.taskName
 
-      this.exchangeTool.personTaskItem.task = bRawTask
-      personTaskItem.task = aRawTask
+      this.exchangeTool.asgn.taskName = bRawTaskName
+      asgn.taskName = aRawTaskName
 
-      this.exchangeTool.personTaskItem = null
+      this.exchangeTool.asgn = null
       this.exchangeTool.on = false
 
       inputEl.blur()
@@ -276,8 +305,20 @@ export default class Builder extends Vue {
   toggleExchangeTool () {
     this.exchangeTool.on = !this.exchangeTool.on
     if (this.exchangeTool.on === false) {
-      this.exchangeTool.personTaskItem = null
+      this.exchangeTool.asgn = null
     }
+  }
+
+  /** Asgn one 是否做过 Asgn task */
+  isAsgnOneJustDidAsgnTask (asgn: Asgn, areaName: string) {
+    const one = asgn.tryGetOne()
+    return one ? one.isJustDidTask(asgn.taskName, areaName) : false
+  }
+
+  /** Asgn One 执行这个 Task 的次数 */
+  getAsgnOneTaskActionNum (asgn: Asgn) {
+    const one = asgn.tryGetOne()
+    return one ? one.getTaskActionNum(asgn.taskName) : false
   }
 }
 </script>

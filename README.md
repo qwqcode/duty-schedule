@@ -26,6 +26,8 @@
 - 扁平化友好 UI
 - 密码保护*
 - JSON 灵活数据处理
+- 云端数据同步
+- [独立核心库](https://github.com/qwqcode/duty-schedule-core)
 
 ## 预览
 
@@ -47,12 +49,24 @@
 
 #### Dev Setup
 
+核心库
+
 ```bash
+# clone core lib
+git clone https://github.com/qwqcode/duty-schedule-core
+
+yarn link
+```
+
+客户端
+
+```
 # clone the project
 git clone https://github.com/qwqcode/duty-schedule -b dev
 
 # install dependencies
 yarn install
+yarn link duty-schedule-core
 
 # start developing
 yarn dev
