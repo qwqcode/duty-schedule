@@ -9,7 +9,7 @@ import $ from 'jquery'
 
 @Component({})
 export default class Notify extends Vue {
-  created() {
+  created () {
     /* notify */
     window.notify = (message: string, level?: string, timeout?: number): void => {
       window.console.log(`[notify][${level}][${new Date().toLocaleString()}] ${message}`)

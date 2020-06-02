@@ -41,7 +41,7 @@
                     :title="`${one.name} 上次做的就是这个任务`"
                     class="warn"
                   >上次</span>
-                  <span v-if="!!one" :title="`${one.name} 已做过 ${one.getTaskActionNum(task.name)} 次该任务`" class="clickable">
+                  <span v-if="!!one" :title="`${one.name} 已做过 ${one.getTaskActionNum(task.name)} 次该任务`">
                     <i class="zmdi zmdi-calendar-check" />
                     {{ one.getTaskActionNum(task.name) }}
                   </span>
@@ -127,9 +127,10 @@ export default class PersonProfile extends Vue {
   get profileDetails (): {[label: string]: string} {
     if (!this.one) return {}
 
+    const lastDidTaskRec = this.one.getLastDidTaskRec()
     return {
-      '最后执行': this.one.lastDidTaskRec ? `${this.one.lastDidTaskRec.task.name}`
-      + ` (${this.$duty.Utils.timeAgo(new Date(this.one.lastDidTaskRec.rec.lastTime))})` : '无'
+      '最后执行': lastDidTaskRec ? `${lastDidTaskRec.task.name}`
+      + ` (${this.$duty.Utils.timeAgo(new Date(lastDidTaskRec.rec.lastTime))})` : '无'
     }
   }
 

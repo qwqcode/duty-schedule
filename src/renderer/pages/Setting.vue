@@ -108,7 +108,7 @@
         <br>
         <b style="font-size: 1.4em;">值日任务表 v{{ version }}</b>
         <br>
-        <br>© 2019
+        <br>© 2020
         <span @click="openBlog()" style="cursor: pointer;color: #1a73e8">qwqaq.com</span>
       </div>
     </div>

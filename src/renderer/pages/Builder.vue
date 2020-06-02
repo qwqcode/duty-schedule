@@ -110,7 +110,7 @@
                       placeholder="任务"
                     >
                     <div class="badge-box">
-                      <span v-if="isAsgnOneJustDidAsgnTask(asgn)" class="warn">上次做过</span>
+                      <span v-if="isAsgnOneJustDidAsgnTask(asgn, planGrp.areaName)" class="warn">上次做过</span>
                       <span>{{ getAsgnOneTaskActionNum(asgn) }}</span>
                     </div>
                   </div>
@@ -141,7 +141,6 @@
 </template>
 
 <script lang="ts">
-import $ from 'jquery'
 import _ from 'lodash'
 import Vue from 'vue'
 import { Plan, Grp, GrpInPlan, Asgn, Area } from 'duty-schedule-core'
@@ -278,6 +277,7 @@ console.log(fateList)
     // 刷新时间
     this.plan.createdTime = new Date().getTime()
     this.$duty.Store.PlanList.unshift(this.plan)
+    this.$duty.Store.recSync()
     this.$dutyHelper.localSave()
     this.$router.replace('/')
   }
@@ -310,9 +310,9 @@ console.log(fateList)
   }
 
   /** Asgn one 是否做过 Asgn task */
-  isAsgnOneJustDidAsgnTask (asgn: Asgn) {
+  isAsgnOneJustDidAsgnTask (asgn: Asgn, areaName: string) {
     const one = asgn.tryGetOne()
-    return one ? one.isJustDidTask(asgn.taskName) : false
+    return one ? one.isJustDidTask(asgn.taskName, areaName) : false
   }
 
   /** Asgn One 执行这个 Task 的次数 */

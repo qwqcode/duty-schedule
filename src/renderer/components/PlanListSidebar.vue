@@ -69,7 +69,9 @@ export default class PlanListSidebar extends Vue {
   }
 
   deletePlan (plan: Plan) {
-    this.$duty.Store.remove(plan)
+    this.$duty.Store.PlanList.splice(this.$duty.Store.PlanList.indexOf(plan), 1)
+    this.$duty.Store.recSync()
+    this.$dutyHelper.localSave()
     window.notify(`"${plan.name}" 已删除`, 'i')
   }
 }

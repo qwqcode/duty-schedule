@@ -1,62 +1,69 @@
 # Migrating Data from v0.0.9 to v0.1.0
 
-```js
-JSON.stringify(_.countBy(srcObj.AreaList[0].taskList), null, ' ')
+```ts
+function transOldVersionData (jsonStr: string) {
+  const srcObj = JSON.parse(jsonStr)
 
-"(.+)": ([0-9]+),?
+  const makeNewArea = (areaSrc: any) => {
+    const nArea: any = {
+        name: areaSrc.name,
+      demandNumGrp: 2,
+      recForGrps: {},
+      taskList: []
+    }
+    _.forEach(_.countBy(areaSrc.taskList), (demandNumOne, taskName) => {
+      const nTask: any = {
+        name: taskName,
+        aliasList: [],
+        demandNumOne: Number(demandNumOne),
+        recForOnes: {}
+      }
+      if (!!areaSrc.taskAliasList && !!areaSrc.taskAliasList[taskName])
+        nTask.aliasList = areaSrc.taskAliasList[taskName]
+      nArea.taskList.push(nTask)
+    })
+    return nArea
+  }
 
-// to: 
+  const makeNewPlan = (planSrc: any) => {
+    const nPlan: any = {
+      id: planSrc.id,
+      name: planSrc.name,
+      actionTime: planSrc.actionTime,
+      createdTime: planSrc.createdTime,
+      note: (planSrc.note || ''),
+      grpList: []
+    }
+    _.forEach(planSrc.grpList, (grp) => {
+      const newGrp: any = {
+        name: String(grp.grpId),
+        areaName: grp.area,
+        asgnList: []
+      }
+      _.forEach(grp.personTaskList, (o) => {
+        newGrp.asgnList.push({ oneName: o.person, taskName: o.task })
+      })
+      nPlan.grpList.push(newGrp)
+    })
+    return nPlan
+  }
 
-{
-   "name": "$1",
-   "aliasList": [],
-   "demandNumOne": $2,
-   "recForOnes": {}
+  const makeNewGrp = (grpSrc: any) => {
+    const nGrp: any = {
+      name: String(grpSrc.id),
+      oneList: []
+    }
+    _.forEach(grpSrc.personList, (oneName) => {
+      nGrp.oneList.push({ name: oneName })
+    })
+    return nGrp
+   }
+
+  const nObj: any = { PlanList: [], GrpList: [], AreaList: [] }
+  _.forEach(srcObj.AreaList, (area) => { nObj.AreaList.push(makeNewArea(area)) })
+  _.forEach(srcObj.PlanList, (plan) => { nObj.PlanList.push(makeNewPlan(plan)) })
+  _.forEach(srcObj.GrpList, (grp) => { nObj.GrpList.push(makeNewGrp(grp)) })
+
+  return JSON.stringify(nObj, null, ' ')
 }
-
-// resolve aliasList manually
-```
-
-## PLAN LIST
-```js
-newPlanList = [];
-srcObj.PlanList.forEach(plan => {
-  const nPlan = {};
-  nPlan.id = plan.id;
-  nPlan.name = plan.name;
-  nPlan.actionTime = plan.actionTime;
-  nPlan.createdTime = plan.createdTime;
-  nPlan.note = plan.note || "";
-  nPlan.grpList = [];
-  _.forEach(plan.grpList, grp => {
-    const newGrp = {};
-    newGrp.name = String(grp.grpId);
-    newGrp.areaName = grp.area;
-    newGrp.asgnList = [];
-    _.forEach(grp.personTaskList, o => {
-      newGrp.asgnList.push({ oneName: o.person, taskName: o.task });
-    });
-    nPlan.grpList.push(newGrp);
-  });
-  newPlanList.push(nPlan);
-});
-console.log(JSON.stringify(newPlanList, null, " "));
-```
-
-## GRP LIST
-```js
-newGrpList = [];
-srcObj.GrpList.forEach(grp => {
-  const nGrp = {};
-  nGrp.name = String(grp.id);
-  nGrp.oneList = [];
-  _.forEach(grp.personList, oneName => {
-    nGrp.oneList.push({
-      name: oneName
-    });
-  });
-
-  newGrpList.push(nGrp);
-});
-console.log(JSON.stringify(newGrpList, null, " "));
 ```

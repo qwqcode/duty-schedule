@@ -62,7 +62,6 @@
 <script lang="ts">
 import Vue from 'vue'
 import _ from 'lodash'
-import $ from 'jquery'
 import { Watch, Component } from 'vue-property-decorator'
 import { Plan, GrpInPlan } from 'duty-schedule-core'
 import PlanListSidebar from '../components/PlanListSidebar.vue'
