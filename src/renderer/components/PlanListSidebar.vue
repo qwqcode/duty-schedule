@@ -53,7 +53,7 @@ export default class PlanListSidebar extends Vue {
   @Prop() readonly selectedPlan!: Plan
 
   get PlanList () {
-    return this.$duty.Store.PlanList
+    return this.$duty.Store.PlanListSorted
   }
 
   open () {
